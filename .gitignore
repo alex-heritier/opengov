@@ -1,1 +1,44 @@
+# OS
 .DS_Store
+Thumbs.db
+
+# IDE & Tools
+.claude/
+
+# Backend
+backend/.env
+backend/.env.local
+backend/opengov.db
+backend/.pytest_cache/
+backend/.venv/
+backend/venv/
+backend/*.pyc
+backend/htmlcov/
+backend/.coverage
+__pycache__
+*.db
+
+# Frontend
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# Misc
+.env
+.env.local
+.env.*.local

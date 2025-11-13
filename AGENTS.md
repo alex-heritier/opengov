@@ -1,7 +1,7 @@
 # AI Agent Guidelines
 
 ## Project Overview
-
+÷«
 Mission Statement: A viral news app that helps Americans stay informed about what their government is doing by publishing live updates on everything the Federal government is doing.
 
 How We Do It: We use the Federal Register API to scrape data, the Grok API to process the data, and then display it on a feed page.
