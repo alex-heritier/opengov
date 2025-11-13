@@ -101,6 +101,51 @@ opengov/
 └── README.md
 ```
 
+## API Structure
+
+### Authentication Endpoints
+- `POST /api/auth/google/login` - Initiate Google OAuth flow
+- `GET /api/auth/google/callback` - Handle Google OAuth callback
+- `POST /api/auth/logout` - Logout current user
+- `GET /api/auth/me` - Get current authenticated user info
+
+### Feed Endpoints
+- `GET /api/feed` - Get paginated list of articles/blurbs
+  - Query params: `page`, `limit`, `sort` (newest, trending, etc.)
+- `GET /api/feed/{article_id}` - Get specific article details
+- `POST /api/feed/{article_id}/share` - Track article sharing (analytics)
+
+### User Endpoints
+- `GET /api/users/me` - Get current user profile
+- `PATCH /api/users/me` - Update user profile settings
+
+### Admin Endpoints (Optional)
+- `POST /api/admin/scrape` - Manually trigger Federal Register scrape
+- `GET /api/admin/articles` - Get all articles with metadata for admin dashboard
+
+### Response Format
+
+All API responses follow this structure:
+```json
+{
+  "success": true,
+  "data": { ... },
+  "error": null
+}
+```
+
+Error responses:
+```json
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human readable error message"
+  }
+}
+```
+
 ## Implementation Notes
 
 ### Backend
