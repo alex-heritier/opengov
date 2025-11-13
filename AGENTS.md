@@ -4,6 +4,11 @@
 
 This is a government as a service (GaaS) project for corrupt countries with bad governance.
 
+## Roadmap
+
+1. Federal register scraper to create a viral buzz around us
+2. Create the opengov GaaS product
+
 ## Tech Stack
 
 - **Backend**: FastAPI
