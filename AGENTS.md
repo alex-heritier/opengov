@@ -53,3 +53,10 @@ When working on this project:
 - Follow React/Vite conventions for frontend development
 - Ensure API integrations remain functional
 - Keep the feed content engaging and digestible
+
+### Makefile Commands
+
+Use the Makefile for common development tasks:
+- `make build` - Build the project (frontend and backend)
+- `make run` - Run the development environment
+- `make deploy` - Deploy the application
