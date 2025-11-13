@@ -94,6 +94,9 @@ opengov/
 │   ├── components.json            # shadcn config
 │   └── .env.example
 │
+├── docs/
+│   ├── model.md                   # Data model documentation (MUST be kept in sync)
+│   └── style.md                   # UI technical style guide
 ├── Makefile
 ├── AGENTS.md
 ├── CLAUDE.md -> AGENTS.md
@@ -172,6 +175,30 @@ Error responses:
 - Use Vite's environment variables for API endpoint configuration
 - Keep UI responsive and mobile-friendly
 - Add loading states and error boundaries for better UX
+
+## Testing
+
+- **Tests must be created for all features** on both frontend and backend
+- Backend: Use pytest for unit tests, integration tests, and API endpoint tests
+- Frontend: Use Vitest and React Testing Library for component and integration tests
+- Ensure adequate test coverage for critical functionality
+- Test external API integrations with mocks/stubs
+- Run tests before committing changes
+
+## Documentation
+
+### Model Documentation
+- **All data models MUST be documented in `docs/model.md`**
+- This file MUST be kept in sync with the codebase at all times
+- Include SQLAlchemy models, Pydantic schemas, and any data structures
+- Document all fields, types, relationships, and constraints
+- Update `docs/model.md` whenever models are added, modified, or removed
+
+### UI Style Guide
+- **A detailed technical style guide for the UI is maintained in `docs/style.md`**
+- Follow the style guide for all UI components and layouts
+- Document component patterns, spacing, colors, typography, and interactions
+- Keep style guide updated when design decisions are made
 
 ## Development Guidelines
 
