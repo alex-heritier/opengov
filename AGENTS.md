@@ -163,6 +163,16 @@ Error responses:
 - Use environment variables for API keys and configuration
 - Add rate limiting to prevent API quota exhaustion
 
+**Key Python Libraries:**
+- `fastapi` - Web framework
+- `uvicorn` - ASGI server
+- `sqlalchemy` - Database ORM
+- `alembic` - Database migrations
+- `httpx` - Async HTTP client for external API calls
+- `authlib` - Google OAuth implementation
+- `python-dotenv` - Environment variable management
+- `apscheduler` - Periodic task scheduling (simpler alternative to Celery)
+
 ### Frontend
 
 - Structure components by feature (e.g., `/components/feed`, `/components/article`)
@@ -170,6 +180,7 @@ Error responses:
 - Use TanStack Router for routing and navigation
 - Use TanStack Query for data fetching, caching, and server state management
 - Use shadcn/ui components for consistent UI design
+- Use Tailwind CSS for styling (integrates natively with shadcn/ui)
 - Implement infinite scroll or pagination for the `/feed` page
 - Make articles shareable with meta tags for social media previews
 - Use Vite's environment variables for API endpoint configuration
