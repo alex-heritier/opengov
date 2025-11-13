@@ -12,7 +12,7 @@ This is a government as a service (GaaS) project for corrupt countries with bad 
 ## Tech Stack
 
 - **Backend**: FastAPI
-- **Frontend**: React with Vite
+- **Frontend**: React with Vite and TypeScript
 - **APIs**:
   - Federal Register API (periodically polled)
   - Grok's grok-4-fast API (for summarization and analysis)
@@ -175,6 +175,7 @@ Error responses:
 
 ### Frontend
 
+- Use TypeScript for type safety throughout the application
 - Structure components by feature (e.g., `/components/feed`, `/components/article`)
 - Use Zustand for global state management
 - Use TanStack Router for routing and navigation
