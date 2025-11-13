@@ -220,9 +220,81 @@ When working on this project:
 - Ensure API integrations remain functional
 - Keep the feed content engaging and digestible
 
+## Commands
+
 ### Makefile Commands
 
 Use the Makefile for common development tasks:
 - `make build` - Build the project (frontend and backend)
 - `make run` - Run the development environment
 - `make deploy` - Deploy the application
+
+### Backend Commands
+
+**Development Server:**
+```bash
+cd backend
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+**Dependencies:**
+```bash
+pip install -r requirements.txt
+```
+
+**Testing:**
+```bash
+pytest                          # Run all tests
+pytest tests/test_api.py        # Run specific test file
+pytest -v                       # Verbose output
+pytest --cov=app                # Run with coverage
+```
+
+**Database Migrations (Alembic):**
+```bash
+alembic init alembic                                    # Initialize alembic (first time only)
+alembic revision --autogenerate -m "Create users table" # Generate migration
+alembic upgrade head                                    # Apply all migrations
+alembic downgrade -1                                    # Rollback one migration
+alembic current                                         # Show current migration
+alembic history                                         # Show migration history
+```
+
+**Database Access:**
+```bash
+sqlite3 opengov.db              # Open SQLite database
+.tables                         # Show all tables
+.schema users                   # Show table schema
+```
+
+### Frontend Commands
+
+**Development Server:**
+```bash
+cd frontend
+npm run dev                     # Start dev server (usually port 5173)
+```
+
+**Dependencies:**
+```bash
+npm install                     # Install dependencies
+```
+
+**Build:**
+```bash
+npm run build                   # Build for production
+npm run preview                 # Preview production build
+```
+
+**Testing:**
+```bash
+npm test                        # Run tests
+npm run test:ui                 # Run tests with UI
+npm run coverage                # Run tests with coverage
+```
+
+**Linting:**
+```bash
+npm run lint                    # Run ESLint
+npm run format                  # Format with Prettier
+```
