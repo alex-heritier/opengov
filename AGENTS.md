@@ -2,12 +2,17 @@
 
 ## Project Overview
 
-Government as a service (GaaS) project that scrapes Federal Register API, processes data with Grok API, and displays digestible articles on a feed page.
+Mission Statement: A viral news app that helps Americans stay informed about what their government is doing by publishing live updates on everything the Federal government is doing.
+
+How We Do It: We use the Federal Register API to scrape data, the Grok API to process the data, and then display it on a feed page.
+
+Refer to TODO.md for tasks.
 
 ## Roadmap
 
-1. Federal register scraper to create viral buzz
-2. Create the opengov GaaS product
+1. Basic Federal register scraping + Grok AI processing + website to create viral buzz
+2. Allow user accounts, likes, comments, and shares (TBD, do not implement)
+3. Create the opengov GaaS product (TBD, do not implement)
 
 ## Tech Stack
 
