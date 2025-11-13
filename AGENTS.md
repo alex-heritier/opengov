@@ -21,6 +21,86 @@ This is a government as a service (GaaS) project for corrupt countries with bad 
 
 The backend periodically hits the Federal Register API and runs the results through Grok's grok-4-fast API to summarize and analyze the register details. It then creates interesting, digestible little blurbs and articles on the `/feed` page for people to read and share.
 
+## Project Structure
+
+```
+opengov/
+├── backend/
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── main.py                 # FastAPI app entry point
+│   │   ├── config.py               # Configuration and environment variables
+│   │   ├── database.py             # SQLAlchemy setup and session management
+│   │   ├── models/                 # SQLAlchemy models
+│   │   │   ├── __init__.py
+│   │   │   ├── user.py
+│   │   │   ├── article.py
+│   │   │   └── federal_register.py
+│   │   ├── services/               # Business logic and external API integrations
+│   │   │   ├── __init__.py
+│   │   │   ├── federal_register.py # Federal Register API client
+│   │   │   ├── grok.py            # Grok API client
+│   │   │   └── auth.py            # Google OAuth logic
+│   │   ├── routers/               # API endpoints
+│   │   │   ├── __init__.py
+│   │   │   ├── auth.py            # Authentication routes
+│   │   │   ├── feed.py            # Feed/articles routes
+│   │   │   └── users.py
+│   │   ├── schemas/               # Pydantic schemas
+│   │   │   ├── __init__.py
+│   │   │   ├── user.py
+│   │   │   └── article.py
+│   │   └── workers/               # Background tasks
+│   │       ├── __init__.py
+│   │       └── scraper.py         # Periodic Federal Register scraper
+│   ├── requirements.txt
+│   ├── .env.example
+│   └── opengov.db                 # SQLite database file
+│
+├── frontend/
+│   ├── src/
+│   │   ├── main.tsx               # App entry point
+│   │   ├── App.tsx
+│   │   ├── routes/                # TanStack Router routes
+│   │   │   ├── __root.tsx
+│   │   │   ├── index.tsx
+│   │   │   └── feed.tsx
+│   │   ├── components/
+│   │   │   ├── ui/                # shadcn components
+│   │   │   ├── feed/              # Feed-specific components
+│   │   │   │   ├── ArticleCard.tsx
+│   │   │   │   └── FeedList.tsx
+│   │   │   ├── auth/              # Auth-specific components
+│   │   │   │   └── GoogleLogin.tsx
+│   │   │   └── layout/
+│   │   │       ├── Header.tsx
+│   │   │       └── Footer.tsx
+│   │   ├── stores/                # Zustand stores
+│   │   │   ├── authStore.ts
+│   │   │   └── feedStore.ts
+│   │   ├── api/                   # TanStack Query hooks and API calls
+│   │   │   ├── client.ts          # Axios/fetch client
+│   │   │   ├── queries.ts         # Query hooks
+│   │   │   └── mutations.ts       # Mutation hooks
+│   │   ├── lib/                   # Utilities
+│   │   │   └── utils.ts
+│   │   └── styles/
+│   │       └── globals.css
+│   ├── public/
+│   ├── index.html
+│   ├── package.json
+│   ├── vite.config.ts
+│   ├── tsconfig.json
+│   ├── components.json            # shadcn config
+│   └── .env.example
+│
+├── Makefile
+├── AGENTS.md
+├── CLAUDE.md -> AGENTS.md
+├── .gitignore
+└── README.md
+```
+
 ## Implementation Notes
 
 ### Backend
