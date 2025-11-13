@@ -1,25 +1,19 @@
 # AI Agent Guidelines
 
-## Overview
+## Project Overview
 
-This is a government as a service (GaaS) project for corrupt countries with bad governance.
+Government as a service (GaaS) project that scrapes Federal Register API, processes data with Grok API, and displays digestible articles on a feed page.
 
 ## Roadmap
 
-1. Federal register scraper to create a viral buzz around us
+1. Federal register scraper to create viral buzz
 2. Create the opengov GaaS product
 
 ## Tech Stack
 
-- **Backend**: FastAPI
-- **Frontend**: React with Vite and TypeScript
-- **APIs**:
-  - Federal Register API (periodically polled)
-  - Grok's grok-4-fast API (for summarization and analysis)
-
-## How It Works
-
-The backend periodically hits the Federal Register API and runs the results through Grok's grok-4-fast API to summarize and analyze the register details. It then creates interesting, digestible little blurbs and articles on the `/feed` page for people to read and share.
+- **Backend**: FastAPI + SQLite + SQLAlchemy
+- **Frontend**: React + Vite + TypeScript
+- **External APIs**: Federal Register API, Grok grok-4-fast API
 
 ## Project Structure
 
@@ -149,152 +143,69 @@ Error responses:
 }
 ```
 
-## Implementation Notes
+## Implementation Guidelines
 
 ### Backend
+- Use FastAPI async/await for all endpoints and external calls
+- SQLite + SQLAlchemy for data persistence
+- Google OAuth for authentication
+- Separate service modules for external API integrations
+- Environment variables for API keys and configuration
+- Background workers for periodic Federal Register scraping
 
-- Use FastAPI's async/await for all API endpoints and external calls
-- Implement periodic tasks with background workers (e.g., APScheduler or Celery)
-- Use SQLite as the database with SQLAlchemy ORM for data persistence
-- Store Federal Register data and Grok summaries in the database
-- Implement Google OAuth for user authentication and login
-- Create separate service modules for Federal Register API and Grok API integrations
-- Include proper error handling and retry logic for external API calls
-- Use environment variables for API keys and configuration
-- Add rate limiting to prevent API quota exhaustion
-
-**Key Python Libraries:**
-- `fastapi` - Web framework
-- `uvicorn` - ASGI server
-- `sqlalchemy` - Database ORM
-- `alembic` - Database migrations
-- `httpx` - Async HTTP client for external API calls
-- `authlib` - Google OAuth implementation
-- `python-dotenv` - Environment variable management
-- `apscheduler` - Periodic task scheduling (simpler alternative to Celery)
+**Key Libraries:** fastapi, uvicorn, sqlalchemy, alembic, httpx, authlib, apscheduler
 
 ### Frontend
-
-- Use TypeScript for type safety throughout the application
-- Structure components by feature (e.g., `/components/feed`, `/components/article`)
-- Use Zustand for global state management
-- Use TanStack Router for routing and navigation
-- Use TanStack Query for data fetching, caching, and server state management
-- Use shadcn/ui components for consistent UI design
-- Use Tailwind CSS for styling (integrates natively with shadcn/ui)
-- Implement infinite scroll or pagination for the `/feed` page
-- Make articles shareable with meta tags for social media previews
-- Use Vite's environment variables for API endpoint configuration
-- Keep UI responsive and mobile-friendly
-- Add loading states and error boundaries for better UX
+- TypeScript throughout
+- Component structure by feature
+- Zustand for state management
+- TanStack Router + Query for routing and data fetching
+- shadcn/ui + Tailwind CSS for styling
+- Infinite scroll/pagination for feed
+- Responsive design with loading states and error boundaries
 
 ## Testing
 
-- **Tests must be created for all features** on both frontend and backend
-- Backend: Use pytest for unit tests, integration tests, and API endpoint tests
-- Frontend: Use Vitest and React Testing Library for component and integration tests
-- Ensure adequate test coverage for critical functionality
-- Test external API integrations with mocks/stubs
-- Run tests before committing changes
+- Tests required for all features
+- Backend: pytest
+- Frontend: Vitest + React Testing Library
+- Mock external API integrations
+- Run tests before commits
 
 ## Documentation
 
-### Model Documentation
-- **All data models MUST be documented in `docs/model.md`**
-- This file MUST be kept in sync with the codebase at all times
-- Include SQLAlchemy models, Pydantic schemas, and any data structures
-- Document all fields, types, relationships, and constraints
-- Update `docs/model.md` whenever models are added, modified, or removed
+- `docs/model.md` - Keep data models in sync (SQLAlchemy, Pydantic)
+- `docs/style.md` - UI component patterns and design decisions
 
-### UI Style Guide
-- **A detailed technical style guide for the UI is maintained in `docs/style.md`**
-- Follow the style guide for all UI components and layouts
-- Document component patterns, spacing, colors, typography, and interactions
-- Keep style guide updated when design decisions are made
+## Development Rules
 
-## Development Guidelines
-
-When working on this project:
-- Maintain the FastAPI backend structure
-- Follow React/Vite conventions for frontend development
-- Ensure API integrations remain functional
-- Keep the feed content engaging and digestible
+- Follow established project structure and patterns
+- Keep API integrations functional
+- Tests required for all features
+- Keep docs/model.md in sync with codebase
 
 ## Commands
 
-### Makefile Commands
-
-Use the Makefile for common development tasks:
-- `make build` - Build the project (frontend and backend)
-- `make run` - Run the development environment
-- `make deploy` - Deploy the application
-
-### Backend Commands
-
-**Development Server:**
+### Backend
 ```bash
 cd backend
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000  # Dev server
+pip install -r requirements.txt                           # Dependencies
+pytest                                                    # Tests
+alembic revision --autogenerate -m "message"              # Migration
+alembic upgrade head                                      # Apply migrations
 ```
 
-**Dependencies:**
-```bash
-pip install -r requirements.txt
-```
-
-**Testing:**
-```bash
-pytest                          # Run all tests
-pytest tests/test_api.py        # Run specific test file
-pytest -v                       # Verbose output
-pytest --cov=app                # Run with coverage
-```
-
-**Database Migrations (Alembic):**
-```bash
-alembic init alembic                                    # Initialize alembic (first time only)
-alembic revision --autogenerate -m "Create users table" # Generate migration
-alembic upgrade head                                    # Apply all migrations
-alembic downgrade -1                                    # Rollback one migration
-alembic current                                         # Show current migration
-alembic history                                         # Show migration history
-```
-
-**Database Access:**
-```bash
-sqlite3 opengov.db              # Open SQLite database
-.tables                         # Show all tables
-.schema users                   # Show table schema
-```
-
-### Frontend Commands
-
-**Development Server:**
+### Frontend
 ```bash
 cd frontend
-npm run dev                     # Start dev server (usually port 5173)
+npm run dev        # Dev server
+npm install        # Dependencies
+npm test           # Tests
+npm run build      # Production build
 ```
 
-**Dependencies:**
-```bash
-npm install                     # Install dependencies
-```
-
-**Build:**
-```bash
-npm run build                   # Build for production
-npm run preview                 # Preview production build
-```
-
-**Testing:**
-```bash
-npm test                        # Run tests
-npm run test:ui                 # Run tests with UI
-npm run coverage                # Run tests with coverage
-```
-
-**Linting:**
-```bash
-npm run lint                    # Run ESLint
-npm run format                  # Format with Prettier
-```
+### Makefile
+- `make build` - Build project
+- `make run` - Run development environment
+- `make deploy` - Deploy application
