@@ -36,7 +36,10 @@ The backend periodically hits the Federal Register API and runs the results thro
 ### Frontend
 
 - Structure components by feature (e.g., `/components/feed`, `/components/article`)
-- Use React hooks for state management (Context API or Zustand for global state)
+- Use Zustand for global state management
+- Use TanStack Router for routing and navigation
+- Use TanStack Query for data fetching, caching, and server state management
+- Use shadcn/ui components for consistent UI design
 - Implement infinite scroll or pagination for the `/feed` page
 - Make articles shareable with meta tags for social media previews
 - Use Vite's environment variables for API endpoint configuration
