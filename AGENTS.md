@@ -1,38 +1,25 @@
 # AI Agent Guidelines
 
-This document provides guidance for AI agents (like Claude) working with this repository.
-
 ## Overview
 
-This repository is for the OpenGov project. AI agents should follow these guidelines when making contributions.
+This is a government as a service (GaaS) project for corrupt countries with bad governance.
 
-## Development Practices
+## Tech Stack
 
-### Code Quality
-- Write clear, maintainable code
-- Follow existing code style and conventions
-- Add appropriate tests for new functionality
-- Document complex logic and APIs
+- **Backend**: FastAPI
+- **Frontend**: React with Vite
+- **APIs**:
+  - Federal Register API (periodically polled)
+  - Grok's grok-4-fast API (for summarization and analysis)
 
-### Git Workflow
-- Work on feature branches
-- Write clear, descriptive commit messages
-- Keep commits focused and atomic
-- Push changes to the designated branch
+## How It Works
 
-### Communication
-- Ask for clarification when requirements are ambiguous
-- Explain reasoning for technical decisions
-- Highlight any potential issues or concerns
-- Provide context for significant changes
+The backend periodically hits the Federal Register API and runs the results through Grok's grok-4-fast API to summarize and analyze the register details. It then creates interesting, digestible little blurbs and articles on the `/feed` page for people to read and share.
 
-## Best Practices
+## Development Guidelines
 
-- Read existing code before making changes
-- Maintain consistency with the existing codebase
-- Consider edge cases and error handling
-- Prioritize code readability and maintainability
-
-## Questions?
-
-If you need more specific guidance, please ask the repository maintainers.
+When working on this project:
+- Maintain the FastAPI backend structure
+- Follow React/Vite conventions for frontend development
+- Ensure API integrations remain functional
+- Keep the feed content engaging and digestible
