@@ -13,7 +13,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from app.config import settings
 from app.routers import feed, admin
 from app.workers.scraper import fetch_and_process
-from app.database import engine, Base
+from app.database import engine, Base, SessionLocal
+from app.services.federal_register import fetch_agencies, store_agencies
 
 # Configure logging
 logging.basicConfig(
@@ -42,6 +43,22 @@ async def lifespan(app: FastAPI):
     """Handle app startup and shutdown"""
     # Startup
     logger.info("Starting OpenGov API")
+
+    # Sync agencies from Federal Register API on startup
+    logger.info("Syncing agencies from Federal Register API...")
+    db = SessionLocal()
+    try:
+        agencies_data = await fetch_agencies()
+        if agencies_data:
+            result = store_agencies(db, agencies_data)
+            logger.info(f"Agency sync completed: {result['created']} created, {result['updated']} updated, {result['skipped']} skipped, {result['errors']} errors")
+        else:
+            logger.warning("No agencies returned from Federal Register API during startup")
+    except Exception as e:
+        logger.error(f"Error syncing agencies during startup: {e}", exc_info=True)
+    finally:
+        db.close()
+
     scheduler.add_job(
         fetch_and_process,
         "interval",
