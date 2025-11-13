@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, BackgroundTasks
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
@@ -39,7 +39,7 @@ async def get_stats(request: Request, db: Session = Depends(get_db)):
         "total_articles": total_articles,
         "last_scrape_time": last_scrape_time,
         "last_scrape_human": (
-            f"{int((datetime.utcnow() - last_scrape_time).total_seconds())} seconds ago"
+            f"{int((datetime.now(timezone.utc) - last_scrape_time).total_seconds())} seconds ago"
             if last_scrape_time else "Never"
         ),
     }

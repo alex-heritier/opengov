@@ -5,7 +5,7 @@ Usage: python -m scripts.populate_test_data
 """
 import asyncio
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 
 # Add backend to path
@@ -28,8 +28,8 @@ def populate_test_data(num_articles: int = 150):
             return
         
         articles = []
-        base_date = datetime.utcnow()
-        
+        base_date = datetime.now(timezone.utc)
+
         for i in range(num_articles):
             published_at = base_date - timedelta(minutes=i*5)
             article = Article(

@@ -7,9 +7,12 @@ from app.database import SessionLocal
 
 def get_ip_from_x_forwarded_for(request: Request):
     """Extract client IP from X-Forwarded-For header if present (for proxy setups)"""
-    x_forwarded_for = request.headers.get("X-Forwarded-For")
-    if x_forwarded_for:
-        return x_forwarded_for.split(",")[0].strip()
+    from app.config import settings
+    if settings.BEHIND_PROXY:
+        x_forwarded_for = request.headers.get("X-Forwarded-For")
+        if x_forwarded_for:
+            # Use rightmost IP (added by our trusted proxy)
+            return x_forwarded_for.split(",")[-1].strip()
     return get_remote_address(request)
 
 

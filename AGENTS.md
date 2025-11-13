@@ -14,6 +14,8 @@ Refer to TODO.md for tasks.
 2. Allow user accounts, likes, comments, and shares (TBD, do not implement)
 3. Create the opengov GaaS product (TBD, do not implement)
 
+**Note:** User authentication (Google OAuth), user endpoints, and user management are **postponed to Phase 2**. The current implementation focuses on the public feed functionality without authentication.
+
 ## Tech Stack
 
 - **Backend**: FastAPI + SQLite + SQLAlchemy
@@ -106,6 +108,7 @@ opengov/
 ## API Structure
 
 ### Authentication Endpoints
+**[POSTPONED TO PHASE 2]** - Not currently implemented
 - `POST /api/auth/google/login` - Initiate Google OAuth flow
 - `GET /api/auth/google/callback` - Handle Google OAuth callback
 - `POST /api/auth/logout` - Logout current user
@@ -118,6 +121,7 @@ opengov/
 - `POST /api/feed/{article_id}/share` - Track article sharing (analytics)
 
 ### User Endpoints
+**[POSTPONED TO PHASE 2]** - Not currently implemented
 - `GET /api/users/me` - Get current user profile
 - `PATCH /api/users/me` - Update user profile settings
 
@@ -153,12 +157,14 @@ Error responses:
 ### Backend
 - Use FastAPI async/await for all endpoints and external calls
 - SQLite + SQLAlchemy for data persistence
-- Google OAuth for authentication
+- **[POSTPONED]** Google OAuth for authentication - Phase 2 feature
 - Separate service modules for external API integrations
 - Environment variables for API keys and configuration
 - Background workers for periodic Federal Register scraping
 
-**Key Libraries:** fastapi, uvicorn, sqlalchemy, alembic, httpx, authlib, apscheduler
+**Key Libraries:** fastapi, uvicorn, sqlalchemy, alembic, httpx, apscheduler, slowapi, tenacity
+
+**Note:** `authlib` is not currently used (authentication postponed to Phase 2)
 
 ### Frontend
 - TypeScript throughout

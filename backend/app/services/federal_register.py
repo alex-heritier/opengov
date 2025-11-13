@@ -1,24 +1,31 @@
 import logging
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import httpx
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.config import settings
 
 logger = logging.getLogger(__name__)
 
 
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    retry=retry_if_exception_type((httpx.TimeoutException, httpx.HTTPStatusError)),
+    reraise=True
+)
 async def fetch_recent_documents(days: int = 1) -> list:
     """
     Fetch recent Federal Register documents.
-    
+
     Args:
         days: Number of days to look back
-        
+
     Returns:
         List of document dictionaries
     """
     # Calculate date range
-    end_date = datetime.utcnow().date()
+    end_date = datetime.now(timezone.utc).date()
     start_date = end_date - timedelta(days=days)
     
     params = {
@@ -59,7 +66,7 @@ async def fetch_recent_documents(days: int = 1) -> list:
                 params["page"] += 1
                 page_count += 1
                 # Be respectful to the API: 0.5 second delay between paginated requests
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.5)
         
         logger.info(f"Successfully fetched {len(documents)} documents from Federal Register API")
         return documents

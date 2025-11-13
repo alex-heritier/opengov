@@ -23,7 +23,7 @@ class Settings:
 
     # Scraper settings
     SCRAPER_INTERVAL_MINUTES: int = int(os.getenv("SCRAPER_INTERVAL_MINUTES", "15"))
-    SCRAPER_DAYS_LOOKBACK: int = int(os.getenv("SCRAPER_DAYS_LOOKBACK", "0"))
+    SCRAPER_DAYS_LOOKBACK: int = int(os.getenv("SCRAPER_DAYS_LOOKBACK", "1"))  # Changed from "0" to "1"
 
     # CORS
     ALLOWED_ORIGINS: list = os.getenv(
@@ -40,7 +40,27 @@ class Settings:
     FEDERAL_REGISTER_MAX_PAGES: int = int(os.getenv("FEDERAL_REGISTER_MAX_PAGES", "100"))
 
     # Environment
-    DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
+    DEBUG: bool = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
+    BEHIND_PROXY: bool = os.getenv("BEHIND_PROXY", "False").lower() in ("true", "1", "yes")
+
+    def validate(self):
+        """Validate critical configuration on startup"""
+        import sys
+        import logging
+
+        # Skip validation during testing
+        if "pytest" in sys.modules or "unittest" in sys.modules:
+            return True
+
+        # Warn about missing API key but don't fail
+        # (grok.py has graceful fallback for missing key)
+        if not self.GROK_API_KEY or not self.GROK_API_KEY.strip():
+            logging.warning(
+                "GROK_API_KEY is not configured. Summaries will be truncated text instead of AI-generated. "
+                "Get your API key from https://x.ai/"
+            )
+        return True
 
 
 settings = Settings()
+settings.validate()  # Validate on import

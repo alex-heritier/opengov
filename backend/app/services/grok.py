@@ -1,5 +1,6 @@
 import logging
 import httpx
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,12 @@ Document to summarize:
 Generate only the summary, nothing else."""
 
 
+@retry(
+    stop=stop_after_attempt(2),  # Fewer retries for Grok (costs money)
+    wait=wait_exponential(multiplier=1, min=1, max=5),
+    retry=retry_if_exception_type((httpx.TimeoutException, httpx.HTTPStatusError)),
+    reraise=True
+)
 async def summarize_text(text: str) -> str:
     """
     Summarize text using Grok API.
@@ -44,7 +51,7 @@ async def summarize_text(text: str) -> str:
         return "No summary available."
 
     # Early return if API key is not configured
-    if not settings.GROK_API_KEY or settings.GROK_API_KEY.strip() == "":
+    if not settings.GROK_API_KEY.strip():
         logger.warning("GROK_API_KEY not configured, returning truncated text")
         return text[:SUMMARY_MAX_FALLBACK] + "..." if len(text) > SUMMARY_MAX_FALLBACK else text
 
