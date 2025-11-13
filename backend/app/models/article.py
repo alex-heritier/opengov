@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Text, DateTime, Index, ForeignKey
+from sqlalchemy.orm import relationship
 from app.database import Base
 
 
@@ -14,6 +15,9 @@ class Article(Base):
     published_at = Column(DateTime, nullable=False, index=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    # Relationship to FederalRegister
+    federal_register_entry = relationship("FederalRegister", foreign_keys=[federal_register_id])
 
     # Index for efficient sorting and filtering
     __table_args__ = (

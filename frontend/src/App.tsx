@@ -3,6 +3,7 @@ import RootLayout from './components/layout/RootLayout'
 import FeedPage from './pages/FeedPage'
 import HomePage from './pages/HomePage'
 import AdminPage from './pages/AdminPage'
+import ArticleDetailPage from './pages/ArticleDetailPage'
 
 // Root route
 const rootRoute = new RootRoute({
@@ -30,8 +31,15 @@ const adminRoute = new Route({
   component: AdminPage,
 })
 
+// Article detail route
+const articleDetailRoute = new Route({
+  getParentRoute: () => rootRoute,
+  path: '/articles/$documentNumber',
+  component: ArticleDetailPage,
+})
+
 // Create route tree
-const routeTree = rootRoute.addChildren([indexRoute, feedRoute, adminRoute])
+const routeTree = rootRoute.addChildren([indexRoute, feedRoute, adminRoute, articleDetailRoute])
 
 // Create router
 const router = new Router({ routeTree })

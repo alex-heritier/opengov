@@ -73,6 +73,7 @@ export const FeedList: React.FC = () => {
             summary={article.summary}
             source_url={article.source_url}
             published_at={article.published_at}
+            document_number={article.document_number}
           />
         ))}
       </div>
