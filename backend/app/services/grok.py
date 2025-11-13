@@ -1,0 +1,89 @@
+import logging
+import httpx
+from app.config import settings
+
+logger = logging.getLogger(__name__)
+
+# Constants for Grok API calls
+GROK_MODEL = "grok-4-fast"
+GROK_TEMPERATURE = 0.7
+GROK_MAX_TOKENS = 300
+SUMMARY_MAX_FALLBACK = 200
+
+# Prompt for generating viral, engaging summaries
+VIRAL_SUMMARY_PROMPT = """You are an expert at writing engaging, viral-worthy summaries of government documents and Federal Register entries. 
+
+Your task is to create a short, punchy summary (1-2 sentences max) that captures the essence of what the government is doing and why it matters to everyday Americans.
+
+Guidelines:
+- Be clear and accessible (avoid jargon)
+- Focus on human impact
+- Make it engaging and interesting
+- Keep it under 280 characters when possible
+- Start with the most important information
+
+Document to summarize:
+{text}
+
+Generate only the summary, nothing else."""
+
+
+async def summarize_text(text: str) -> str:
+    """
+    Summarize text using Grok API.
+
+    Args:
+        text: Text to summarize
+
+    Returns:
+        Summary text, or original text if API fails
+    """
+    # Early return if text is empty
+    if not text or not text.strip():
+        logger.debug("Empty text provided for summarization, returning default")
+        return "No summary available."
+
+    # Early return if API key is not configured
+    if not settings.GROK_API_KEY or settings.GROK_API_KEY.strip() == "":
+        logger.warning("GROK_API_KEY not configured, returning truncated text")
+        return text[:SUMMARY_MAX_FALLBACK] + "..." if len(text) > SUMMARY_MAX_FALLBACK else text
+
+    try:
+        prompt = VIRAL_SUMMARY_PROMPT.format(text=text)
+
+        async with httpx.AsyncClient(timeout=settings.GROK_TIMEOUT) as client:
+            response = await client.post(
+                f"{settings.GROK_API_URL}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {settings.GROK_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": GROK_MODEL,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": GROK_TEMPERATURE,
+                    "max_tokens": GROK_MAX_TOKENS,
+                },
+            )
+
+            response.raise_for_status()
+            data = response.json()
+
+            summary = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+
+            if summary:
+                logger.info(f"Successfully generated summary ({len(summary)} chars)")
+                return summary.strip()
+            else:
+                logger.warning("Empty response from Grok API")
+                return text[:SUMMARY_MAX_FALLBACK] + "..." if len(text) > SUMMARY_MAX_FALLBACK else text
+
+    except httpx.TimeoutException:
+        logger.warning(f"Grok API timeout after {settings.GROK_TIMEOUT}s, using truncated text")
+        return text[:SUMMARY_MAX_FALLBACK] + "..." if len(text) > SUMMARY_MAX_FALLBACK else text
+    except httpx.HTTPError as e:
+        logger.warning(f"Grok API HTTP error: {e}, using truncated text")
+        return text[:SUMMARY_MAX_FALLBACK] + "..." if len(text) > SUMMARY_MAX_FALLBACK else text
+    except Exception as e:
+        logger.warning(f"Error calling Grok API: {e}, using truncated text")
+        return text[:SUMMARY_MAX_FALLBACK] + "..." if len(text) > SUMMARY_MAX_FALLBACK else text
