@@ -27,7 +27,9 @@ The backend periodically hits the Federal Register API and runs the results thro
 
 - Use FastAPI's async/await for all API endpoints and external calls
 - Implement periodic tasks with background workers (e.g., APScheduler or Celery)
-- Store Federal Register data and Grok summaries in a database (use SQLAlchemy ORM)
+- Use SQLite as the database with SQLAlchemy ORM for data persistence
+- Store Federal Register data and Grok summaries in the database
+- Implement Google OAuth for user authentication and login
 - Create separate service modules for Federal Register API and Grok API integrations
 - Include proper error handling and retry logic for external API calls
 - Use environment variables for API keys and configuration
