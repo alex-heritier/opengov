@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.models import Article, FederalRegister, ScraperRun
@@ -24,15 +24,18 @@ async def fetch_and_process():
     """
     db: Session = SessionLocal()
 
-    # Check for running scraper (simple lock via DB)
-    running_run = db.query(ScraperRun).filter(ScraperRun.completed_at == None).first()
+    # Check for running scraper (simple lock via DB) with 1 hour timeout
+    running_run = db.query(ScraperRun).filter(
+        ScraperRun.completed_at.is_(None),
+        ScraperRun.started_at > datetime.now(timezone.utc) - timedelta(hours=1)  # 1 hour timeout
+    ).first()
     if running_run:
         logger.warning(f"Scraper already running (ID: {running_run.id}), skipping")
         db.close()
         return
 
     # Create scraper run record
-    run = ScraperRun(started_at=datetime.utcnow())
+    run = ScraperRun(started_at=datetime.now(timezone.utc))
     db.add(run)
     db.commit()
     
@@ -46,7 +49,7 @@ async def fetch_and_process():
         
         if not documents:
             logger.warning("No documents fetched from Federal Register API")
-            run.completed_at = datetime.utcnow()
+            run.completed_at = datetime.now(timezone.utc)
             run.success = True
             db.commit()
             return
@@ -75,7 +78,7 @@ async def fetch_and_process():
                 fed_entry = FederalRegister(
                     document_number=doc_number,
                     raw_data=doc,
-                    fetched_at=datetime.utcnow(),
+                    fetched_at=datetime.now(timezone.utc),
                     processed=False,
                 )
                 db.add(fed_entry)
@@ -97,7 +100,7 @@ async def fetch_and_process():
                 try:
                     published_at = datetime.fromisoformat(published_at_str)
                 except (ValueError, TypeError):
-                    published_at = datetime.utcnow()
+                    published_at = datetime.now(timezone.utc)
                 
                 # Create article
                 article = Article(
@@ -125,18 +128,18 @@ async def fetch_and_process():
             f"Scraper run {run.id} complete. Processed: {processed_count}, "
             f"Skipped: {skipped_count}, Errors: {error_count}"
         )
-        
+
         # Update run record
-        run.completed_at = datetime.utcnow()
+        run.completed_at = datetime.now(timezone.utc)
         run.processed_count = processed_count
         run.skipped_count = skipped_count
         run.error_count = error_count
         run.success = True
         db.commit()
-        
+
     except Exception as e:
         logger.error(f"Fatal error in scraper: {e}")
-        run.completed_at = datetime.utcnow()
+        run.completed_at = datetime.now(timezone.utc)
         run.error_message = str(e)
         run.success = False
         db.commit()

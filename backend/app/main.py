@@ -1,6 +1,7 @@
 import logging
 import time
 from contextlib import asynccontextmanager
+from logging.handlers import RotatingFileHandler
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter
@@ -20,13 +21,14 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(),  # Console
-        logging.FileHandler("scraper.log")  # File
+        RotatingFileHandler("scraper.log", maxBytes=10*1024*1024, backupCount=5)  # File with rotation
     ]
 )
 logger = logging.getLogger(__name__)
 
-# Create tables
-Base.metadata.create_all(bind=engine)
+# NOTE: Database tables are managed by Alembic migrations.
+# Run migrations separately using: alembic upgrade head
+# Do not use Base.metadata.create_all() as it bypasses migration tracking and causes schema drift.
 
 # Scheduler instance
 scheduler = AsyncIOScheduler()
@@ -48,12 +50,12 @@ async def lifespan(app: FastAPI):
     )
     scheduler.start()
     logger.info(f"Scraper scheduled to run every {settings.SCRAPER_INTERVAL_MINUTES} minutes")
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down OpenGov API")
-    scheduler.shutdown()
+    scheduler.shutdown(wait=True)  # Wait for running jobs to complete
 
 
 app = FastAPI(
@@ -104,7 +106,7 @@ async def logging_middleware(request: Request, call_next):
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -137,13 +139,13 @@ async def health_check():
 @app.get("/health/db")
 async def health_check_db():
     """Database health check endpoint"""
+    db = None
     try:
         from app.database import SessionLocal
         from sqlalchemy import text
         db = SessionLocal()
         # Simple query to verify database connection
         db.execute(text("SELECT 1"))
-        db.close()
         return {
             "status": "ok",
             "database": "connected"
@@ -155,3 +157,6 @@ async def health_check_db():
             "database": "disconnected",
             "error": str(e)
         }
+    finally:
+        if db:
+            db.close()

@@ -2,7 +2,7 @@
 Tests for scraper run monitoring and tracking.
 """
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import Mock, patch, AsyncMock
 from sqlalchemy.orm import Session
 
@@ -38,8 +38,8 @@ async def test_scraper_run_creation():
 
 def test_scraper_run_response_schema():
     """Test ScraperRunResponse schema"""
-    now = datetime.utcnow()
-    later = datetime.utcnow()
+    now = datetime.now(timezone.utc)
+    later = datetime.now(timezone.utc)
     
     run_data = {
         'id': 1,
@@ -64,7 +64,7 @@ def test_scraper_run_response_schema():
 
 def test_scraper_run_list_response_schema():
     """Test ScraperRunListResponse schema"""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     
     run1 = ScraperRunResponse(
         id=1,
@@ -87,8 +87,8 @@ def test_scraper_run_list_response_schema():
 def test_scraper_run_duration_calculation():
     """Test that duration_seconds is calculated correctly"""
     from datetime import timedelta
-    
-    now = datetime.utcnow()
+
+    now = datetime.now(timezone.utc)
     later = now + timedelta(seconds=45.5)
     
     response = ScraperRunResponse(
@@ -107,7 +107,7 @@ def test_scraper_run_duration_calculation():
 
 def test_scraper_run_no_completion():
     """Test duration_seconds when job hasn't completed"""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     
     response = ScraperRunResponse(
         id=1,

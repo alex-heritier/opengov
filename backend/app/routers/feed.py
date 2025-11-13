@@ -55,7 +55,7 @@ async def get_feed(
         for a in articles
     ]
     articles_json = json.dumps(articles_data, sort_keys=True)
-    etag_hash = hashlib.md5(articles_json.encode()).hexdigest()
+    etag_hash = hashlib.sha256(articles_json.encode()).hexdigest()
     response.headers["ETag"] = f'"{etag_hash}"'
 
     return FeedResponse(

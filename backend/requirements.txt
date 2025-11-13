@@ -8,3 +8,4 @@ python-dotenv==1.0.0
 pytest==7.4.3
 pytest-asyncio==0.21.1
 slowapi==0.1.9
+tenacity==8.2.3
