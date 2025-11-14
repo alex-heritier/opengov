@@ -17,7 +17,3 @@ class ArticleResponse(BaseModel):
 
 class ArticleDetail(ArticleResponse):
     updated_at: datetime
-    document_number: str | None = None
-
-    class Config:
-        from_attributes = True
