@@ -21,6 +21,7 @@ Refer to TODO.md for tasks.
 - **Backend**: FastAPI + SQLite + SQLAlchemy
 - **Frontend**: React + Vite + TypeScript
 - **External APIs**: Federal Register API, Grok grok-4-fast API
+- **Dependency Management**: `uv` (Python) and `npm` (Node)
 
 ## Project Structure
 
