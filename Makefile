@@ -11,7 +11,7 @@ help:
 
 install:
 	@echo "Installing dependencies..."
-	cd backend && pip install -r requirements.txt
+	cd backend && uv sync
 	cd frontend && npm install
 	@echo "Installation complete"
 

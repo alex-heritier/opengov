@@ -16,7 +16,8 @@ OpenGov publishes real-time updates from the Federal Register with AI-powered su
 
 - Python 3.11+
 - Node.js 18+
-- pip and npm
+- [uv](https://github.com/astral-sh/uv) (Python package manager)
+- npm
 
 ## Installation
 
