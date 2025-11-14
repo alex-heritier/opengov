@@ -38,7 +38,7 @@ Generate only the summary, nothing else."""
     retry=retry_if_exception_type((httpx.TimeoutException, httpx.HTTPStatusError)),
     reraise=True
 )
-async def summarize_text(text: str) -> str:
+async def _summarize_text_real(text: str) -> str:
     """
     Summarize text using Grok API.
 
@@ -100,3 +100,18 @@ async def summarize_text(text: str) -> str:
     except Exception as e:
         logger.warning(f"Error calling Grok API: {e}, using truncated text")
         return text[:SUMMARY_MAX_FALLBACK] + "..." if len(text) > SUMMARY_MAX_FALLBACK else text
+
+
+def _get_summarizer():
+    """Factory function to select the appropriate summarizer based on config."""
+    if settings.USE_MOCK_GROK:
+        logger.info("Using mock Grok summarizer for development")
+        from app.services.grok_mock import summarize_text as mock_summarize
+        return mock_summarize
+    else:
+        logger.info("Using real Grok API summarizer")
+        return _summarize_text_real
+
+
+# Initialize the summarizer at module load time
+summarize_text = _get_summarizer()

@@ -42,6 +42,7 @@ class Settings:
     # Environment
     DEBUG: bool = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
     BEHIND_PROXY: bool = os.getenv("BEHIND_PROXY", "False").lower() in ("true", "1", "yes")
+    USE_MOCK_GROK: bool = os.getenv("USE_MOCK_GROK", "False").lower() in ("true", "1", "yes")
 
     def validate(self):
         """Validate critical configuration on startup"""
