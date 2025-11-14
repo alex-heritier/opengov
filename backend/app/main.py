@@ -13,6 +13,7 @@ from app.routers import feed, admin, auth
 from app.workers.scraper import fetch_and_process
 from app.database import SessionLocal
 from app.services.federal_register import fetch_agencies, store_agencies
+from app.exceptions import OpenGovException
 
 # Configure logging
 logging.basicConfig(
@@ -148,6 +149,30 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "errors": [{"field": str(err["loc"]), "message": err["msg"]} for err in exc.errors()]
         }
     )
+
+
+# Add custom exception handler for OpenGov exceptions
+@app.exception_handler(OpenGovException)
+async def opengov_exception_handler(request: Request, exc: OpenGovException):
+    """Handle custom OpenGov exceptions with user-friendly messages"""
+    logger.warning(
+        f"OpenGov exception: {exc.code} - {exc.message}",
+        extra={"code": exc.code, "path": request.url.path}
+    )
+
+    response_data = {
+        "message": exc.message,
+        "code": exc.code,
+    }
+
+    if exc.action:
+        response_data["action"] = exc.action
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=response_data,
+    )
+
 
 # Include routers
 app.include_router(auth.router)

@@ -1,11 +1,11 @@
 import { useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { GoogleLogin } from '../components/auth/GoogleLogin'
-import { useAuthStore } from '../stores/authStore'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function AuthLoginPage() {
   const navigate = useNavigate()
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated } = useAuth()
 
   // Redirect if already authenticated
   useEffect(() => {

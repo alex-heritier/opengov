@@ -1,13 +1,10 @@
-import { useAuthStore } from '../../stores/authStore'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+import { useAuth } from '../../contexts/AuthContext'
 
 export function GoogleLogin() {
-  const { isAuthenticated, user } = useAuthStore()
+  const { isAuthenticated, user, login, isLoading } = useAuth()
 
   const handleGoogleLogin = () => {
-    // Redirect to backend Google OAuth endpoint
-    window.location.href = `${API_URL}/api/auth/google/login`
+    login()
   }
 
   if (isAuthenticated && user) {
@@ -28,7 +25,8 @@ export function GoogleLogin() {
   return (
     <button
       onClick={handleGoogleLogin}
-      className="flex items-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+      disabled={isLoading}
+      className="flex items-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <svg className="h-5 w-5" viewBox="0 0 24 24">
         <path
