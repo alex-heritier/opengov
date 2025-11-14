@@ -24,23 +24,23 @@ async def get_feed(
     db: Session = Depends(get_db),
 ):
     """Get paginated list of articles with rate limiting (100 req/min)"""
-    
+
     # Build query
     query = db.query(Article)
-    
+
     # Count total
     total = query.count()
-    
+
     # Sort
     if sort == "newest":
         query = query.order_by(desc(Article.published_at))
     else:
         query = query.order_by(Article.published_at)
-    
+
     # Paginate
     skip = (page - 1) * limit
     articles = query.offset(skip).limit(limit).all()
-    
+
     # Add cache headers (5 minute TTL)
     response.headers["Cache-Control"] = "public, max-age=300"
 
@@ -71,10 +71,10 @@ async def get_feed(
 @limiter.limit("100/minute")
 async def get_article(request: Request, article_id: int, db: Session = Depends(get_db)):
     """Get specific article details with rate limiting"""
-    
+
     article = db.query(Article).filter(Article.id == article_id).first()
-    
+
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
-    
+
     return ArticleDetail.from_orm(article)

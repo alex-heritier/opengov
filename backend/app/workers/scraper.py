@@ -38,92 +38,101 @@ async def fetch_and_process():
     run = ScraperRun(started_at=datetime.now(timezone.utc))
     db.add(run)
     db.commit()
-    
+
     try:
         logger.info(f"Starting scraper run {run.id} at {run.started_at}")
         logger.info(f"Looking back {settings.SCRAPER_DAYS_LOOKBACK} day(s)")
-        
+
         # Fetch documents from Federal Register API
         logger.info("Fetching documents from Federal Register API...")
         documents = await fetch_recent_documents(days=settings.SCRAPER_DAYS_LOOKBACK)
-        
+
         if not documents:
             logger.warning("No documents fetched from Federal Register API")
             run.completed_at = datetime.now(timezone.utc)
             run.success = True
             db.commit()
             return
-        
+
         logger.info(f"Starting to process {len(documents)} documents")
-        
+
         processed_count = 0
         skipped_count = 0
         error_count = 0
-        
+
+        # Collect objects for bulk insert
+        new_fed_entries = []
+        new_articles = []
+
         for i, doc in enumerate(documents, 1):
             try:
                 doc_number = doc.get("document_number", "UNKNOWN")
                 title = doc.get("title", "Untitled")
                 logger.debug(f"[{i}/{len(documents)}] Processing: {doc_number} - {title[:60]}")
-                
+
                 # Check if already in database
                 if db.query(FederalRegister).filter(
                     FederalRegister.document_number == doc_number
                 ).first():
-                    logger.debug(f"  → Already in database, skipping")
+                    logger.debug("  → Already in database, skipping")
                     skipped_count += 1
                     continue
-                
-                # Store raw entry
+
+                # Prepare raw entry
                 fed_entry = FederalRegister(
                     document_number=doc_number,
                     raw_data=doc,
                     fetched_at=datetime.now(timezone.utc),
-                    processed=False,
+                    processed=True,  # Mark as processed since we're adding the article
                 )
-                db.add(fed_entry)
-                db.flush()
-                logger.debug(f"  → Stored raw entry in database")
-                
+                new_fed_entries.append(fed_entry)
+
                 # Extract fields
                 abstract = doc.get("abstract", "")
                 summary_text = abstract or doc.get("full_text", "")[:1000]
                 source_url = doc.get("html_url", "")
-                
+
                 # Summarize with Grok
-                logger.debug(f"  → Summarizing with Grok API...")
+                logger.debug("  → Summarizing with Grok API...")
                 summary = await summarize_text(summary_text)
                 logger.debug(f"  → Summary generated ({len(summary)} chars)")
-                
+
                 # Parse published date
                 published_at_str = doc.get("publication_date", "")
                 try:
                     published_at = datetime.fromisoformat(published_at_str)
                 except (ValueError, TypeError):
                     published_at = datetime.now(timezone.utc)
-                
-                # Create article
+
+                # Prepare article
                 article = Article(
-                    federal_register_id=fed_entry.id,
+                    federal_register_id=fed_entry.id,  # Note: ID will be assigned after add_all
                     title=title,
                     summary=summary,
                     source_url=source_url,
                     published_at=published_at,
                 )
-                
-                db.add(article)
-                fed_entry.processed = True
-                
-                db.commit()
+                new_articles.append(article)
+
                 processed_count += 1
-                logger.info(f"  ✓ Article created: {doc_number}")
-                
+                logger.info(f"  ✓ Article prepared: {doc_number}")
+
             except Exception as e:
                 error_count += 1
                 logger.error(f"  ✗ Error processing document {doc.get('document_number', 'UNKNOWN')}: {e}", exc_info=True)
-                db.rollback()
-                continue
-        
+                continue  # Skip failed items, don't rollback
+
+        if new_fed_entries:
+            # Bulk insert
+            db.add_all(new_fed_entries)
+            db.flush()  # Assign IDs to fed_entries
+            # Update article foreign keys with assigned IDs
+            for fed_entry, article in zip(new_fed_entries, new_articles):
+                article.federal_register_id = fed_entry.id
+            db.add_all(new_articles)
+            db.commit()
+            logger.info(f"Bulk inserted {len(new_fed_entries)} federal entries and {len(new_articles)} articles")
+
         logger.info(
             f"Scraper run {run.id} complete. Processed: {processed_count}, "
             f"Skipped: {skipped_count}, Errors: {error_count}"
@@ -139,10 +148,11 @@ async def fetch_and_process():
 
     except Exception as e:
         logger.error(f"Fatal error in scraper: {e}")
+        db.rollback()  # Rollback entire batch on fatal error
         run.completed_at = datetime.now(timezone.utc)
         run.error_message = str(e)
         run.success = False
         db.commit()
-    
+
     finally:
         db.close()

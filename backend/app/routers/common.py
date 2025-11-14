@@ -1,5 +1,4 @@
 from fastapi import Request
-from sqlalchemy.orm import Session
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from app.database import SessionLocal

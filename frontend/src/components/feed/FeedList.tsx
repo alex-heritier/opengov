@@ -9,7 +9,6 @@ export const FeedList: React.FC = () => {
   const [hasMore, setHasMore] = useState(true)
   const { sort, pageSize } = useFeedStore()
   const { data, isLoading, error } = useFeedQuery(page, pageSize, sort)
-  const observerTarget = useRef<HTMLDivElement>(null)
   const loadingRef = useRef(false)
 
   // Accumulate articles from each page

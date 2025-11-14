@@ -27,7 +27,7 @@ async def fetch_recent_documents(days: int = 1) -> list:
     # Calculate date range
     end_date = datetime.now(timezone.utc).date()
     start_date = end_date - timedelta(days=days)
-    
+
     params = {
         "filter[publication_date][gte]": start_date.isoformat(),
         "filter[publication_date][lte]": end_date.isoformat(),
@@ -45,16 +45,16 @@ async def fetch_recent_documents(days: int = 1) -> list:
                 api_url = f"{settings.FEDERAL_REGISTER_API_URL}/documents"
                 logger.debug(f"Fetching page {params['page']} from {api_url}")
                 logger.debug(f"Query params: {params}")
-                
+
                 response = await client.get(api_url, params=params)
-                
+
                 logger.info(f"Federal Register API response: status={response.status_code}, page={params['page']}")
                 response.raise_for_status()
 
                 data = response.json()
                 results = data.get("results", [])
                 total_results = data.get("total_documents", 0)
-                
+
                 logger.info(f"Page {params['page']}: Got {len(results)} results (total in API: {total_results})")
                 documents.extend(results)
 
@@ -67,10 +67,10 @@ async def fetch_recent_documents(days: int = 1) -> list:
                 page_count += 1
                 # Be respectful to the API: 0.5 second delay between paginated requests
                 await asyncio.sleep(0.5)
-        
+
         logger.info(f"Successfully fetched {len(documents)} documents from Federal Register API")
         return documents
-        
+
     except httpx.TimeoutException:
         logger.error(f"Federal Register API timeout after {settings.FEDERAL_REGISTER_TIMEOUT}s")
         return []

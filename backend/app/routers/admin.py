@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, BackgroundTasks
+from fastapi import APIRouter, Depends, Query, Request, BackgroundTasks
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 from app.routers.common import get_db, limiter
@@ -56,7 +56,7 @@ async def get_scraper_runs(
     runs = db.query(ScraperRun).order_by(
         desc(ScraperRun.started_at)
     ).limit(limit).all()
-    
+
     total = db.query(ScraperRun).count()
-    
+
     return ScraperRunListResponse(runs=runs, total=total)

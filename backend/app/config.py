@@ -23,7 +23,7 @@ class Settings:
 
     # Scraper settings
     SCRAPER_INTERVAL_MINUTES: int = int(os.getenv("SCRAPER_INTERVAL_MINUTES", "15"))
-    SCRAPER_DAYS_LOOKBACK: int = int(os.getenv("SCRAPER_DAYS_LOOKBACK", "1"))  # Changed from "0" to "1"
+    SCRAPER_DAYS_LOOKBACK: int = int(os.getenv("SCRAPER_DAYS_LOOKBACK", "1"))
 
     # CORS
     ALLOWED_ORIGINS: list = os.getenv(

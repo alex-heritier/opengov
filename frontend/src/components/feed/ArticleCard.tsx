@@ -1,5 +1,4 @@
 import React from 'react'
-import { ExternalLink } from 'lucide-react'
 
 interface ArticleCardProps {
   id?: number
@@ -13,18 +12,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   title,
   summary,
   source_url,
-  published_at,
 }) => {
-  let formattedDate: string
-  try {
-    formattedDate = new Date(published_at).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
-  } catch {
-    formattedDate = 'Invalid Date'  // Fallback
-  }
 
   // Generate a placeholder image based on title hash
   const colors = ['from-blue-500 to-cyan-500', 'from-purple-500 to-pink-500', 'from-orange-500 to-red-500', 'from-green-500 to-emerald-500']

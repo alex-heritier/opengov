@@ -200,8 +200,10 @@ Error responses:
 ### Backend
 ```bash
 cd backend
+uv sync                                                   # Install dependencies
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000  # Dev server
-pip install -r requirements.txt                           # Dependencies
+ruff check app                                            # Lint check
+ruff check app --fix                                      # Auto-fix linting issues
 pytest                                                    # Tests
 alembic revision --autogenerate -m "message"              # Migration
 alembic upgrade head                                      # Apply migrations

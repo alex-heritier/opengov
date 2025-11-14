@@ -4,8 +4,6 @@ from contextlib import asynccontextmanager
 from logging.handlers import RotatingFileHandler
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -13,7 +11,6 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from app.config import settings
 from app.routers import feed, admin
 from app.workers.scraper import fetch_and_process
-from app.database import engine, Base
 
 # Configure logging
 logging.basicConfig(
@@ -34,7 +31,7 @@ logger = logging.getLogger(__name__)
 scheduler = AsyncIOScheduler()
 
 # Import limiter from common to avoid circular imports
-from app.routers.common import limiter
+from app.routers.common import limiter  # noqa: E402
 
 
 @asynccontextmanager
@@ -88,19 +85,19 @@ async def request_size_limit_middleware(request: Request, call_next):
 async def logging_middleware(request: Request, call_next):
     """Log request/response details"""
     start_time = time.time()
-    
+
     # Log request
     logger.debug(f"→ {request.method} {request.url.path}")
-    
+
     # Process request
     response = await call_next(request)
-    
+
     # Log response
     process_time = time.time() - start_time
     logger.info(
         f"← {request.method} {request.url.path} {response.status_code} ({process_time:.3f}s)"
     )
-    
+
     return response
 
 # Add CORS middleware

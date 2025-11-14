@@ -11,7 +11,7 @@ class FederalRegister(Base):
     raw_data = Column(JSON, nullable=False)
     fetched_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     processed = Column(Boolean, default=False, nullable=False, index=True)
-    
+
     # Index for finding unprocessed entries
     __table_args__ = (
         Index("idx_processed_fetched", "processed", "fetched_at"),

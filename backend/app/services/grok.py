@@ -12,7 +12,7 @@ GROK_MAX_TOKENS = 300
 SUMMARY_MAX_FALLBACK = 200
 
 # Prompt for generating viral, engaging summaries
-VIRAL_SUMMARY_PROMPT = """You are an expert at writing engaging, viral-worthy summaries of government documents and Federal Register entries. 
+VIRAL_SUMMARY_PROMPT = """You are an expert at writing engaging, viral-worthy summaries of government documents and Federal Register entries.
 
 Your task is to create a short, punchy summary (1-2 sentences max) that captures the essence of what the government is doing and why it matters to everyday Americans.
 
