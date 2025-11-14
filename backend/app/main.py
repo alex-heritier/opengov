@@ -9,10 +9,11 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from app.config import settings
-from app.routers import feed, admin
+from app.routers import feed, admin, auth
 from app.workers.scraper import fetch_and_process
 from app.database import SessionLocal
 from app.services.federal_register import fetch_agencies, store_agencies
+from app.exceptions import OpenGovException
 
 # Configure logging
 logging.basicConfig(
@@ -149,7 +150,32 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         }
     )
 
+
+# Add custom exception handler for OpenGov exceptions
+@app.exception_handler(OpenGovException)
+async def opengov_exception_handler(request: Request, exc: OpenGovException):
+    """Handle custom OpenGov exceptions with user-friendly messages"""
+    logger.warning(
+        f"OpenGov exception: {exc.code} - {exc.message}",
+        extra={"code": exc.code, "path": request.url.path}
+    )
+
+    response_data = {
+        "message": exc.message,
+        "code": exc.code,
+    }
+
+    if exc.action:
+        response_data["action"] = exc.action
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=response_data,
+    )
+
+
 # Include routers
+app.include_router(auth.router)
 app.include_router(feed.router)
 app.include_router(admin.router)
 
