@@ -55,6 +55,29 @@ Execution records for scraper jobs (monitoring/observability).
 **Indexes:**
 - `started_at` - For querying recent runs
 
+### Agency
+Federal government agencies from Federal Register API.
+
+| Field | Type | Notes |
+|-------|------|-------|
+| id | Integer | Primary key |
+| fr_agency_id | Integer | Federal Register agency ID (unique, indexed) |
+| name | String(500) | Full agency name (indexed) |
+| short_name | String(200) | Abbreviated agency name |
+| slug | String(200) | URL-friendly identifier (unique, indexed) |
+| description | Text | Agency description (optional) |
+| url | String(500) | Agency website URL (optional) |
+| json_url | String(500) | Federal Register API URL for this agency |
+| parent_id | Integer | Parent agency ID if applicable |
+| raw_data | JSON | Complete API response |
+| created_at | DateTime | When inserted into database |
+| updated_at | DateTime | Last update time |
+
+**Indexes:**
+- `fr_agency_id` - For deduplication
+- `slug` - For lookups by slug
+- `name` - For searching/filtering by name
+
 ## Entity Relationship
 
 ```

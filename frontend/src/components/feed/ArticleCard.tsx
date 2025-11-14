@@ -1,4 +1,6 @@
 import React from 'react'
+import { ExternalLink, FileText } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
 
 interface ArticleCardProps {
   id?: number
@@ -6,12 +8,15 @@ interface ArticleCardProps {
   summary: string
   source_url: string
   published_at: string
+  document_number?: string | null
 }
 
 export const ArticleCard: React.FC<ArticleCardProps> = ({
   title,
   summary,
   source_url,
+  published_at,
+  document_number,
 }) => {
 
   // Generate a placeholder image based on title hash
@@ -32,15 +37,28 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           {title}
         </h3>
         <p className="text-sm text-gray-600 mb-4 line-clamp-2">{summary}</p>
-        <a
-          href={source_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-block text-sm font-semibold text-blue-600 hover:text-blue-800"
-          aria-label="Read More"
-        >
-          Read More
-        </a>
+        <div className="flex gap-3">
+          {document_number && (
+            <Link
+              to="/articles/$documentNumber"
+              params={{ documentNumber: document_number }}
+              className="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-800"
+            >
+              <FileText className="w-4 h-4" />
+              View Details
+            </Link>
+          )}
+          <a
+            href={source_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-gray-600 hover:text-gray-800"
+            aria-label="Read More"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Federal Register
+          </a>
+        </div>
       </div>
     </div>
   )
