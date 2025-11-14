@@ -9,7 +9,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from app.config import settings
-from app.routers import feed, admin
+from app.routers import feed, admin, auth
 from app.workers.scraper import fetch_and_process
 from app.database import SessionLocal
 from app.services.federal_register import fetch_agencies, store_agencies
@@ -150,6 +150,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 # Include routers
+app.include_router(auth.router)
 app.include_router(feed.router)
 app.include_router(admin.router)
 

@@ -4,6 +4,8 @@ import FeedPage from './pages/FeedPage'
 import HomePage from './pages/HomePage'
 import AdminPage from './pages/AdminPage'
 import ArticleDetailPage from './pages/ArticleDetailPage'
+import AuthLoginPage from './pages/AuthLoginPage'
+import AuthCallbackPage from './pages/AuthCallbackPage'
 
 // Root route
 const rootRoute = new RootRoute({
@@ -38,8 +40,29 @@ const articleDetailRoute = new Route({
   component: ArticleDetailPage,
 })
 
+// Auth login route
+const authLoginRoute = new Route({
+  getParentRoute: () => rootRoute,
+  path: '/auth/login',
+  component: AuthLoginPage,
+})
+
+// Auth callback route
+const authCallbackRoute = new Route({
+  getParentRoute: () => rootRoute,
+  path: '/auth/callback',
+  component: AuthCallbackPage,
+})
+
 // Create route tree
-const routeTree = rootRoute.addChildren([indexRoute, feedRoute, adminRoute, articleDetailRoute])
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  feedRoute,
+  adminRoute,
+  articleDetailRoute,
+  authLoginRoute,
+  authCallbackRoute,
+])
 
 // Create router
 const router = new Router({ routeTree })

@@ -44,6 +44,21 @@ class Settings:
     BEHIND_PROXY: bool = os.getenv("BEHIND_PROXY", "False").lower() in ("true", "1", "yes")
     USE_MOCK_GROK: bool = os.getenv("USE_MOCK_GROK", "False").lower() in ("true", "1", "yes")
 
+    # Google OAuth
+    GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
+    GOOGLE_CLIENT_SECRET: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
+    GOOGLE_REDIRECT_URI: str = os.getenv(
+        "GOOGLE_REDIRECT_URI", "http://localhost:8000/api/auth/google/callback"
+    )
+
+    # JWT
+    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "")
+    JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+
+    # Frontend URL for redirects
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
     def validate(self):
         """Validate critical configuration on startup"""
         import sys
