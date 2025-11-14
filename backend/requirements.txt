@@ -1,3 +1,10 @@
+# This file is maintained for backwards compatibility.
+# The source of truth is pyproject.toml
+# Install dependencies with: uv sync
+#
+# To regenerate this file from pyproject.toml:
+#   uv pip compile pyproject.toml -o requirements.txt
+
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 sqlalchemy==2.0.23
@@ -5,9 +12,6 @@ alembic==1.12.1
 httpx==0.25.2
 apscheduler==3.10.4
 python-dotenv==1.0.0
-pytest==7.4.3
-pytest-asyncio==0.21.1
-pytest-mock==3.12.0
 slowapi==0.1.9
 tenacity==8.2.3
 ruff==0.1.9
@@ -16,3 +20,8 @@ python-jose[cryptography]==3.3.0
 python-multipart==0.0.6
 pydantic-settings==2.1.0
 cachetools==5.3.2
+
+# Dev dependencies (install with: uv sync --dev)
+# pytest==7.4.3
+# pytest-asyncio==0.21.1
+# pytest-mock==3.12.0

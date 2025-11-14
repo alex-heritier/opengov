@@ -54,7 +54,8 @@ opengov/
 │   │   └── workers/               # Background tasks
 │   │       ├── __init__.py
 │   │       └── scraper.py         # Periodic Federal Register scraper
-│   ├── requirements.txt
+│   ├── pyproject.toml             # Python dependencies (uv)
+│   ├── uv.lock                    # Locked dependency versions
 │   ├── .env.example
 │   └── opengov.db                 # SQLite database file
 │
