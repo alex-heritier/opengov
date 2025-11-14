@@ -2,13 +2,15 @@
 
 ## Overview
 
-OpenGov uses a simple JWT (JSON Web Token) based authentication system for user sessions.
+OpenGov uses Google OAuth 2.0 for authentication combined with JWT tokens for session management.
+
+**Note**: We're implementing Google login instead of the simple JWT approach originally documented below.
 
 ## Design Principles
 
-- **Simplicity**: Single token type, no refresh token complexity
-- **Security**: Secure token generation with reasonable expiration
-- **Stateless**: No server-side session storage required
+- **Trust Google**: Leverage Google's secure authentication infrastructure
+- **Simplicity**: OAuth flow with JWT tokens for API authorization
+- **User Experience**: One-click login with Google accounts
 
 ## Token Architecture
 
