@@ -15,7 +15,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   title,
   summary,
   source_url,
-  published_at,
+  published_at: _published_at,
   document_number,
 }) => {
 

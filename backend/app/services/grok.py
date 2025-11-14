@@ -12,9 +12,12 @@ GROK_MAX_TOKENS = 300
 SUMMARY_MAX_FALLBACK = 200
 
 # Prompt for generating viral, engaging summaries
-VIRAL_SUMMARY_PROMPT = """You are an expert at writing engaging, viral-worthy summaries of government documents and Federal Register entries.
+VIRAL_SUMMARY_PROMPT = """You are an expert at writing engaging, viral-worthy \
+summaries of government documents and Federal Register entries.
 
-Your task is to create a short, punchy summary (1-2 sentences max) that captures the essence of what the government is doing and why it matters to everyday Americans.
+Your task is to create a short, punchy summary (1-2 sentences max) that \
+captures the essence of what the government is doing and why it matters to \
+everyday Americans.
 
 Guidelines:
 - Be clear and accessible (avoid jargon)
@@ -83,7 +86,10 @@ async def summarize_text(text: str) -> str:
                 return summary.strip()
             else:
                 logger.warning("Empty response from Grok API")
-                return text[:SUMMARY_MAX_FALLBACK] + "..." if len(text) > SUMMARY_MAX_FALLBACK else text
+                return (
+                    text[:SUMMARY_MAX_FALLBACK] + "..."
+                    if len(text) > SUMMARY_MAX_FALLBACK else text
+                )
 
     except httpx.TimeoutException:
         logger.warning(f"Grok API timeout after {settings.GROK_TIMEOUT}s, using truncated text")

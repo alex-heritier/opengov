@@ -8,13 +8,26 @@ class Article(Base):
     __tablename__ = "articles"
 
     id = Column(Integer, primary_key=True, index=True)
-    federal_register_id = Column(Integer, ForeignKey("federal_register_entries.id"), nullable=False, index=True)
+    federal_register_id = Column(
+        Integer,
+        ForeignKey("federal_register_entries.id"),
+        nullable=False,
+        index=True
+    )
     title = Column(String(500), nullable=False)
     summary = Column(Text, nullable=False)
-    source_url = Column(String(500), nullable=False, unique=True, index=True)
+    source_url = Column(
+        String(500), nullable=False, unique=True, index=True
+    )
     published_at = Column(DateTime, nullable=False, index=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
+    )
 
     # Relationship to FederalRegister
     federal_register_entry = relationship("FederalRegister", foreign_keys=[federal_register_id])

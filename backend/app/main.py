@@ -11,7 +11,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from app.config import settings
 from app.routers import feed, admin
 from app.workers.scraper import fetch_and_process
-from app.database import engine, Base, SessionLocal
+from app.database import SessionLocal
 from app.services.federal_register import fetch_agencies, store_agencies
 
 # Configure logging
@@ -20,7 +20,9 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(),  # Console
-        RotatingFileHandler("scraper.log", maxBytes=10*1024*1024, backupCount=5)  # File with rotation
+        RotatingFileHandler(
+            "scraper.log", maxBytes=10*1024*1024, backupCount=5
+        )  # File with rotation
     ]
 )
 logger = logging.getLogger(__name__)
@@ -49,9 +51,15 @@ async def lifespan(app: FastAPI):
         agencies_data = await fetch_agencies()
         if agencies_data:
             result = store_agencies(db, agencies_data)
-            logger.info(f"Agency sync completed: {result['created']} created, {result['updated']} updated, {result['skipped']} skipped, {result['errors']} errors")
+            logger.info(
+                f"Agency sync completed: {result['created']} created, "
+                f"{result['updated']} updated, {result['skipped']} skipped, "
+                f"{result['errors']} errors"
+            )
         else:
-            logger.warning("No agencies returned from Federal Register API during startup")
+            logger.warning(
+                "No agencies returned from Federal Register API during startup"
+            )
     except Exception as e:
         logger.error(f"Error syncing agencies during startup: {e}", exc_info=True)
     finally:
@@ -92,9 +100,10 @@ async def request_size_limit_middleware(request: Request, call_next):
     """Limit request body size"""
     content_length = request.headers.get("content-length")
     if content_length and int(content_length) > settings.MAX_REQUEST_SIZE_BYTES:
+        max_mb = settings.MAX_REQUEST_SIZE_BYTES // (1024*1024)
         return JSONResponse(
             status_code=413,
-            content={"detail": f"Request body too large (max {settings.MAX_REQUEST_SIZE_BYTES // (1024*1024)} MB)"}
+            content={"detail": f"Request body too large (max {max_mb} MB)"}
         )
     return await call_next(request)
 

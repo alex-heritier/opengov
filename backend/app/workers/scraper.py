@@ -119,7 +119,11 @@ async def fetch_and_process():
 
             except Exception as e:
                 error_count += 1
-                logger.error(f"  ✗ Error processing document {doc.get('document_number', 'UNKNOWN')}: {e}", exc_info=True)
+                logger.error(
+                    f"  ✗ Error processing document "
+                    f"{doc.get('document_number', 'UNKNOWN')}: {e}",
+                    exc_info=True
+                )
                 continue  # Skip failed items, don't rollback
 
         if new_fed_entries:
@@ -131,7 +135,10 @@ async def fetch_and_process():
                 article.federal_register_id = fed_entry.id
             db.add_all(new_articles)
             db.commit()
-            logger.info(f"Bulk inserted {len(new_fed_entries)} federal entries and {len(new_articles)} articles")
+            logger.info(
+                f"Bulk inserted {len(new_fed_entries)} federal entries "
+                f"and {len(new_articles)} articles"
+            )
 
         logger.info(
             f"Scraper run {run.id} complete. Processed: {processed_count}, "

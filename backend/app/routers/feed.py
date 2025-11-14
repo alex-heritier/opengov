@@ -94,7 +94,10 @@ async def get_article_by_document_number(
     )
 
     if not article:
-        raise HTTPException(status_code=404, detail=f"Article with document number '{document_number}' not found")
+        raise HTTPException(
+            status_code=404,
+            detail=f"Article with document number '{document_number}' not found"
+        )
 
     # Build response with document_number
     article_dict = ArticleDetail.from_orm(article).model_dump()
@@ -108,7 +111,12 @@ async def get_article_by_document_number(
 async def get_article(request: Request, article_id: int, db: Session = Depends(get_db)):
     """Get specific article details with rate limiting"""
 
-    article = db.query(Article).options(joinedload(Article.federal_register_entry)).filter(Article.id == article_id).first()
+    article = (
+        db.query(Article)
+        .options(joinedload(Article.federal_register_entry))
+        .filter(Article.id == article_id)
+        .first()
+    )
 
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")

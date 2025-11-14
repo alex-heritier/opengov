@@ -41,7 +41,10 @@ async def fetch_recent_documents(days: int = 1) -> list:
     page_count = 0
 
     try:
-        logger.info(f"Starting Federal Register API fetch for {days} day(s) ({start_date} to {end_date})")
+        logger.info(
+            f"Starting Federal Register API fetch for {days} day(s) "
+            f"({start_date} to {end_date})"
+        )
         async with httpx.AsyncClient(timeout=settings.FEDERAL_REGISTER_TIMEOUT) as client:
             while page_count < settings.FEDERAL_REGISTER_MAX_PAGES:
                 api_url = f"{settings.FEDERAL_REGISTER_API_URL}/documents"
@@ -50,19 +53,28 @@ async def fetch_recent_documents(days: int = 1) -> list:
 
                 response = await client.get(api_url, params=params)
 
-                logger.info(f"Federal Register API response: status={response.status_code}, page={params['page']}")
+                logger.info(
+                    f"Federal Register API response: "
+                    f"status={response.status_code}, page={params['page']}"
+                )
                 response.raise_for_status()
 
                 data = response.json()
                 results = data.get("results", [])
                 total_results = data.get("total_documents", 0)
 
-                logger.info(f"Page {params['page']}: Got {len(results)} results (total in API: {total_results})")
+                logger.info(
+                    f"Page {params['page']}: Got {len(results)} results "
+                    f"(total in API: {total_results})"
+                )
                 documents.extend(results)
 
                 # Check for pagination
                 if len(results) < params["per_page"]:
-                    logger.info(f"Reached last page (got {len(results)} results < {params['per_page']} per_page)")
+                    logger.info(
+                        f"Reached last page (got {len(results)} results "
+                        f"< {params['per_page']} per_page)"
+                    )
                     break
 
                 params["page"] += 1
@@ -70,14 +82,18 @@ async def fetch_recent_documents(days: int = 1) -> list:
                 # Be respectful to the API: 0.5 second delay between paginated requests
                 await asyncio.sleep(0.5)
 
-        logger.info(f"Successfully fetched {len(documents)} documents from Federal Register API")
+        logger.info(
+            f"Successfully fetched {len(documents)} documents "
+            f"from Federal Register API"
+        )
         return documents
 
     except httpx.TimeoutException:
         logger.error(f"Federal Register API timeout after {settings.FEDERAL_REGISTER_TIMEOUT}s")
         return []
     except httpx.HTTPError as e:
-        logger.error(f"Federal Register API HTTP error: {e.response.status_code if hasattr(e, 'response') else 'unknown'} - {e}")
+        status = e.response.status_code if hasattr(e, 'response') else 'unknown'
+        logger.error(f"Federal Register API HTTP error: {status} - {e}")
         return []
     except Exception as e:
         logger.error(f"Unexpected error fetching Federal Register: {e}", exc_info=True)
@@ -104,19 +120,29 @@ async def fetch_agencies() -> list:
             logger.debug(f"Fetching agencies from {api_url}")
 
             response = await client.get(api_url)
-            logger.info(f"Federal Register agencies API response: status={response.status_code}")
+            logger.info(
+                f"Federal Register agencies API response: "
+                f"status={response.status_code}"
+            )
             response.raise_for_status()
 
             agencies = response.json()
 
-            logger.info(f"Successfully fetched {len(agencies)} agencies from Federal Register API")
+            logger.info(
+                f"Successfully fetched {len(agencies)} agencies "
+                f"from Federal Register API"
+            )
             return agencies
 
     except httpx.TimeoutException:
-        logger.error(f"Federal Register agencies API timeout after {settings.FEDERAL_REGISTER_TIMEOUT}s")
+        logger.error(
+            f"Federal Register agencies API timeout after "
+            f"{settings.FEDERAL_REGISTER_TIMEOUT}s"
+        )
         return []
     except httpx.HTTPError as e:
-        logger.error(f"Federal Register agencies API HTTP error: {e.response.status_code if hasattr(e, 'response') else 'unknown'} - {e}")
+        status = e.response.status_code if hasattr(e, 'response') else 'unknown'
+        logger.error(f"Federal Register agencies API HTTP error: {status} - {e}")
         return []
     except Exception as e:
         logger.error(f"Unexpected error fetching agencies: {e}", exc_info=True)
@@ -144,7 +170,10 @@ def store_agencies(db: Session, agencies_data: list) -> dict:
             # Extract agency ID from the data
             fr_agency_id = agency_data.get("id")
             if not fr_agency_id:
-                logger.warning(f"Agency data missing 'id' field, skipping: {agency_data.get('name', 'Unknown')}")
+                logger.warning(
+                    f"Agency data missing 'id' field, skipping: "
+                    f"{agency_data.get('name', 'Unknown')}"
+                )
                 error_count += 1
                 continue
 
@@ -185,7 +214,9 @@ def store_agencies(db: Session, agencies_data: list) -> dict:
                     logger.debug(f"Updated agency: {agency_data.get('name')}")
                 else:
                     skipped_count += 1
-                    logger.debug(f"Skipped agency (no changes): {agency_data.get('name')}")
+                    logger.debug(
+                        f"Skipped agency (no changes): {agency_data.get('name')}"
+                    )
             else:
                 # Create new agency
                 new_agency = Agency(
@@ -204,14 +235,21 @@ def store_agencies(db: Session, agencies_data: list) -> dict:
                 logger.debug(f"Created agency: {agency_data.get('name')}")
 
         except Exception as e:
-            logger.error(f"Error processing agency {agency_data.get('name', 'Unknown')}: {e}", exc_info=True)
+            logger.error(
+                f"Error processing agency {agency_data.get('name', 'Unknown')}: "
+                f"{e}",
+                exc_info=True
+            )
             error_count += 1
             continue
 
     # Commit all changes
     try:
         db.commit()
-        logger.info(f"Stored agencies: {created_count} created, {updated_count} updated, {skipped_count} skipped, {error_count} errors")
+        logger.info(
+            f"Stored agencies: {created_count} created, {updated_count} updated, "
+            f"{skipped_count} skipped, {error_count} errors"
+        )
     except Exception as e:
         db.rollback()
         logger.error(f"Error committing agencies to database: {e}", exc_info=True)

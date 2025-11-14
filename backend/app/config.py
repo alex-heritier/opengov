@@ -56,7 +56,8 @@ class Settings:
         # (grok.py has graceful fallback for missing key)
         if not self.GROK_API_KEY or not self.GROK_API_KEY.strip():
             logging.warning(
-                "GROK_API_KEY is not configured. Summaries will be truncated text instead of AI-generated. "
+                "GROK_API_KEY is not configured. Summaries will be "
+                "truncated text instead of AI-generated. "
                 "Get your API key from https://x.ai/"
             )
         return True
