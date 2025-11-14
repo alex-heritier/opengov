@@ -1,13 +1,38 @@
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
-from app.models import Article, FederalRegister, ScraperRun
+from app.models import Article, FederalRegister
 from app.services.federal_register import fetch_recent_documents
 from app.services.grok import summarize_text
 from app.config import settings
 
 logger = logging.getLogger(__name__)
+
+# Batch size for persisting articles to database
+BATCH_SIZE = 50
+
+
+async def _insert_batch(db: Session, new_fed_entries: list, new_articles: list) -> None:
+    """Insert a batch of federal entries and articles into the database."""
+    if not new_fed_entries:
+        return
+    
+    logger.debug(f"Inserting batch of {len(new_fed_entries)} fed_entries and {len(new_articles)} articles")
+    db.add_all(new_fed_entries)
+    db.flush()
+    
+    # Link articles to fed entries
+    for fed_entry, article in zip(new_fed_entries, new_articles):
+        article.federal_register_id = fed_entry.id
+    
+    db.add_all(new_articles)
+    db.commit()
+    logger.info(f"✓ Batch persisted: {len(new_fed_entries)} entries and {len(new_articles)} articles")
+    
+    # Clear the lists
+    new_fed_entries.clear()
+    new_articles.clear()
 
 
 async def fetch_and_process():
@@ -15,33 +40,15 @@ async def fetch_and_process():
     Fetch recent Federal Register documents, process them, and insert into database.
 
     This function:
-    1. Checks for running scrapers (simple lock via DB)
-    2. Fetches new Federal Register items
-    3. Checks for duplicates in database
-    4. Summarizes with Grok API
-    5. Inserts Article rows
-    6. Tracks scraper execution in database
+    1. Fetches new Federal Register items
+    2. Checks for duplicates in database
+    3. Summarizes with Grok API
+    4. Inserts Article rows
     """
     db: Session = SessionLocal()
 
-    # Check for running scraper (simple lock via DB) with 1 hour timeout
-    running_run = db.query(ScraperRun).filter(
-        ScraperRun.completed_at.is_(None),
-        ScraperRun.started_at > datetime.now(timezone.utc) - timedelta(hours=1)  # 1 hour timeout
-    ).first()
-    if running_run:
-        logger.warning(f"Scraper already running (ID: {running_run.id}), skipping")
-        db.close()
-        return
-
-    # Create scraper run record
-    run = ScraperRun(started_at=datetime.now(timezone.utc))
-    db.add(run)
-    db.commit()
-
     try:
-        logger.info(f"Starting scraper run {run.id} at {run.started_at}")
-        logger.info(f"Looking back {settings.SCRAPER_DAYS_LOOKBACK} day(s)")
+        logger.info(f"Starting scraper (looking back {settings.SCRAPER_DAYS_LOOKBACK} day(s))")
 
         # Fetch documents from Federal Register API
         logger.info("Fetching documents from Federal Register API...")
@@ -49,9 +56,6 @@ async def fetch_and_process():
 
         if not documents:
             logger.warning("No documents fetched from Federal Register API")
-            run.completed_at = datetime.now(timezone.utc)
-            run.success = True
-            db.commit()
             return
 
         logger.info(f"Starting to process {len(documents)} documents")
@@ -70,10 +74,19 @@ async def fetch_and_process():
                 title = doc.get("title", "Untitled")
                 logger.debug(f"[{i}/{len(documents)}] Processing: {doc_number} - {title[:60]}")
 
-                # Check if already in database
-                if db.query(FederalRegister).filter(
+                # Prepare source URL for duplicate check
+                source_url = doc.get("html_url", "")
+                
+                # Check for duplicates by source_url (unique constraint) or document_number (in FederalRegister)
+                existing_article = db.query(Article).filter(
+                    Article.source_url == source_url
+                ).first()
+                
+                existing_fed_entry = db.query(FederalRegister).filter(
                     FederalRegister.document_number == doc_number
-                ).first():
+                ).first()
+                
+                if existing_article or existing_fed_entry:
                     logger.debug("  → Already in database, skipping")
                     skipped_count += 1
                     continue
@@ -90,7 +103,6 @@ async def fetch_and_process():
                 # Extract fields
                 abstract = doc.get("abstract", "")
                 summary_text = abstract or doc.get("full_text", "")[:1000]
-                source_url = doc.get("html_url", "")
 
                 # Summarize with Grok
                 logger.debug("  → Summarizing with Grok API...")
@@ -104,9 +116,8 @@ async def fetch_and_process():
                 except (ValueError, TypeError):
                     published_at = datetime.now(timezone.utc)
 
-                # Prepare article
+                # Prepare article (don't set federal_register_id yet, will be set after flush)
                 article = Article(
-                    federal_register_id=fed_entry.id,  # Note: ID will be assigned after add_all
                     title=title,
                     summary=summary,
                     source_url=source_url,
@@ -116,6 +127,11 @@ async def fetch_and_process():
 
                 processed_count += 1
                 logger.info(f"  ✓ Article prepared: {doc_number}")
+                
+                # Flush batch if threshold reached
+                if len(new_fed_entries) >= BATCH_SIZE:
+                    logger.info(f"Batch size {len(new_fed_entries)} reached, persisting...")
+                    await _insert_batch(db, new_fed_entries, new_articles)
 
             except Exception as e:
                 error_count += 1
@@ -126,40 +142,21 @@ async def fetch_and_process():
                 )
                 continue  # Skip failed items, don't rollback
 
+        logger.info(f"Processing complete. Final batch: {len(new_fed_entries)} fed_entries, {len(new_articles)} articles")
+        
+        # Insert remaining articles
         if new_fed_entries:
-            # Bulk insert
-            db.add_all(new_fed_entries)
-            db.flush()  # Assign IDs to fed_entries
-            # Update article foreign keys with assigned IDs
-            for fed_entry, article in zip(new_fed_entries, new_articles):
-                article.federal_register_id = fed_entry.id
-            db.add_all(new_articles)
-            db.commit()
-            logger.info(
-                f"Bulk inserted {len(new_fed_entries)} federal entries "
-                f"and {len(new_articles)} articles"
-            )
+            logger.info(f"Persisting final batch of {len(new_fed_entries)} entries...")
+            await _insert_batch(db, new_fed_entries, new_articles)
 
         logger.info(
-            f"Scraper run {run.id} complete. Processed: {processed_count}, "
+            f"Scraper complete. Processed: {processed_count}, "
             f"Skipped: {skipped_count}, Errors: {error_count}"
         )
 
-        # Update run record
-        run.completed_at = datetime.now(timezone.utc)
-        run.processed_count = processed_count
-        run.skipped_count = skipped_count
-        run.error_count = error_count
-        run.success = True
-        db.commit()
-
     except Exception as e:
-        logger.error(f"Fatal error in scraper: {e}")
+        logger.error(f"Fatal error in scraper: {e}", exc_info=True)
         db.rollback()  # Rollback entire batch on fatal error
-        run.completed_at = datetime.now(timezone.utc)
-        run.error_message = str(e)
-        run.success = False
-        db.commit()
 
     finally:
         db.close()

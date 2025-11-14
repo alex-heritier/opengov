@@ -3,7 +3,8 @@
 help:
 	@echo "OpenGov Development Commands"
 	@echo "make install  - Install backend & frontend dependencies"
-	@echo "make run      - Start backend & frontend dev servers"
+	@echo "make runb    - Start backend dev server"
+	@echo "make runf    - Start frontend dev server"
 	@echo "make test     - Run backend + frontend tests"
 	@echo "make build    - Build frontend for production"
 	@echo "make clean    - Clean up generated files"
@@ -14,14 +15,15 @@ install:
 	cd frontend && npm install
 	@echo "Installation complete"
 
-run:
-	@echo "Starting development servers..."
+runb:
+	@echo "Starting backend dev server..."
 	@echo "Backend: http://localhost:8000"
+	cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+runf:
+	@echo "Starting frontend dev server..."
 	@echo "Frontend: http://localhost:5173"
-	@echo "Press Ctrl+C to stop"
-	@(cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000) &
-	@(cd frontend && npm run dev) &
-	@wait
+	cd frontend && npm run dev
 
 test:
 	@echo "Running tests..."

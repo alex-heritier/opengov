@@ -4,8 +4,7 @@ from fastapi import APIRouter, Depends, Query, Request, BackgroundTasks, HTTPExc
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 from app.routers.common import get_db, limiter
-from app.models import Article, FederalRegister, ScraperRun, Agency
-from app.schemas import ScraperRunListResponse
+from app.models import Article, FederalRegister, Agency
 from app.workers.scraper import fetch_and_process
 from app.services.federal_register import fetch_agencies, store_agencies
 
@@ -44,23 +43,6 @@ async def get_stats(request: Request, db: Session = Depends(get_db)):
             if last_scrape_time else "Never"
         ),
     }
-
-
-@router.get("/scraper-runs", response_model=ScraperRunListResponse)
-@limiter.limit("50/minute")
-async def get_scraper_runs(
-    request: Request,
-    limit: int = Query(10, ge=1, le=50, description="Number of runs to return"),
-    db: Session = Depends(get_db),
-):
-    """Get recent scraper runs (50 req/min limit)"""
-    runs = db.query(ScraperRun).order_by(
-        desc(ScraperRun.started_at)
-    ).limit(limit).all()
-
-    total = db.query(ScraperRun).count()
-
-    return ScraperRunListResponse(runs=runs, total=total)
 
 
 @router.post("/sync-agencies")

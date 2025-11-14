@@ -36,7 +36,7 @@ def upgrade() -> None:
     # Create articles table with federal_register_id
     op.create_table('articles',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('federal_register_id', sa.Integer(), nullable=False),
+    sa.Column('federal_register_id', sa.Integer(), nullable=True),
     sa.Column('title', sa.String(length=500), nullable=False),
     sa.Column('summary', sa.Text(), nullable=False),
     sa.Column('source_url', sa.String(length=500), nullable=False),
@@ -52,24 +52,8 @@ def upgrade() -> None:
     op.create_index('ix_articles_published_at', 'articles', ['published_at'], unique=False)
     op.create_index('ix_articles_source_url', 'articles', ['source_url'], unique=False)
 
-    # Create scraper_runs table
-    op.create_table('scraper_runs',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('started_at', sa.DateTime(), nullable=False),
-    sa.Column('completed_at', sa.DateTime(), nullable=True),
-    sa.Column('processed_count', sa.Integer(), nullable=True),
-    sa.Column('skipped_count', sa.Integer(), nullable=True),
-    sa.Column('error_count', sa.Integer(), nullable=True),
-    sa.Column('success', sa.Boolean(), nullable=True),
-    sa.Column('error_message', sa.String(length=500), nullable=True),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index('ix_scraper_runs_started_at', 'scraper_runs', ['started_at'], unique=False)
-
 
 def downgrade() -> None:
-    op.drop_index('ix_scraper_runs_started_at', table_name='scraper_runs')
-    op.drop_table('scraper_runs')
     op.drop_index('ix_articles_source_url', table_name='articles')
     op.drop_index('ix_articles_published_at', table_name='articles')
     op.drop_index('ix_articles_federal_register_id', table_name='articles')

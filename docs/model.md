@@ -8,7 +8,7 @@ Represents a processed government update.
 | Field | Type | Notes |
 |-------|------|-------|
 | id | Integer | Primary key |
-| federal_register_id | Integer | Foreign key to FederalRegister (indexed) |
+| federal_register_id | Integer | Foreign key to FederalRegister (indexed, **nullable**) |
 | title | String(500) | Article headline |
 | summary | Text | AI-generated viral summary |
 | source_url | String(500) | Link to Federal Register (unique) |
@@ -82,10 +82,14 @@ Federal government agencies from Federal Register API.
 
 ```
 FederalRegister (1) ----> (many) Article
-        (id)           federal_register_id
+        (id)           federal_register_id [nullable]
 ```
 
-Each Federal Register entry produces exactly one Article. The `federal_register_id` foreign key ensures traceability from Article back to its source document.
+Each Federal Register entry can optionally produce an Article. The `federal_register_id` foreign key is **optional** and can be NULL, allowing articles to exist independently. When set, it ensures traceability from Article back to its source document.
+
+**Duplicate Prevention:**
+- Articles are prevented from having duplicate `source_url` values (unique constraint)
+- The scraper checks for both `source_url` and `federal_register_id` matches before creating new articles
 
 ## Pydantic Schemas
 

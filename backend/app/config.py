@@ -18,8 +18,8 @@ class Settings:
         "GROK_API_URL", "https://api.x.ai/v1"
     )
 
-    # Database
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./opengov.db")
+    # Database (set in .env)
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "")
 
     # Scraper settings
     SCRAPER_INTERVAL_MINUTES: int = int(os.getenv("SCRAPER_INTERVAL_MINUTES", "15"))
@@ -37,7 +37,7 @@ class Settings:
     # Limits
     MAX_REQUEST_SIZE_BYTES: int = int(os.getenv("MAX_REQUEST_SIZE_BYTES", "10485760"))  # 10 MB
     FEDERAL_REGISTER_PER_PAGE: int = int(os.getenv("FEDERAL_REGISTER_PER_PAGE", "100"))
-    FEDERAL_REGISTER_MAX_PAGES: int = int(os.getenv("FEDERAL_REGISTER_MAX_PAGES", "100"))
+    FEDERAL_REGISTER_MAX_PAGES: int = int(os.getenv("FEDERAL_REGISTER_MAX_PAGES", "2"))
 
     # Environment
     DEBUG: bool = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")

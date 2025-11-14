@@ -11,7 +11,7 @@ class Article(Base):
     federal_register_id = Column(
         Integer,
         ForeignKey("federal_register_entries.id"),
-        nullable=False,
+        nullable=True,
         index=True
     )
     title = Column(String(500), nullable=False)
