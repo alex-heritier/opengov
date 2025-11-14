@@ -1,7 +1,6 @@
 import logging
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Query, Request, BackgroundTasks, HTTPException
-from sqlalchemy import desc
 from sqlalchemy.orm import Session
 from app.routers.common import get_db, limiter
 from app.models import Article, FederalRegister, Agency
