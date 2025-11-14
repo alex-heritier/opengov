@@ -1,6 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Boolean, Column, DateTime, Integer, String
 from app.database import Base
+
+
+def utcnow():
+    """Get current UTC time (timezone-aware)"""
+    return datetime.now(timezone.utc)
 
 
 class User(Base):
@@ -15,8 +20,8 @@ class User(Base):
     picture_url = Column(String(500), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
     last_login_at = Column(DateTime, nullable=True)
 
     def __repr__(self):

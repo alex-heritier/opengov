@@ -6,7 +6,7 @@ from datetime import datetime
 
 from app.main import app
 from app.models.user import User
-from app.services.auth import create_access_token
+from app.services.auth import auth_service
 from app.routers.common import get_db
 
 
@@ -46,7 +46,7 @@ def sample_user():
 @pytest.fixture
 def auth_headers(sample_user):
     """Create authorization headers with valid token"""
-    token = create_access_token({"sub": sample_user.id})
+    token = auth_service.create_access_token({"sub": sample_user.id})
     return {"Authorization": f"Bearer {token}"}
 
 
@@ -176,7 +176,7 @@ class TestTokenRenewalEndpoint:
     def test_renew_token_success(self, sample_user, auth_headers):
         """Test successful token renewal"""
         with patch("app.routers.auth.renew_token") as mock_renew:
-            new_token = create_access_token({"sub": sample_user.id})
+            new_token = auth_service.create_access_token({"sub": sample_user.id})
             mock_renew.return_value = new_token
 
             response = client.post("/api/auth/renew", headers=auth_headers)
@@ -198,9 +198,9 @@ class TestTokenRenewalEndpoint:
     def test_renew_token_with_expired_token(self):
         """Test token renewal with expired token"""
         from datetime import timedelta
-        from app.services.auth import create_access_token
+        from app.services.auth import auth_service
 
-        expired_token = create_access_token(
+        expired_token = auth_service.create_access_token(
             {"sub": 1}, expires_delta=timedelta(minutes=-1)
         )
         headers = {"Authorization": f"Bearer {expired_token}"}
@@ -244,7 +244,7 @@ class TestAuthenticationIntegration:
     def test_full_auth_flow(self, sample_user):
         """Test complete authentication flow"""
         # 1. Create a token (simulating successful OAuth)
-        token = create_access_token({"sub": sample_user.id})
+        token = auth_service.create_access_token({"sub": sample_user.id})
 
         # 2. Use token to access protected endpoint
         headers = {"Authorization": f"Bearer {token}"}
@@ -259,7 +259,7 @@ class TestAuthenticationIntegration:
 
             # Renew token
             with patch("app.routers.auth.renew_token") as mock_renew:
-                new_token = create_access_token({"sub": sample_user.id})
+                new_token = auth_service.create_access_token({"sub": sample_user.id})
                 mock_renew.return_value = new_token
 
                 response = client.post("/api/auth/renew", headers=headers)
@@ -271,7 +271,7 @@ class TestAuthenticationIntegration:
         from datetime import timedelta
 
         # Create an expired token
-        expired_token = create_access_token(
+        expired_token = auth_service.create_access_token(
             {"sub": 1}, expires_delta=timedelta(minutes=-1)
         )
         headers = {"Authorization": f"Bearer {expired_token}"}

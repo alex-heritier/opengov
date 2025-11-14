@@ -1,16 +1,18 @@
 """Authentication routes for Google OAuth and JWT token management"""
 import logging
+import secrets
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, Query
+from fastapi import APIRouter, Depends, Header, Query, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
+from cachetools import TTLCache
 
 from app.config import settings
 from app.models.user import User
-from app.routers.common import get_db
+from app.routers.common import get_db, limiter
 from app.schemas.user import TokenResponse, UserResponse
-from app.services.auth_service import auth_service
+from app.services.auth import auth_service
 from app.exceptions import (
     MissingTokenError,
     InvalidAuthHeaderError,
@@ -19,6 +21,9 @@ from app.exceptions import (
 )
 
 logger = logging.getLogger(__name__)
+
+# State parameter cache for CSRF protection (5 minute TTL)
+_oauth_state_cache = TTLCache(maxsize=1000, ttl=300)
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -57,11 +62,12 @@ def get_current_user(
 
 
 @router.get("/google/login")
-async def google_login():
+@limiter.limit("10/minute")
+async def google_login(request: Request):
     """
     Initiate Google OAuth login flow
 
-    Redirects user to Google's OAuth consent screen
+    Redirects user to Google's OAuth consent screen with CSRF state parameter
 
     Raises:
         OAuthNotConfiguredError: If OAuth credentials not configured
@@ -71,39 +77,58 @@ async def google_login():
         logger.error("Google OAuth not configured")
         raise OAuthNotConfiguredError()
 
-    # Build Google OAuth URL
+    # Generate cryptographically secure state parameter for CSRF protection
+    state = secrets.token_urlsafe(32)
+    _oauth_state_cache[state] = True
+
+    # Build Google OAuth URL with state parameter
     google_oauth_url = (
         f"https://accounts.google.com/o/oauth2/v2/auth?"
         f"client_id={settings.GOOGLE_CLIENT_ID}&"
         f"redirect_uri={settings.GOOGLE_REDIRECT_URI}&"
         f"response_type=code&"
         f"scope=openid%20email%20profile&"
+        f"state={state}&"
         f"access_type=offline&"
         f"prompt=consent"
     )
 
+    logger.debug("Generated OAuth state parameter for login flow")
     return RedirectResponse(url=google_oauth_url)
 
 
 @router.get("/google/callback")
+@limiter.limit("20/minute")
 async def google_callback(
+    request: Request,
     code: str = Query(..., description="Authorization code from Google"),
+    state: str = Query(..., description="CSRF protection state parameter"),
     db: Session = Depends(get_db),
 ):
     """
     Handle Google OAuth callback
 
-    Exchanges authorization code for user info, creates/updates user,
-    and redirects to frontend with JWT token
+    Verifies CSRF state, exchanges authorization code for user info,
+    creates/updates user, and redirects to frontend with JWT token
 
     Args:
         code: Authorization code from Google
+        state: CSRF protection state parameter
         db: Database session
 
     Returns:
         Redirect to frontend with token in URL fragment or error page
     """
     try:
+        # Verify state parameter to prevent CSRF attacks
+        if state not in _oauth_state_cache:
+            logger.warning("Invalid or expired OAuth state parameter")
+            error_redirect = f"{settings.FRONTEND_URL}/auth/error?message=invalid_state"
+            return RedirectResponse(url=error_redirect)
+
+        # Remove state from cache (one-time use)
+        del _oauth_state_cache[state]
+
         # Exchange code for user info
         user_info = await auth_service.exchange_code_for_user_info(code)
 
@@ -140,7 +165,9 @@ async def google_callback(
 
 
 @router.post("/renew", response_model=TokenResponse)
+@limiter.limit("30/minute")
 async def renew_access_token(
+    request: Request,
     authorization: Annotated[str | None, Header()] = None,
     db: Session = Depends(get_db),
 ):
@@ -195,15 +222,31 @@ async def get_current_user_info(
 
 
 @router.post("/logout")
-async def logout():
+@limiter.limit("10/minute")
+async def logout(
+    request: Request,
+    authorization: Annotated[str | None, Header()] = None,
+):
     """
-    Logout endpoint (client-side only)
+    Logout endpoint
 
-    Since we use stateless JWT tokens, logout is handled client-side
-    by removing the token from localStorage. This endpoint exists for
-    API completeness but doesn't perform any server-side action.
+    Invalidates the current token from the cache and instructs client
+    to remove it from localStorage. Since we use stateless JWT tokens,
+    the token will still be valid until expiration, but it won't be cached
+    server-side.
+
+    Args:
+        authorization: Authorization header with Bearer token
 
     Returns:
         Success message
     """
+    # Invalidate token from cache if provided
+    if authorization:
+        parts = authorization.split()
+        if len(parts) == 2 and parts[0].lower() == "bearer":
+            token = parts[1]
+            auth_service.invalidate_token(token)
+            logger.info("User logged out and token invalidated from cache")
+
     return {"message": "Logout successful. Clear your token client-side."}

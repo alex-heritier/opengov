@@ -5,15 +5,15 @@ from unittest.mock import Mock, patch, AsyncMock
 from fastapi import HTTPException
 from jose import jwt
 
-from app.services.auth import (
-    create_access_token,
-    decode_access_token,
-    get_user_from_token,
-    create_or_update_user,
-    renew_token,
-)
+from app.services.auth import auth_service, _get_jwt_secret
 from app.models.user import User
 from app.config import settings
+from app.exceptions import (
+    TokenExpiredError,
+    InvalidTokenError,
+    UserNotFoundError,
+    InactiveUserError,
+)
 
 
 # Test fixtures
@@ -47,16 +47,16 @@ class TestJWTTokens:
     def test_create_access_token(self):
         """Test creating a valid access token"""
         data = {"sub": 1}
-        token = create_access_token(data)
+        token = auth_service.create_access_token(data)
 
         assert isinstance(token, str)
         assert len(token) > 0
 
         # Decode and verify token
         payload = jwt.decode(
-            token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+            token, _get_jwt_secret(), algorithms=[settings.JWT_ALGORITHM]
         )
-        assert payload["sub"] == 1
+        assert payload["sub"] == "1"  # JWT RFC 7519 requires sub to be string
         assert "exp" in payload
         assert "iat" in payload
 
@@ -64,10 +64,10 @@ class TestJWTTokens:
         """Test creating token with custom expiration"""
         data = {"sub": 1}
         expires_delta = timedelta(minutes=30)
-        token = create_access_token(data, expires_delta)
+        token = auth_service.create_access_token(data, expires_delta)
 
         payload = jwt.decode(
-            token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+            token, _get_jwt_secret(), algorithms=[settings.JWT_ALGORITHM]
         )
 
         # Check expiration is approximately 30 minutes from now
@@ -80,10 +80,10 @@ class TestJWTTokens:
     def test_decode_valid_token(self):
         """Test decoding a valid token"""
         data = {"sub": 1, "email": "test@example.com"}
-        token = create_access_token(data)
+        token = auth_service.create_access_token(data)
 
-        payload = decode_access_token(token)
-        assert payload["sub"] == 1
+        payload = auth_service.decode_access_token(token)
+        assert payload["sub"] == "1"  # JWT RFC 7519 requires sub to be string
         assert payload["email"] == "test@example.com"
 
     def test_decode_expired_token(self):
@@ -91,20 +91,20 @@ class TestJWTTokens:
         data = {"sub": 1}
         # Create token that expired 1 minute ago
         expires_delta = timedelta(minutes=-1)
-        token = create_access_token(data, expires_delta)
+        token = auth_service.create_access_token(data, expires_delta)
 
-        with pytest.raises(HTTPException) as exc_info:
-            decode_access_token(token)
+        with pytest.raises(TokenExpiredError) as exc_info:
+            auth_service.decode_access_token(token)
 
         assert exc_info.value.status_code == 401
-        assert "Could not validate credentials" in str(exc_info.value.detail)
+        assert "expired" in str(exc_info.value.message).lower()
 
     def test_decode_invalid_token(self):
         """Test decoding an invalid token raises exception"""
         invalid_token = "invalid.token.here"
 
-        with pytest.raises(HTTPException) as exc_info:
-            decode_access_token(invalid_token)
+        with pytest.raises(InvalidTokenError) as exc_info:
+            auth_service.decode_access_token(invalid_token)
 
         assert exc_info.value.status_code == 401
 
@@ -130,7 +130,7 @@ class TestUserAuthentication:
     def test_get_user_from_valid_token(self, mock_db_session, sample_user):
         """Test getting user from valid token"""
         # Create token
-        token = create_access_token({"sub": sample_user.id})
+        token = auth_service.create_access_token({"sub": sample_user.id})
 
         # Mock database query
         mock_query = Mock()
@@ -138,7 +138,7 @@ class TestUserAuthentication:
         mock_db_session.query.return_value = mock_query
 
         # Get user
-        user = get_user_from_token(token, mock_db_session)
+        user = auth_service.get_user_from_token(token, mock_db_session)
 
         assert user.id == sample_user.id
         assert user.email == sample_user.email
@@ -146,7 +146,7 @@ class TestUserAuthentication:
 
     def test_get_user_from_token_user_not_found(self, mock_db_session):
         """Test getting user when user doesn't exist in database"""
-        token = create_access_token({"sub": 999})
+        token = auth_service.create_access_token({"sub": 999})
 
         # Mock database query to return None
         mock_query = Mock()
@@ -154,14 +154,14 @@ class TestUserAuthentication:
         mock_db_session.query.return_value = mock_query
 
         with pytest.raises(HTTPException) as exc_info:
-            get_user_from_token(token, mock_db_session)
+            auth_service.get_user_from_token(token, mock_db_session)
 
         assert exc_info.value.status_code == 401
         assert "User not found" in str(exc_info.value.detail)
 
     def test_get_user_from_token_inactive_user(self, mock_db_session, sample_user):
         """Test getting inactive user raises exception"""
-        token = create_access_token({"sub": sample_user.id})
+        token = auth_service.create_access_token({"sub": sample_user.id})
         sample_user.is_active = False
 
         mock_query = Mock()
@@ -169,17 +169,17 @@ class TestUserAuthentication:
         mock_db_session.query.return_value = mock_query
 
         with pytest.raises(HTTPException) as exc_info:
-            get_user_from_token(token, mock_db_session)
+            auth_service.get_user_from_token(token, mock_db_session)
 
         assert exc_info.value.status_code == 403
         assert "Inactive user" in str(exc_info.value.detail)
 
     def test_get_user_from_token_missing_sub(self, mock_db_session):
         """Test getting user from token without 'sub' claim"""
-        token = create_access_token({"email": "test@example.com"})
+        token = auth_service.create_access_token({"email": "test@example.com"})
 
         with pytest.raises(HTTPException) as exc_info:
-            get_user_from_token(token, mock_db_session)
+            auth_service.get_user_from_token(token, mock_db_session)
 
         assert exc_info.value.status_code == 401
 
@@ -195,7 +195,7 @@ class TestUserCreationAndUpdate:
         mock_query.filter.return_value.first.return_value = None
         mock_db_session.query.return_value = mock_query
 
-        user = create_or_update_user(
+        user = auth_service.create_or_update_user(
             db=mock_db_session,
             google_id="google123",
             email="newuser@example.com",
@@ -215,7 +215,7 @@ class TestUserCreationAndUpdate:
         mock_query.filter.return_value.first.return_value = sample_user
         mock_db_session.query.return_value = mock_query
 
-        user = create_or_update_user(
+        user = auth_service.create_or_update_user(
             db=mock_db_session,
             google_id="google123",
             email="updated@example.com",
@@ -240,7 +240,7 @@ class TestUserCreationAndUpdate:
         mock_query.filter.return_value.first.return_value = sample_user
         mock_db_session.query.return_value = mock_query
 
-        user = create_or_update_user(
+        user = auth_service.create_or_update_user(
             db=mock_db_session,
             google_id="new_google_id",
             email=sample_user.email,
@@ -269,7 +269,7 @@ class TestTokenRenewal:
         mock_db_session.query.return_value = mock_query
 
         # Renew token
-        new_token = renew_token(current_token, mock_db_session)
+        new_token = auth_service.renew_token(current_token, mock_db_session)
 
         assert isinstance(new_token, str)
         assert new_token != current_token
@@ -286,7 +286,7 @@ class TestTokenRenewal:
         )
 
         with pytest.raises(HTTPException) as exc_info:
-            renew_token(expired_token, mock_db_session)
+            auth_service.renew_token(expired_token, mock_db_session)
 
         assert exc_info.value.status_code == 401
 
@@ -300,7 +300,7 @@ class TestTokenRenewal:
         mock_db_session.query.return_value = mock_query
 
         with pytest.raises(HTTPException) as exc_info:
-            renew_token(current_token, mock_db_session)
+            auth_service.renew_token(current_token, mock_db_session)
 
         assert exc_info.value.status_code == 403
 
@@ -312,7 +312,7 @@ class TestOAuthExchange:
     @pytest.mark.asyncio
     async def test_exchange_code_success(self):
         """Test successful code exchange for user info"""
-        from app.services.auth import exchange_code_for_user_info
+        # exchange_code_for_user_info is now auth_service.exchange_code_for_user_info
 
         mock_token_response = Mock()
         mock_token_response.status_code = 200
@@ -332,7 +332,7 @@ class TestOAuthExchange:
             mock_instance.post = AsyncMock(return_value=mock_token_response)
             mock_instance.get = AsyncMock(return_value=mock_userinfo_response)
 
-            user_info = await exchange_code_for_user_info("auth_code")
+            user_info = await auth_service.exchange_code_for_user_info("auth_code")
 
             assert user_info["google_id"] == "google123"
             assert user_info["email"] == "test@example.com"
@@ -342,7 +342,7 @@ class TestOAuthExchange:
     @pytest.mark.asyncio
     async def test_exchange_code_token_failure(self):
         """Test code exchange when token request fails"""
-        from app.services.auth import exchange_code_for_user_info
+        # exchange_code_for_user_info is now auth_service.exchange_code_for_user_info
 
         mock_response = Mock()
         mock_response.status_code = 400
@@ -353,7 +353,7 @@ class TestOAuthExchange:
             mock_instance.post = AsyncMock(return_value=mock_response)
 
             with pytest.raises(HTTPException) as exc_info:
-                await exchange_code_for_user_info("invalid_code")
+                await auth_service.exchange_code_for_user_info("invalid_code")
 
             assert exc_info.value.status_code == 400
             assert "Failed to exchange authorization code" in str(exc_info.value.detail)
@@ -361,7 +361,7 @@ class TestOAuthExchange:
     @pytest.mark.asyncio
     async def test_exchange_code_userinfo_failure(self):
         """Test code exchange when userinfo request fails"""
-        from app.services.auth import exchange_code_for_user_info
+        # exchange_code_for_user_info is now auth_service.exchange_code_for_user_info
 
         mock_token_response = Mock()
         mock_token_response.status_code = 200
@@ -377,7 +377,7 @@ class TestOAuthExchange:
             mock_instance.get = AsyncMock(return_value=mock_userinfo_response)
 
             with pytest.raises(HTTPException) as exc_info:
-                await exchange_code_for_user_info("auth_code")
+                await auth_service.exchange_code_for_user_info("auth_code")
 
             assert exc_info.value.status_code == 400
             assert "Failed to fetch user information" in str(exc_info.value.detail)

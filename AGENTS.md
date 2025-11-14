@@ -10,11 +10,12 @@ Refer to TODO.md for tasks.
 
 ## Roadmap
 
-1. Basic Federal register scraping + Grok AI processing + website to create viral buzz
-2. Allow user accounts, likes, comments, and shares (TBD, do not implement)
-3. Create the opengov GaaS product (TBD, do not implement)
+1. ✅ Basic Federal register scraping + Grok AI processing + website to create viral buzz
+2. 🚧 **PHASE 2 (CURRENT)**: User accounts with Google OAuth authentication
+3. 🔮 Allow likes, comments, and shares (Phase 3, do not implement yet)
+4. 🔮 Create the opengov GaaS product (Phase 4, do not implement yet)
 
-**Note:** User authentication (Google OAuth), user endpoints, and user management are **postponed to Phase 2**. The current implementation focuses on the public feed functionality without authentication.
+**Current Status:** Phase 2 - Implementing Google OAuth authentication with JWT tokens for user accounts. Authentication system includes login, token management, and protected endpoints.
 
 ## Tech Stack
 
@@ -110,10 +111,11 @@ opengov/
 ## API Structure
 
 ### Authentication Endpoints
-**[POSTPONED TO PHASE 2]** - Not currently implemented
-- `POST /api/auth/google/login` - Initiate Google OAuth flow
+**[PHASE 2 - IMPLEMENTED]**
+- `GET /api/auth/google/login` - Initiate Google OAuth flow
 - `GET /api/auth/google/callback` - Handle Google OAuth callback
-- `POST /api/auth/logout` - Logout current user
+- `POST /api/auth/renew` - Renew JWT access token
+- `POST /api/auth/logout` - Logout (client-side token removal)
 - `GET /api/auth/me` - Get current authenticated user info
 
 ### Feed Endpoints
@@ -123,7 +125,7 @@ opengov/
 - `POST /api/feed/{article_id}/share` - Track article sharing (analytics)
 
 ### User Endpoints
-**[POSTPONED TO PHASE 2]** - Not currently implemented
+**[PHASE 3 - NOT YET IMPLEMENTED]**
 - `GET /api/users/me` - Get current user profile
 - `PATCH /api/users/me` - Update user profile settings
 
@@ -159,14 +161,14 @@ Error responses:
 ### Backend
 - Use FastAPI async/await for all endpoints and external calls
 - SQLite + SQLAlchemy for data persistence
-- **[POSTPONED]** Google OAuth for authentication - Phase 2 feature
+- **[PHASE 2]** Google OAuth authentication with JWT tokens (stateless, 1-hour expiration)
 - Separate service modules for external API integrations
 - Environment variables for API keys and configuration
 - Background workers for periodic Federal Register scraping
 
-**Key Libraries:** fastapi, uvicorn, sqlalchemy, alembic, httpx, apscheduler, slowapi, tenacity
+**Key Libraries:** fastapi, uvicorn, sqlalchemy, alembic, httpx, apscheduler, slowapi, tenacity, authlib, python-jose, cachetools
 
-**Note:** `authlib` is not currently used (authentication postponed to Phase 2)
+**Authentication:** Google OAuth 2.0 with JWT tokens, automatic token renewal, token caching for performance
 
 ### Frontend
 - TypeScript throughout

@@ -45,6 +45,31 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting OpenGov API")
 
+    # Check database migrations
+    logger.info("Checking database migrations...")
+    db = SessionLocal()
+    try:
+        from sqlalchemy import inspect
+
+        # Check if users table exists (from migration 003)
+        inspector = inspect(db.bind)
+        tables = inspector.get_table_names()
+
+        if "users" not in tables:
+            logger.error(
+                "Database schema is not up to date! Missing 'users' table. "
+                "Please run migrations: uv run alembic upgrade head"
+            )
+            raise RuntimeError("Database migrations not applied. Run 'alembic upgrade head'")
+
+        logger.info("Database schema check passed")
+    except RuntimeError:
+        raise
+    except Exception as e:
+        logger.warning(f"Could not verify database schema: {e}")
+    finally:
+        db.close()
+
     # Sync agencies from Federal Register API on startup
     logger.info("Syncing agencies from Federal Register API...")
     db = SessionLocal()

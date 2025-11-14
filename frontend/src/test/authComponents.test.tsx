@@ -3,9 +3,30 @@
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { GoogleLogin } from '../components/auth/GoogleLogin'
+import { AuthProvider } from '../contexts/AuthContext'
 import { useAuthStore } from '../stores/authStore'
 import userEvent from '@testing-library/user-event'
+
+// Create a test wrapper with necessary providers
+const createWrapper = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  })
+
+  return function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>{children}</AuthProvider>
+      </QueryClientProvider>
+    )
+  }
+}
 
 describe('GoogleLogin Component', () => {
   beforeEach(() => {
@@ -17,14 +38,14 @@ describe('GoogleLogin Component', () => {
   })
 
   it('should render login button when not authenticated', () => {
-    render(<GoogleLogin />)
+    render(<GoogleLogin />, { wrapper: createWrapper() })
 
     const button = screen.getByRole('button', { name: /sign in with google/i })
     expect(button).toBeTruthy()
   })
 
   it('should display Google logo in login button', () => {
-    render(<GoogleLogin />)
+    render(<GoogleLogin />, { wrapper: createWrapper() })
 
     const button = screen.getByRole('button')
     const svg = button.querySelector('svg')
@@ -33,7 +54,7 @@ describe('GoogleLogin Component', () => {
 
   it('should redirect to Google OAuth on button click', async () => {
     const user = userEvent.setup()
-    render(<GoogleLogin />)
+    render(<GoogleLogin />, { wrapper: createWrapper() })
 
     const button = screen.getByRole('button', { name: /sign in with google/i })
     await user.click(button)
@@ -64,7 +85,7 @@ describe('GoogleLogin Component', () => {
 
     useAuthStore.getState().setAuth(mockToken, mockUser)
 
-    render(<GoogleLogin />)
+    render(<GoogleLogin />, { wrapper: createWrapper() })
 
     expect(screen.getByText('Test User')).toBeTruthy()
     const img = screen.getByAlt('Test User')
@@ -93,7 +114,7 @@ describe('GoogleLogin Component', () => {
 
     useAuthStore.getState().setAuth(mockToken, mockUser)
 
-    render(<GoogleLogin />)
+    render(<GoogleLogin />, { wrapper: createWrapper() })
 
     expect(screen.getByText('test@example.com')).toBeTruthy()
   })
@@ -119,7 +140,7 @@ describe('GoogleLogin Component', () => {
 
     useAuthStore.getState().setAuth(mockToken, mockUser)
 
-    render(<GoogleLogin />)
+    render(<GoogleLogin />, { wrapper: createWrapper() })
 
     const img = screen.queryByRole('img')
     expect(img).toBeFalsy()

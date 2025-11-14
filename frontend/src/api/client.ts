@@ -14,6 +14,13 @@ const client = axios.create({
 let isRenewing = false
 let renewalPromise: Promise<string> | null = null
 
+// Helper function to redirect to login
+function redirectToLogin(): void {
+  if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/auth')) {
+    window.location.href = '/auth/login'
+  }
+}
+
 // Function to renew token
 async function renewToken(currentToken: string): Promise<string> {
   const response = await axios.post(
@@ -71,10 +78,7 @@ client.interceptors.request.use(
       } catch (error) {
         console.error('Token renewal failed:', error)
         clearAuth()
-        // Redirect to login if not already on auth pages
-        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/auth')) {
-          window.location.href = '/auth/login'
-        }
+        redirectToLogin()
       } finally {
         isRenewing = false
         renewalPromise = null
@@ -101,11 +105,7 @@ client.interceptors.response.use(
     if (error.response?.status === 401) {
       const { clearAuth } = useAuthStore.getState()
       clearAuth()
-
-      // Redirect to login if not already on auth pages
-      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/auth')) {
-        window.location.href = '/auth/login'
-      }
+      redirectToLogin()
     }
 
     console.error('API Error:', error)
