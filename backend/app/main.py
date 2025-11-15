@@ -9,7 +9,9 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from app.config import settings
-from app.routers import feed, admin, auth
+from app.routers import feed, admin
+# Auth router disabled - authentication postponed to Phase 2
+# from app.routers import auth
 from app.workers.scraper import fetch_and_process
 from app.database import SessionLocal
 from app.services.federal_register import fetch_agencies, store_agencies
@@ -175,7 +177,8 @@ async def opengov_exception_handler(request: Request, exc: OpenGovException):
 
 
 # Include routers
-app.include_router(auth.router)
+# Auth router disabled - authentication postponed to Phase 2
+# app.include_router(auth.router)
 app.include_router(feed.router)
 app.include_router(admin.router)
 
