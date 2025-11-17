@@ -4,6 +4,7 @@ import { ArrowLeft, ExternalLink, Calendar, Clock, AlertCircle } from 'lucide-re
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import ShareButtons from '@/components/share/ShareButtons'
 
 interface ArticleDetail {
   id: number
@@ -125,6 +126,15 @@ export default function ArticleDetailPage() {
           <div>
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">Summary</h2>
             <p className="text-sm sm:text-base text-gray-700 leading-relaxed whitespace-pre-wrap">{article.summary}</p>
+          </div>
+
+          {/* Share Buttons */}
+          <div className="pt-4 sm:pt-6 border-t border-gray-200">
+            <ShareButtons
+              title={article.title}
+              url={typeof window !== 'undefined' ? window.location.href : ''}
+              summary={article.summary}
+            />
           </div>
 
           {/* Source Link */}
