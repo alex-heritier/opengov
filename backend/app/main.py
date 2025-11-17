@@ -9,11 +9,13 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from app.config import settings
-from app.routers import feed, admin
+from app.routers import feed, admin, oauth
 from app.workers.scraper import fetch_and_process
 from app.database import SessionLocal
 from app.services.federal_register import fetch_agencies, store_agencies
 from app.exceptions import OpenGovException
+from app.auth import auth_backend, fastapi_users
+from app.schemas.user import UserCreate, UserRead, UserUpdate
 
 # Configure logging
 logging.basicConfig(
@@ -208,10 +210,6 @@ async def opengov_exception_handler(request: Request, exc: OpenGovException):
 
 
 # Include routers
-# Import fastapi-users auth components
-from app.auth import auth_backend, fastapi_users
-from app.schemas.user import UserCreate, UserRead, UserUpdate
-
 # FastAPI-Users authentication routes
 app.include_router(
     fastapi_users.get_auth_router(auth_backend),
@@ -240,6 +238,7 @@ app.include_router(
 )
 
 # Feature routers
+app.include_router(oauth.router)
 app.include_router(feed.router)
 app.include_router(admin.router)
 

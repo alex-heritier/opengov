@@ -39,7 +39,7 @@ describe('ArticleCard', () => {
       />
     )
 
-    const link = screen.getByRole('link', { name: /Read More/i })
+    const link = screen.getByRole('link', { name: /Federal Register/i })
     expect(link).toHaveAttribute('href', 'https://example.com')
   })
 })

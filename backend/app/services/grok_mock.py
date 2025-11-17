@@ -21,20 +21,20 @@ LOREM_IPSUM_SUMMARIES = [
 async def summarize_text(text: str) -> str:
     """
     Mock summarizer that returns Lorem Ipsum text.
-    
+
     Use this for development to avoid API calls and costs.
     In production, use the real Grok summarizer.
-    
+
     Args:
         text: Text to summarize (ignored in mock)
-    
+
     Returns:
         Random Lorem Ipsum summary
     """
     if not text or not text.strip():
         logger.debug("Empty text provided for mock summarization")
         return "No summary available."
-    
+
     summary = random.choice(LOREM_IPSUM_SUMMARIES)
     logger.info(f"Mock summarizer returning Lorem Ipsum ({len(summary)} chars)")
     return summary

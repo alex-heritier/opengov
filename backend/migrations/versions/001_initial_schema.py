@@ -1,7 +1,7 @@
 """Initial schema with federal_register_id
 
 Revision ID: 001_initial_schema
-Revises: 
+Revises:
 Create Date: 2025-11-13 17:02:20.509411
 
 """

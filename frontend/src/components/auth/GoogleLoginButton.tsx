@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button'
 
-export function GoogleLogin() {
+export default function GoogleLoginButton() {
   const handleGoogleLogin = () => {
     // Redirect to backend OAuth flow
     // Backend handles everything: Google redirect, login, cookie setting
