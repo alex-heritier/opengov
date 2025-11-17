@@ -1,28 +1,35 @@
-from datetime import datetime, timezone
-from sqlalchemy import Boolean, Column, DateTime, Integer, String
+from datetime import datetime
+from typing import Optional
+from sqlalchemy import Boolean, DateTime, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
+from fastapi_users.db import SQLAlchemyBaseUserTable
 from app.database import Base
 
 
-def utcnow():
-    """Get current UTC time (timezone-aware)"""
-    return datetime.now(timezone.utc)
-
-
-class User(Base):
-    """User model for authentication"""
+class User(SQLAlchemyBaseUserTable[int], Base):
+    """User model for authentication with fastapi-users"""
 
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(255), unique=True, nullable=False, index=True)
-    google_id = Column(String(255), unique=True, nullable=True, index=True)
-    name = Column(String(255), nullable=True)
-    picture_url = Column(String(500), nullable=True)
-    is_active = Column(Boolean, default=True, nullable=False)
-    is_verified = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime, default=utcnow, nullable=False)
-    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
-    last_login_at = Column(DateTime, nullable=True)
+    # Primary key (inherited from SQLAlchemyBaseUserTable but we define it explicitly)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    # Required by fastapi-users
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    hashed_password: Mapped[str] = mapped_column(String(1024), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_superuser: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    # Additional fields for Google OAuth (optional)
+    google_id: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True, index=True)
+    name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    picture_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, name={self.name})>"
