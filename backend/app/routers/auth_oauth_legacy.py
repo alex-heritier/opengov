@@ -1,3 +1,14 @@
+"""
+⚠️ LEGACY CODE - NOT IN USE ⚠️
+
+This file contains the old Google OAuth authentication implementation.
+It has been REPLACED by the new fastapi-users cookie-based authentication system.
+
+Current authentication: See app/auth.py and docs/auth.md
+Phase 2 (Future): This OAuth code may be reintegrated for Google SSO
+
+DO NOT USE OR IMPORT THIS MODULE - It is kept for reference only.
+"""
 """Authentication routes for Google OAuth and JWT token management"""
 import logging
 from typing import Annotated
@@ -10,7 +21,7 @@ from app.config import settings
 from app.models.user import User
 from app.routers.common import get_db
 from app.schemas.user import TokenResponse, UserResponse
-from app.services.auth_service import auth_service
+from app.services.auth_service_legacy import auth_service
 from app.exceptions import (
     MissingTokenError,
     InvalidAuthHeaderError,

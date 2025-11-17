@@ -1,3 +1,14 @@
+"""
+⚠️ LEGACY CODE - NOT IN USE ⚠️
+
+This file contains the old authentication service with dependency injection.
+It has been REPLACED by the new fastapi-users authentication system.
+
+Current authentication: See app/auth.py and docs/auth.md
+Phase 2 (Future): This OAuth code may be reintegrated for Google SSO
+
+DO NOT USE OR IMPORT THIS MODULE - It is kept for reference only.
+"""
 """Refactored authentication service with dependency injection and caching"""
 import logging
 from datetime import datetime, timedelta
