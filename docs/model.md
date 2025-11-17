@@ -85,6 +85,24 @@ User bookmarks for articles. Allows authenticated users to save articles for lat
 - `(user_id, is_bookmarked)` - Composite index for filtering active bookmarks
 - Unique constraint on `(user_id, frarticle_id)` - Prevents duplicate bookmarks
 
+### Like
+User likes and dislikes for articles. Allows authenticated users to vote on articles.
+
+| Field | Type | Notes |
+|-------|------|-------|
+| id | Integer | Primary key |
+| user_id | Integer | Foreign key to users.id (indexed, cascade delete) |
+| frarticle_id | Integer | Foreign key to frarticles.id (indexed, cascade delete) |
+| is_positive | Boolean | True for like, False for dislike |
+| created_at | DateTime | When like/dislike was created |
+| updated_at | DateTime | Last update time |
+
+**Indexes:**
+- `user_id` - For efficient user like queries
+- `frarticle_id` - For article like lookups
+- `(user_id, is_positive)` - Composite index for filtering likes/dislikes
+- Unique constraint on `(user_id, frarticle_id)` - Prevents duplicate votes
+
 ## Entity Relationship
 
 **FRArticle** is a standalone entity with no foreign key relationships to other tables. Each Federal Register document maps to exactly one FRArticle.
@@ -94,11 +112,18 @@ User bookmarks for articles. Allows authenticated users to save articles for lat
 - One article can be bookmarked by many users
 - The unique constraint ensures each user can only bookmark an article once
 
+**Like** creates a many-to-many relationship between Users and FRArticles:
+- One user can like/dislike many articles
+- One article can be liked/disliked by many users
+- The unique constraint ensures each user can only have one vote per article
+- Clicking the same vote again removes it; clicking a different vote updates it
+
 **Duplicate Prevention:**
 - `document_number` has a unique constraint - prevents duplicate Federal Register documents
 - `source_url` has a unique constraint - prevents duplicate articles
 - The scraper checks both fields before creating new FRArticles
 - Bookmarks have a unique constraint on `(user_id, frarticle_id)` to prevent duplicate bookmarks
+- Likes have a unique constraint on `(user_id, frarticle_id)` to prevent duplicate votes
 
 **API Usage:**
 - Articles can be retrieved by ID: `GET /api/feed/{article_id}`
@@ -106,12 +131,20 @@ User bookmarks for articles. Allows authenticated users to save articles for lat
 - Toggle bookmark: `POST /api/bookmarks/toggle` with `{frarticle_id: <id>}`
 - Get user bookmarks: `GET /api/bookmarks`
 - Remove bookmark: `DELETE /api/bookmarks/{frarticle_id}`
+- Toggle like/dislike: `POST /api/likes/toggle` with `{frarticle_id: <id>, is_positive: <true/false>}`
+- Get like status: `GET /api/likes/status/{frarticle_id}`
+- Get like counts: `GET /api/likes/counts/{frarticle_id}`
+- Remove like: `DELETE /api/likes/{frarticle_id}`
 
 ## Pydantic Schemas
 
 ### ArticleResponse
 Used for API responses listing articles (based on FRArticle model).
-- id, document_number, title, summary, source_url, published_at, created_at, is_bookmarked (optional, indicates if current user has bookmarked)
+- id, document_number, title, summary, source_url, published_at, created_at
+- is_bookmarked (optional, indicates if current user has bookmarked)
+- user_like_status (optional, null = no vote, true = liked, false = disliked)
+- likes_count (total number of likes)
+- dislikes_count (total number of dislikes)
 
 ### ArticleDetail
 Extended response for single article views.
@@ -133,3 +166,12 @@ Response schema for bookmark operations.
 ### BookmarkedArticleResponse
 Response schema for bookmarked articles with article details.
 - id, document_number, title, summary, source_url, published_at, created_at, bookmarked_at
+
+### LikeToggle
+Request schema for toggling like/dislike status.
+- frarticle_id: int
+- is_positive: bool (True for like, False for dislike)
+
+### LikeResponse
+Response schema for like operations.
+- id, user_id, frarticle_id, is_positive, created_at, updated_at

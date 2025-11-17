@@ -10,6 +10,9 @@ export interface Article {
   created_at: string
   is_bookmarked?: boolean
   document_number?: string
+  user_like_status?: boolean | null  // null = no vote, true = liked, false = disliked
+  likes_count?: number
+  dislikes_count?: number
 }
 
 export interface BookmarkedArticle {
@@ -100,6 +103,42 @@ export function useRemoveBookmarkMutation() {
       queryClient.invalidateQueries({ queryKey: ['feed'] })
       queryClient.invalidateQueries({ queryKey: ['article'] })
       queryClient.invalidateQueries({ queryKey: ['bookmarks'] })
+    },
+  })
+}
+
+// Like queries and mutations
+export function useToggleLikeMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ articleId, isPositive }: { articleId: number; isPositive: boolean }) => {
+      const { data } = await client.post('/api/likes/toggle', {
+        frarticle_id: articleId,
+        is_positive: isPositive,
+      })
+      return data
+    },
+    onSuccess: () => {
+      // Invalidate feed queries to update like status
+      queryClient.invalidateQueries({ queryKey: ['feed'] })
+      queryClient.invalidateQueries({ queryKey: ['article'] })
+    },
+  })
+}
+
+export function useRemoveLikeMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (articleId: number) => {
+      const { data } = await client.delete(`/api/likes/${articleId}`)
+      return data
+    },
+    onSuccess: () => {
+      // Invalidate queries to update UI
+      queryClient.invalidateQueries({ queryKey: ['feed'] })
+      queryClient.invalidateQueries({ queryKey: ['article'] })
     },
   })
 }

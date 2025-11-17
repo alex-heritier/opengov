@@ -1,9 +1,9 @@
 import React from 'react'
-import { ExternalLink, FileText, Bookmark, BookmarkCheck } from 'lucide-react'
+import { ExternalLink, FileText, Bookmark, BookmarkCheck, ThumbsUp, ThumbsDown } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import DOMPurify from 'dompurify'
 import { Button } from '@/components/ui/button'
-import { useToggleBookmarkMutation } from '@/api/queries'
+import { useToggleBookmarkMutation, useToggleLikeMutation } from '@/api/queries'
 import { useAuthStore } from '@/stores/authStore'
 
 interface ArticleCardProps {
@@ -14,6 +14,9 @@ interface ArticleCardProps {
   published_at: string
   document_number?: string | null
   is_bookmarked?: boolean
+  user_like_status?: boolean | null
+  likes_count?: number
+  dislikes_count?: number
 }
 
 export const ArticleCard: React.FC<ArticleCardProps> = ({
@@ -24,9 +27,13 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   published_at: _published_at,
   document_number,
   is_bookmarked = false,
+  user_like_status = null,
+  likes_count = 0,
+  dislikes_count = 0,
 }) => {
   const { isAuthenticated } = useAuthStore()
   const toggleBookmark = useToggleBookmarkMutation()
+  const toggleLike = useToggleLikeMutation()
 
   // Sanitize summary to prevent XSS attacks
   const sanitizedSummary = DOMPurify.sanitize(summary, {
@@ -37,6 +44,16 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const handleToggleBookmark = async () => {
     if (!id) return
     await toggleBookmark.mutateAsync(id)
+  }
+
+  const handleLike = async () => {
+    if (!id) return
+    await toggleLike.mutateAsync({ articleId: id, isPositive: true })
+  }
+
+  const handleDislike = async () => {
+    if (!id) return
+    await toggleLike.mutateAsync({ articleId: id, isPositive: false })
   }
 
   return (
@@ -86,26 +103,50 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
             </a>
           </Button>
           {isAuthenticated && (
-            <Button
-              variant={is_bookmarked ? "default" : "outline"}
-              size="sm"
-              onClick={handleToggleBookmark}
-              disabled={toggleBookmark.isPending}
-              className="text-xs sm:text-sm h-8 px-3"
-              aria-label={is_bookmarked ? "Remove bookmark" : "Bookmark article"}
-            >
-              {is_bookmarked ? (
-                <>
-                  <BookmarkCheck className="w-4 h-4" />
-                  Bookmarked
-                </>
-              ) : (
-                <>
-                  <Bookmark className="w-4 h-4" />
-                  Bookmark
-                </>
-              )}
-            </Button>
+            <>
+              <Button
+                variant={user_like_status === true ? "default" : "outline"}
+                size="sm"
+                onClick={handleLike}
+                disabled={toggleLike.isPending}
+                className="text-xs sm:text-sm h-8 px-3"
+                aria-label="Like article"
+              >
+                <ThumbsUp className="w-4 h-4" />
+                {likes_count > 0 && <span className="ml-1">{likes_count}</span>}
+              </Button>
+              <Button
+                variant={user_like_status === false ? "default" : "outline"}
+                size="sm"
+                onClick={handleDislike}
+                disabled={toggleLike.isPending}
+                className="text-xs sm:text-sm h-8 px-3"
+                aria-label="Dislike article"
+              >
+                <ThumbsDown className="w-4 h-4" />
+                {dislikes_count > 0 && <span className="ml-1">{dislikes_count}</span>}
+              </Button>
+              <Button
+                variant={is_bookmarked ? "default" : "outline"}
+                size="sm"
+                onClick={handleToggleBookmark}
+                disabled={toggleBookmark.isPending}
+                className="text-xs sm:text-sm h-8 px-3"
+                aria-label={is_bookmarked ? "Remove bookmark" : "Bookmark article"}
+              >
+                {is_bookmarked ? (
+                  <>
+                    <BookmarkCheck className="w-4 h-4" />
+                    Bookmarked
+                  </>
+                ) : (
+                  <>
+                    <Bookmark className="w-4 h-4" />
+                    Bookmark
+                  </>
+                )}
+              </Button>
+            </>
           )}
         </div>
       </div>
