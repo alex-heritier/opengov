@@ -1,34 +1,51 @@
 from datetime import datetime
+from typing import Optional
+from fastapi_users import schemas
 from pydantic import BaseModel, EmailStr
 
 
-class UserBase(BaseModel):
-    """Base user schema"""
-    email: EmailStr
-    name: str | None = None
-    picture_url: str | None = None
-
-
-class UserCreate(UserBase):
-    """Schema for creating a user"""
-    google_id: str
-
-
-class UserUpdate(BaseModel):
-    """Schema for updating a user"""
-    name: str | None = None
-    picture_url: str | None = None
-
-
-class UserResponse(UserBase):
-    """Schema for user response"""
+class UserRead(schemas.BaseUser[int]):
+    """Schema for reading user data"""
     id: int
-    google_id: str | None
+    email: str
+    name: Optional[str] = None
+    picture_url: Optional[str] = None
+    google_id: Optional[str] = None
+    is_active: bool
+    is_superuser: bool
+    is_verified: bool
+    created_at: datetime
+    updated_at: datetime
+    last_login_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class UserCreate(schemas.BaseUserCreate):
+    """Schema for creating a user"""
+    name: Optional[str] = None
+
+
+class UserUpdate(schemas.BaseUserUpdate):
+    """Schema for updating a user"""
+    name: Optional[str] = None
+    picture_url: Optional[str] = None
+
+
+# Legacy schemas for backward compatibility
+class UserResponse(BaseModel):
+    """Schema for user response (legacy)"""
+    id: int
+    email: str
+    name: Optional[str] = None
+    picture_url: Optional[str] = None
+    google_id: Optional[str] = None
     is_active: bool
     is_verified: bool
     created_at: datetime
     updated_at: datetime
-    last_login_at: datetime | None
+    last_login_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
