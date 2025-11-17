@@ -1,8 +1,24 @@
-# Google OAuth Implementation Guide
+# Google OAuth 2.0 Integration (Phase 2)
 
-Complete step-by-step implementation for Google OAuth 2.0 authentication with JWT tokens and localStorage.
+Add Google OAuth login to the existing fastapi-users authentication system. Users can sign in with Google, and their account will be linked to their email and stored in the User model with profile data.
 
-See `docs/auth.md` for architecture overview.
+**Current System:** fastapi-users with email/password + cookies (see `docs/auth.md`)
+
+**This adds:** Google OAuth option alongside email/password
+
+---
+
+## Overview
+
+When implemented:
+1. User clicks "Sign in with Google"
+2. Redirects to Google login
+3. On approval, user is authenticated
+4. OpenGov creates/links user account automatically
+5. Auth cookie is set (same as email/password flow)
+6. User is logged in
+
+No changes needed to the frontend's token handling or auth store—fastapi-users handles everything via cookies.
 
 ---
 
@@ -12,480 +28,253 @@ See `docs/auth.md` for architecture overview.
 
 ```bash
 cd backend
-uv add authlib python-jose[cryptography] python-multipart
+uv add authlib[client]
 ```
 
 ### 2. Environment Variables
 
-Create `backend/.env`:
+Add to `backend/.env`:
 ```bash
+# Google OAuth (get from https://console.cloud.google.com/)
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-client-secret
 GOOGLE_REDIRECT_URI=http://localhost:8000/api/auth/google/callback
-JWT_SECRET_KEY=$(python -c "import secrets; print(secrets.token_urlsafe(32))")
-JWT_ALGORITHM=HS256
-JWT_ACCESS_TOKEN_EXPIRE_MINUTES=60
-FRONTEND_URL=http://localhost:5173
+
+# In production:
+# GOOGLE_REDIRECT_URI=https://yourdomain.com/api/auth/google/callback
 ```
 
 ### 3. Update Config
 
 `backend/app/config.py`:
 ```python
+from pydantic import SecretStr
+
 class Settings:
-    # ... existing ...
+    # ... existing settings ...
 
-    # Google OAuth
+    # Google OAuth (Phase 2)
     GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
-    GOOGLE_CLIENT_SECRET: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
-    GOOGLE_REDIRECT_URI: str = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/auth/google/callback")
-
-    # JWT
-    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "")
-    JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
-    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
-
-    # Frontend
-    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
-```
-
-### 4. Create User Model
-
-`backend/app/models/user.py`:
-```python
-from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, DateTime, Boolean
-from app.database import Base
-
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(255), unique=True, nullable=False, index=True)
-    google_id = Column(String(255), unique=True, nullable=True, index=True)
-    name = Column(String(255), nullable=True)
-    picture_url = Column(String(500), nullable=True)
-    is_active = Column(Boolean, default=True, nullable=False)
-    is_verified = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
-    last_login_at = Column(DateTime, nullable=True)
-```
-
-Update `backend/app/models/__init__.py`:
-```python
-from .user import User
-__all__ = ["Article", "FederalRegister", "Agency", "User"]
-```
-
-### 5. Create Migration
-
-`backend/migrations/versions/003_add_users_table.py`:
-```python
-"""Add users table"""
-from alembic import op
-import sqlalchemy as sa
-
-revision = "003_add_users_table"
-down_revision = "002_add_agencies_table"
-
-def upgrade() -> None:
-    op.create_table(
-        "users",
-        sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("email", sa.String(255), nullable=False),
-        sa.Column("google_id", sa.String(255), nullable=True),
-        sa.Column("name", sa.String(255), nullable=True),
-        sa.Column("picture_url", sa.String(500), nullable=True),
-        sa.Column("is_active", sa.Boolean(), nullable=False, server_default="1"),
-        sa.Column("is_verified", sa.Boolean(), nullable=False, server_default="0"),
-        sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(), nullable=False),
-        sa.Column("last_login_at", sa.DateTime(), nullable=True),
-        sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("email"),
-        sa.UniqueConstraint("google_id"),
+    GOOGLE_CLIENT_SECRET: SecretStr = SecretStr(
+        os.getenv("GOOGLE_CLIENT_SECRET", "")
     )
-    op.create_index("ix_users_id", "users", ["id"])
-    op.create_index("ix_users_email", "users", ["email"])
-    op.create_index("ix_users_google_id", "users", ["google_id"])
-
-def downgrade() -> None:
-    op.drop_table("users")
+    GOOGLE_REDIRECT_URI: str = os.getenv(
+        "GOOGLE_REDIRECT_URI", 
+        "http://localhost:8000/api/auth/google/callback"
+    )
 ```
 
-Run: `alembic upgrade head`
+### 4. Create OAuth Service
 
----
-
-## Phase 2: Backend Services
-
-### Auth Service
-
-`backend/app/services/auth.py`:
+`backend/app/services/google_oauth.py` (new file):
 ```python
-from datetime import datetime, timedelta, timezone
-from typing import Optional
-from jose import JWTError, jwt
+"""Google OAuth provider for fastapi-users integration"""
+from authlib.integrations.httpx_client import AsyncOAuth2Client
 from app.config import settings
 
-def create_access_token(data: dict) -> str:
-    """Create JWT with 1-hour expiration"""
-    to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc)})
-    return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
-def verify_access_token(token: str) -> Optional[dict]:
-    """Verify and decode JWT"""
-    try:
-        return jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
-    except JWTError:
-        return None
+class GoogleOAuthProvider:
+    """Helper for Google OAuth with fastapi-users"""
+
+    @staticmethod
+    def get_authorization_url(state: str) -> str:
+        """Generate Google OAuth authorization URL"""
+        client = AsyncOAuth2Client(
+            client_id=settings.GOOGLE_CLIENT_ID,
+            redirect_uri=settings.GOOGLE_REDIRECT_URI,
+        )
+        return client.create_authorization_url(
+            "https://accounts.google.com/o/oauth2/v2/auth",
+            scope=["openid", "email", "profile"],
+            state=state,
+        )[0]
+
+    @staticmethod
+    async def exchange_code_for_token(code: str) -> dict:
+        """Exchange authorization code for access token"""
+        async with AsyncOAuth2Client(
+            client_id=settings.GOOGLE_CLIENT_ID,
+            client_secret=settings.GOOGLE_CLIENT_SECRET.get_secret_value(),
+            redirect_uri=settings.GOOGLE_REDIRECT_URI,
+        ) as client:
+            token = await client.fetch_token(
+                "https://oauth2.googleapis.com/token",
+                code=code,
+            )
+            return token
+
+    @staticmethod
+    async def get_user_info(token: dict) -> dict:
+        """Fetch user info from Google"""
+        async with AsyncOAuth2Client(
+            client_id=settings.GOOGLE_CLIENT_ID,
+            token=token,
+        ) as client:
+            response = await client.get(
+                "https://openidconnect.googleapis.com/v1/userinfo",
+            )
+            return response.json()
 ```
 
-### Google OAuth Service
+### 5. Add OAuth Router
 
-`backend/app/services/google_oauth.py`:
+`backend/app/routers/oauth.py` (new file):
 ```python
-from authlib.integrations.starlette_client import OAuth
-from app.config import settings
-
-oauth = OAuth()
-oauth.register(
-    name="google",
-    client_id=settings.GOOGLE_CLIENT_ID,
-    client_secret=settings.GOOGLE_CLIENT_SECRET,
-    server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
-    client_kwargs={"scope": "openid email profile"},
-)
-```
-
-### Auth Dependency
-
-`backend/app/dependencies/auth.py`:
-```python
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
-from app.routers.common import get_db
-from app.services.auth import verify_access_token
-from app.models import User
-
-security = HTTPBearer()
-
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db),
-) -> User:
-    """Get current authenticated user from JWT"""
-    payload = verify_access_token(credentials.credentials)
-    if not payload:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-
-    user = db.query(User).filter(User.id == int(payload.get("sub"))).first()
-    if not user or not user.is_active:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
-
-    return user
-```
-
----
-
-## Phase 3: Backend Endpoints
-
-### Auth Schemas
-
-`backend/app/schemas/auth.py`:
-```python
-from datetime import datetime
-from pydantic import BaseModel
-
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    expires_in: int
-
-class UserResponse(BaseModel):
-    id: int
-    email: str
-    name: str | None
-    picture_url: str | None
-    is_verified: bool
-    created_at: datetime
-    last_login_at: datetime | None
-
-    class Config:
-        from_attributes = True
-```
-
-### Auth Router
-
-`backend/app/routers/auth.py`:
-```python
+"""Google OAuth endpoints"""
 import logging
+import secrets
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
+from app.auth import get_user_db, get_user_manager
 from app.routers.common import get_db, limiter
-from app.models import User
-from app.schemas.auth import TokenResponse, UserResponse
-from app.services.auth import create_access_token
-from app.services.google_oauth import oauth
-from app.dependencies.auth import get_current_user
+from app.models.user import User
+from app.services.google_oauth import GoogleOAuthProvider
 from app.config import settings
+from fastapi_users.db import SQLAlchemyUserDatabase
+from fastapi_users import BaseUserManager
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/auth", tags=["auth"])
+router = APIRouter(prefix="/api/auth/google", tags=["oauth"])
 
-@router.get("/google/login")
-@limiter.limit("10/minute")
-async def google_login(request: Request):
-    """Initiate Google OAuth"""
-    return await oauth.google.authorize_redirect(request, settings.GOOGLE_REDIRECT_URI)
+# Store for OAuth state (in production, use Redis or database)
+_oauth_states = {}
 
-@router.get("/google/callback")
+
+@router.get("/login")
 @limiter.limit("10/minute")
-async def google_callback(request: Request, db: Session = Depends(get_db)):
-    """Handle OAuth callback"""
+async def google_login(request):
+    """Initiate Google OAuth flow"""
+    state = secrets.token_urlsafe(32)
+    _oauth_states[state] = True
+    
+    auth_url = GoogleOAuthProvider.get_authorization_url(state)
+    return RedirectResponse(url=auth_url)
+
+
+@router.get("/callback")
+@limiter.limit("10/minute")
+async def google_callback(
+    code: str = Query(...),
+    state: str = Query(...),
+    db: Session = Depends(get_db),
+    user_db: SQLAlchemyUserDatabase = Depends(get_user_db),
+    user_manager: BaseUserManager = Depends(get_user_manager),
+):
+    """Handle Google OAuth callback"""
+    
+    # Verify state
+    if state not in _oauth_states:
+        logger.warning(f"Invalid OAuth state: {state}")
+        raise HTTPException(status_code=400, detail="Invalid state parameter")
+    
+    del _oauth_states[state]
+    
     try:
-        token = await oauth.google.authorize_access_token(request)
-        user_info = token.get("userinfo")
-        if not user_info:
-            raise ValueError("No user info")
-
+        # Exchange code for token
+        token = await GoogleOAuthProvider.exchange_code_for_token(code)
+        
+        # Get user info from Google
+        user_info = await GoogleOAuthProvider.get_user_info(token)
+        
+        if "sub" not in user_info:
+            logger.error("No Google ID in user info")
+            return RedirectResponse(
+                url=f"{settings.FRONTEND_URL}/login?error=invalid_user_info"
+            )
+        
+        google_id = user_info["sub"]
+        email = user_info.get("email")
+        
         # Find or create user
-        user = db.query(User).filter(User.google_id == user_info["sub"]).first()
+        user = db.query(User).filter(User.google_id == google_id).first()
+        
         if not user:
-            user = db.query(User).filter(User.email == user_info["email"]).first()
+            # Check if email already exists (email/password user)
+            user = db.query(User).filter(User.email == email).first()
+            
             if user:
-                user.google_id = user_info["sub"]
+                # Link Google account to existing user
+                user.google_id = google_id
+                user.name = user_info.get("name", user.name)
+                user.picture_url = user_info.get("picture", user.picture_url)
+                logger.info(f"Linked Google account to existing user: {user.id}")
             else:
+                # Create new user from Google info
                 user = User(
-                    email=user_info["email"],
-                    google_id=user_info["sub"],
+                    email=email,
+                    google_id=google_id,
                     name=user_info.get("name"),
                     picture_url=user_info.get("picture"),
                     is_verified=user_info.get("email_verified", False),
+                    hashed_password="",  # OAuth users have no password initially
+                    is_active=True,
                 )
                 db.add(user)
+                logger.info(f"Created new user from Google: {email}")
         else:
+            # Update profile info
             user.name = user_info.get("name", user.name)
             user.picture_url = user_info.get("picture", user.picture_url)
-
+            if user_info.get("email_verified"):
+                user.is_verified = True
+        
         user.last_login_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(user)
-
-        access_token = create_access_token({"sub": str(user.id), "email": user.email})
-        return RedirectResponse(f"{settings.FRONTEND_URL}/auth/callback?access_token={access_token}")
-
+        
+        # Login user via fastapi-users (sets auth cookie)
+        from app.auth import auth_backend
+        response = RedirectResponse(url=f"{settings.FRONTEND_URL}/feed")
+        
+        # Get token from fastapi-users and set cookie
+        token = auth_backend.get_strategy().encode_token(
+            {"user_id": str(user.id)}
+        )
+        auth_backend.transport.set_login_cookie(response, token)
+        
+        logger.info(f"Google OAuth successful for user: {user.id} ({user.email})")
+        return response
+        
     except Exception as e:
-        logger.error(f"OAuth error: {e}", exc_info=True)
-        return RedirectResponse(f"{settings.FRONTEND_URL}/auth/error?message=Authentication failed")
-
-@router.post("/renew", response_model=TokenResponse)
-@limiter.limit("20/minute")
-async def renew_token(request: Request, current_user: User = Depends(get_current_user)):
-    """Renew access token"""
-    access_token = create_access_token({"sub": str(current_user.id), "email": current_user.email})
-    return TokenResponse(
-        access_token=access_token,
-        expires_in=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-    )
-
-@router.post("/logout")
-async def logout():
-    """Logout (client clears token)"""
-    return {"message": "Logged out"}
-
-@router.get("/me", response_model=UserResponse)
-@limiter.limit("100/minute")
-async def get_me(request: Request, current_user: User = Depends(get_current_user)):
-    """Get current user"""
-    return current_user
+        logger.error(f"Google OAuth error: {e}", exc_info=True)
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/login?error=oauth_error"
+        )
 ```
 
-### Register Router
+### 6. Register OAuth Router
 
-`backend/app/main.py`:
+`backend/app/main.py` (add after auth router includes):
 ```python
-from app.routers import auth
-app.include_router(auth.router)
-
-# Add security headers
-@app.middleware("http")
-async def add_security_headers(request: Request, call_next):
-    response = await call_next(request)
-    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    return response
+# Include OAuth router
+from app.routers import oauth
+app.include_router(oauth.router)
 ```
 
 ---
 
-## Phase 4: Frontend
-
-### Auth Store
-
-`frontend/src/stores/authStore.ts`:
-```typescript
-import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
-import { jwtDecode } from 'jwt-decode'
-
-interface User {
-  id: number
-  email: string
-  name: string | null
-  picture_url: string | null
-  is_verified: boolean
-}
-
-interface AuthState {
-  user: User | null
-  accessToken: string | null
-  tokenExpiresAt: number | null
-  isAuthenticated: boolean
-  setAuth: (accessToken: string, user: User) => void
-  clearAuth: () => void
-  isTokenExpiringSoon: () => boolean
-}
-
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      user: null,
-      accessToken: null,
-      tokenExpiresAt: null,
-      isAuthenticated: false,
-
-      setAuth: (accessToken, user) => {
-        const decoded = jwtDecode<{ exp: number }>(accessToken)
-        set({ accessToken, user, tokenExpiresAt: decoded.exp * 1000, isAuthenticated: true })
-      },
-
-      clearAuth: () => set({ user: null, accessToken: null, tokenExpiresAt: null, isAuthenticated: false }),
-
-      isTokenExpiringSoon: () => {
-        const { tokenExpiresAt } = get()
-        if (!tokenExpiresAt) return true
-        return (tokenExpiresAt - Date.now()) < 10 * 60 * 1000 // <10 min
-      },
-    }),
-    { name: 'opengov-auth', storage: createJSONStorage(() => localStorage) }
-  )
-)
-```
-
-### API Client
-
-`frontend/src/api/client.ts`:
-```typescript
-import axios from 'axios'
-import { useAuthStore } from '@/stores/authStore'
-
-const apiClient = axios.create({
-  baseURL: 'http://localhost:8000',
-  headers: { 'Content-Type': 'application/json' },
-})
-
-// Auto-renew token if expiring
-apiClient.interceptors.request.use(async (config) => {
-  const { accessToken, isTokenExpiringSoon, setAuth, clearAuth } = useAuthStore.getState()
-
-  if (!accessToken) return config
-
-  if (isTokenExpiringSoon()) {
-    try {
-      const { data } = await axios.post('http://localhost:8000/api/auth/renew', {}, {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      })
-      const userRes = await axios.get('http://localhost:8000/api/auth/me', {
-        headers: { Authorization: `Bearer ${data.access_token}` }
-      })
-      setAuth(data.access_token, userRes.data)
-      config.headers.Authorization = `Bearer ${data.access_token}`
-    } catch {
-      clearAuth()
-      window.location.href = '/login'
-    }
-  } else {
-    config.headers.Authorization = `Bearer ${accessToken}`
-  }
-
-  return config
-})
-
-// Handle 401
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      useAuthStore.getState().clearAuth()
-      window.location.href = '/login'
-    }
-    return Promise.reject(error)
-  }
-)
-
-export default apiClient
-```
-
-### Auth Callback Page
-
-`frontend/src/pages/AuthCallbackPage.tsx`:
-```typescript
-import { useEffect } from 'react'
-import { useNavigate } from '@tanstack/react-router'
-import { useAuthStore } from '@/stores/authStore'
-import apiClient from '@/api/client'
-
-export default function AuthCallbackPage() {
-  const navigate = useNavigate()
-  const setAuth = useAuthStore((state) => state.setAuth)
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const accessToken = params.get('access_token')
-
-    if (!accessToken) {
-      navigate({ to: '/login' })
-      return
-    }
-
-    apiClient.get('/api/auth/me', {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    }).then(({ data }) => {
-      setAuth(accessToken, data)
-      navigate({ to: '/feed' })
-    }).catch(() => {
-      navigate({ to: '/login' })
-    })
-  }, [navigate, setAuth])
-
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold mb-4">Signing in...</h2>
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-      </div>
-    </div>
-  )
-}
-```
+## Phase 2: Frontend
 
 ### Google Login Button
 
 `frontend/src/components/auth/GoogleLoginButton.tsx`:
 ```typescript
+import { Button } from '@/components/ui/button'
+
 export default function GoogleLoginButton() {
+  const handleGoogleLogin = () => {
+    // Redirect to backend OAuth flow
+    // Backend handles everything: Google redirect, login, cookie setting
+    window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/google/login`
+  }
+
   return (
-    <button
-      onClick={() => window.location.href = 'http://localhost:8000/api/auth/google/login'}
-      className="flex items-center gap-3 px-6 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+    <Button
+      onClick={handleGoogleLogin}
+      variant="outline"
+      className="w-full flex items-center gap-3"
     >
       <svg className="w-5 h-5" viewBox="0 0 24 24">
         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -493,46 +282,167 @@ export default function GoogleLoginButton() {
         <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
         <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
       </svg>
-      <span className="font-semibold text-gray-700">Sign in with Google</span>
-    </button>
+      Sign in with Google
+    </Button>
+  )
+}
+```
+
+### Login Page Update
+
+Add the button to `frontend/src/pages/AuthLoginPage.tsx`:
+```typescript
+import GoogleLoginButton from '@/components/auth/GoogleLoginButton'
+
+export default function AuthLoginPage() {
+  return (
+    <div className="space-y-4">
+      {/* Email/password form */}
+      <form>{/* ... */}</form>
+      
+      {/* Divider */}
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-300"></div>
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-2 bg-white text-gray-500">Or continue with</span>
+        </div>
+      </div>
+      
+      {/* Google OAuth */}
+      <GoogleLoginButton />
+    </div>
   )
 }
 ```
 
 ---
 
-## Testing
+## How It Works
 
-**Backend:**
-```bash
-cd backend
-uvicorn app.main:app --reload
-# Visit http://localhost:8000/api/auth/google/login
-```
+### User Journey
 
-**Frontend:**
-```bash
-cd frontend
-npm run dev
-# Click "Sign in with Google"
-# Check localStorage for 'opengov-auth'
-```
+1. **Frontend:** User clicks "Sign in with Google"
+2. **Frontend → Backend:** Redirect to `/api/auth/google/login`
+3. **Backend → Google:** Generate OAuth URL, redirect to Google login
+4. **Google:** User approves
+5. **Google → Backend:** Redirect to callback with `code` & `state`
+6. **Backend:** Exchange code for Google access token, fetch user info
+7. **Backend:** Find or create/link User in database
+8. **Backend:** Set auth cookie via fastapi-users
+9. **Backend → Frontend:** Redirect to `/feed`
+10. **Frontend:** Auth store detects cookie, user is logged in
+
+### Key Differences from Email/Password Flow
+
+- No token in URL
+- No localStorage needed
+- Cookie is set automatically by backend
+- User profile fields updated from Google
+
+### Account Linking
+
+If a user signs up with email/password, then later tries Google OAuth with the same email:
+- Backend finds existing user by email
+- Links Google ID to that account
+- User can now login with either method
 
 ---
 
 ## Deployment
 
-1. Set up Google OAuth credentials at https://console.cloud.google.com/
-2. Add production redirect URI: `https://yourdomain.com/api/auth/google/callback`
-3. Set environment variables in production
-4. Enable HTTPS
-5. Test OAuth flow
+### 1. Get Google OAuth Credentials
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create OAuth 2.0 credentials (Web Application)
+3. Add authorized redirect URIs:
+   - Development: `http://localhost:8000/api/auth/google/callback`
+   - Production: `https://yourdomain.com/api/auth/google/callback`
+
+### 2. Set Environment Variables
+
+```bash
+# Production
+GOOGLE_CLIENT_ID=your-prod-client-id
+GOOGLE_CLIENT_SECRET=your-prod-client-secret
+GOOGLE_REDIRECT_URI=https://yourdomain.com/api/auth/google/callback
+```
+
+### 3. Production Considerations
+
+- Use Redis for OAuth state storage (instead of in-memory `_oauth_states`)
+- Ensure HTTPS is enabled
+- Set `COOKIE_SECURE=true` in auth config
+- Validate CORS origins
+
+---
+
+## State Management (Production)
+
+The current implementation stores OAuth state in memory (`_oauth_states`). For production with multiple workers:
+
+**Option 1: Redis (Recommended)**
+```python
+import redis.asyncio as redis
+
+redis_client = redis.from_url("redis://localhost")
+
+@router.get("/login")
+async def google_login():
+    state = secrets.token_urlsafe(32)
+    await redis_client.set(f"oauth_state:{state}", "1", ex=600)  # 10 min expiry
+    # ...
+
+@router.get("/callback")
+async def google_callback(state: str):
+    exists = await redis_client.delete(f"oauth_state:{state}")
+    if not exists:
+        raise HTTPException(status_code=400, detail="Invalid state")
+    # ...
+```
+
+**Option 2: Database**
+```python
+# Add OAuthState table, store state there
+# Check state exists and hasn't expired
+```
 
 ---
 
 ## Troubleshooting
 
-**OAuth fails:** Check `GOOGLE_REDIRECT_URI` matches in `.env` and Google Console
-**Token not persisting:** Check browser localStorage in DevTools
-**Token renewal fails:** Verify `/api/auth/renew` works with valid token
-**CORS errors:** Update CORS middleware to allow frontend origin
+**"Invalid state" error**
+- State expired or mismatched
+- Ensure state is stored correctly and checked before use
+
+**"Google token error"**
+- Check `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are correct
+- Verify redirect URI matches Google Console
+
+**Cookie not being set**
+- Ensure HTTPS is enabled in production
+- Check `COOKIE_SECURE` matches protocol (false for HTTP, true for HTTPS)
+- Verify CORS allows credentials
+
+**User not found after redirect**
+- Check database connection during callback
+- Review logs for SQL errors
+
+---
+
+## Testing
+
+```bash
+# Start backend
+cd backend
+uv run dev
+
+# Visit in browser
+http://localhost:8000/api/auth/google/login
+
+# Should redirect to Google login
+# After approval, should redirect to /feed with auth cookie set
+```
+
+Check browser DevTools → Cookies to verify `opengov_auth` cookie is present.

@@ -4,13 +4,16 @@
 
 The OpenGov API uses **fastapi-users** with **cookie-based authentication** for secure, session-like user management. This provides a Laravel-style authentication experience with HTTP-only secure cookies.
 
+This is the **current production authentication system** (as of Nov 2025).
+
 ## Architecture
 
-- **Library**: `fastapi-users` v12.x
+- **Library**: `fastapi-users` v12.x (currently implemented)
 - **Transport**: Cookie-based (HTTP-only, secure)
 - **Strategy**: JWT tokens stored in cookies
 - **Password Hashing**: bcrypt via passlib
 - **Database**: Async SQLAlchemy with SQLite (aiosqlite)
+- **Future**: Google OAuth 2.0 fields reserved in User model for Phase 2
 
 ## Authentication Flow
 
@@ -94,9 +97,14 @@ GET /api/users/me
   "id": 1,
   "email": "user@example.com",
   "name": "John Doe",
+  "picture_url": "https://example.com/avatar.jpg",
+  "google_id": null,
   "is_active": true,
   "is_superuser": false,
-  "is_verified": false
+  "is_verified": false,
+  "created_at": "2025-11-17T04:27:59.488665",
+  "updated_at": "2025-11-17T04:27:59.488669",
+  "last_login_at": "2025-11-17T10:30:00.000000"
 }
 ```
 
@@ -108,6 +116,23 @@ Content-Type: application/json
 {
   "name": "Jane Doe",
   "picture_url": "https://example.com/avatar.jpg"
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "id": 1,
+  "email": "user@example.com",
+  "name": "Jane Doe",
+  "picture_url": "https://example.com/avatar.jpg",
+  "google_id": null,
+  "is_active": true,
+  "is_superuser": false,
+  "is_verified": false,
+  "created_at": "2025-11-17T04:27:59.488665",
+  "updated_at": "2025-11-17T10:35:00.000000",
+  "last_login_at": "2025-11-17T10:30:00.000000"
 }
 ```
 
@@ -264,13 +289,15 @@ allow_origins=["http://localhost:5173"]  # Your frontend URL
 
 ## Future Enhancements (Phase 2)
 
-- [ ] Google OAuth integration
+- [ ] Google OAuth 2.0 integration (OAuth fields already in User schema)
 - [ ] Email verification workflow
 - [ ] Password reset email notifications
 - [ ] Two-factor authentication
 - [ ] Session management (revocation)
 - [ ] Remember me functionality
 - [ ] Account deletion workflow
+
+**Note:** Google OAuth fields (`google_id`, `picture_url`, `name`) are reserved in the User model for Phase 2 implementation. See `docs/google_oauth_plan.md` for detailed implementation plan (currently Phase 2 - not yet implemented).
 
 ## References
 

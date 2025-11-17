@@ -85,11 +85,15 @@ FederalRegister (1) ----> (many) Article
         (id)           federal_register_id [nullable]
 ```
 
-Each Federal Register entry can optionally produce an Article. The `federal_register_id` foreign key is **optional** and can be NULL, allowing articles to exist independently. When set, it ensures traceability from Article back to its source document.
+Each Federal Register entry can optionally produce an Article. The `federal_register_id` foreign key is **optional** and can be NULL, allowing articles to exist independently. When set, it ensures traceability from Article back to its source document and enables lookup by `document_number`.
 
 **Duplicate Prevention:**
 - Articles are prevented from having duplicate `source_url` values (unique constraint)
 - The scraper checks for both `source_url` and `federal_register_id` matches before creating new articles
+
+**API Usage:**
+- Articles can be retrieved by ID: `GET /api/feed/{article_id}`
+- Articles can be retrieved by Federal Register document_number: `GET /api/feed/document/{document_number}` (requires federal_register_id to be set)
 
 ## Pydantic Schemas
 
@@ -97,11 +101,14 @@ Each Federal Register entry can optionally produce an Article. The `federal_regi
 Used for API responses listing articles.
 - id, title, summary, source_url, published_at, created_at
 
+**Note:** In actual API responses from `/api/feed` endpoints, `document_number` (string, from FederalRegister table) is dynamically added when the article has an associated FederalRegister entry. This is not part of the base schema but always included in feed responses.
+
 ### ArticleDetail
 Extended response for single article views.
 - All of ArticleResponse + updated_at
+- Plus dynamically added `document_number` field (when federal_register_id is set)
 
 ### FeedResponse
 Paginated feed of articles.
-- articles: List[ArticleResponse]
+- articles: List[ArticleResponse]  (each includes document_number from FederalRegister)
 - page, limit, total, has_next

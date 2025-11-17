@@ -83,7 +83,8 @@ Retrieve paginated list of articles.
       "summary": "Engaging summary here",
       "source_url": "https://federalregister.gov/...",
       "published_at": "2024-01-15T10:30:00",
-      "created_at": "2024-01-15T11:00:00"
+      "created_at": "2024-01-15T11:00:00",
+      "document_number": "2024-01234"
     }
   ],
   "page": 1,
@@ -98,10 +99,10 @@ Retrieve paginated list of articles.
 - `400` - Invalid parameters
 - `500` - Server error
 
-### Get Article
+### Get Article by ID
 `GET /api/feed/{article_id}`
 
-Get detailed view of a single article.
+Get detailed view of a single article by ID.
 
 **Parameters:**
 - `article_id` (int) - Article ID
@@ -115,7 +116,35 @@ Get detailed view of a single article.
   "source_url": "https://federalregister.gov/...",
   "published_at": "2024-01-15T10:30:00",
   "created_at": "2024-01-15T11:00:00",
-  "updated_at": "2024-01-15T11:00:00"
+  "updated_at": "2024-01-15T11:00:00",
+  "document_number": "2024-01234"
+}
+```
+
+**Status Codes:**
+- `200` - Success
+- `404` - Article not found
+- `500` - Server error
+
+### Get Article by Document Number
+`GET /api/feed/document/{document_number}`
+
+Get article by Federal Register document number.
+
+**Parameters:**
+- `document_number` (string) - Federal Register document number (e.g., "2024-01234")
+
+**Response:**
+```json
+{
+  "id": 1,
+  "title": "Federal Register Update",
+  "summary": "Summary text",
+  "source_url": "https://federalregister.gov/...",
+  "published_at": "2024-01-15T10:30:00",
+  "created_at": "2024-01-15T11:00:00",
+  "updated_at": "2024-01-15T11:00:00",
+  "document_number": "2024-01234"
 }
 ```
 
