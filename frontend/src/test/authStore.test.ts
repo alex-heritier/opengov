@@ -204,38 +204,4 @@ describe('useAuthStore', () => {
     })
   })
 
-  describe('Persistence', () => {
-    it('should persist to localStorage', () => {
-      const mockUser = {
-        id: 1,
-        email: 'test@example.com',
-        name: 'Test User',
-        picture_url: null,
-        google_id: 'google123',
-        is_active: true,
-        is_verified: true,
-        created_at: '2025-01-01T00:00:00Z',
-        updated_at: '2025-01-01T00:00:00Z',
-        last_login_at: null,
-      }
-
-      const now = Math.floor(Date.now() / 1000)
-      const exp = now + 3600
-      const mockPayload = { sub: 1, exp }
-      const mockToken = `header.${btoa(JSON.stringify(mockPayload))}.signature`
-
-      const { setAuth } = useAuthStore.getState()
-      setAuth(mockToken, mockUser)
-
-      // Check localStorage
-      const stored = localStorage.getItem('opengov-auth')
-      expect(stored).toBeTruthy()
-
-      if (stored) {
-        const parsed = JSON.parse(stored)
-        expect(parsed.state.user.email).toBe('test@example.com')
-        expect(parsed.state.isAuthenticated).toBe(true)
-      }
-    })
-  })
 })

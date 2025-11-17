@@ -201,16 +201,37 @@ Error responses:
 
 ## Commands
 
-### Backend
+### Backend (using **uv**)
+
 ```bash
-cd backend
-uv sync                                                   # Install dependencies
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000  # Dev server
-ruff check app                                            # Lint check
-ruff check app --fix                                      # Auto-fix linting issues
-pytest                                                    # Tests
-alembic revision --autogenerate -m "message"              # Migration
-alembic upgrade head                                      # Apply migrations
+# Run these from ./backend/ (cd backend && ...)
+
+# 1. Install / update dependencies + create/use .venv automatically
+uv sync                                   # Install all dependencies (including dev)
+uv sync --frozen                          # Install without updating uv.lock (perfect for CI)
+
+# 2. Add a new dependency
+uv add fastapi uvicorn[standard]          # Production dependency
+uv add ruff pytest alembic --dev          # Dev / test dependencies
+uv add sqlalchemy psycopg2-binary         # Example regular deps
+
+# 3. Development server
+uv run dev                                # Run development server
+
+# 4. Linting & formatting
+uv run lint                               # Check the whole project
+uv run fix                                # Auto-fix and format code
+
+# 5. Tests
+uv run test                               # Run all tests
+uv run pytest -x --ff                     # Stop on first failure + run failed first
+uv run pytest --cov=app                   # With coverage
+
+# 6. Database migrations (Alembic)
+alembic revision --autogenerate -m "description"   # Create new migration
+alembic upgrade head                                   # Apply migrations to latest
+alembic downgrade -1                                   # Rollback last migration
+alembic current                                        # Show current revision
 ```
 
 ### Frontend

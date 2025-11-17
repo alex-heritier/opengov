@@ -27,8 +27,8 @@ runf:
 
 test:
 	@echo "Running tests..."
-	cd backend && pytest
-	cd frontend && npm test
+	cd backend && uv run pytest
+	cd frontend && npm test -- --run
 
 build:
 	@echo "Building frontend for production..."

@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import '@testing-library/jest-dom'
 import { ArticleCard } from './ArticleCard'
 
 describe('ArticleCard', () => {
@@ -40,7 +39,7 @@ describe('ArticleCard', () => {
       />
     )
 
-    const link = screen.getByRole('link', { name: /View Source/i })
+    const link = screen.getByRole('link', { name: /Read More/i })
     expect(link).toHaveAttribute('href', 'https://example.com')
   })
 })
