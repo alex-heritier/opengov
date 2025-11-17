@@ -52,7 +52,6 @@ opengov/
 │
 ├── docs/                           # Documentation (model.md, api.md, auth.md, etc.)
 ├── Makefile
-├── docker-compose.yml
 └── TODO.md
 ```
 

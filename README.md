@@ -21,21 +21,6 @@ OpenGov publishes real-time updates from the Federal Register with AI-powered su
 
 ## Installation
 
-### Option 1: Docker (Recommended)
-
-```bash
-# Build and start all services
-docker-compose up --build
-
-# Frontend: http://localhost
-# Backend: http://localhost:8000
-# API Docs: http://localhost:8000/docs
-```
-
-See `DOCKER.md` for detailed Docker setup and troubleshooting.
-
-### Option 2: Local Development
-
 ```bash
 # Install dependencies for both backend and frontend
 make install
