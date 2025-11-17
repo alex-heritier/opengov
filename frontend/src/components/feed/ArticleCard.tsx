@@ -1,6 +1,7 @@
 import React from 'react'
 import { ExternalLink, FileText } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
+import DOMPurify from 'dompurify'
 
 interface ArticleCardProps {
   id?: number
@@ -23,6 +24,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const colors = ['from-blue-500 to-cyan-500', 'from-purple-500 to-pink-500', 'from-orange-500 to-red-500', 'from-green-500 to-emerald-500']
   const colorIndex = title.charCodeAt(0) % colors.length
   const bgGradient = colors[colorIndex]
+  
+  // Sanitize summary to prevent XSS attacks
+  const sanitizedSummary = DOMPurify.sanitize(summary, { 
+    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'br', 'p'],
+    ALLOWED_ATTR: []
+  })
 
   return (
     <div className="rounded-lg overflow-hidden bg-white hover:shadow-lg transition-shadow">
@@ -36,7 +43,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         <h3 className="text-lg font-bold mb-2 line-clamp-2 text-gray-900">
           {title}
         </h3>
-        <p className="text-sm text-gray-600 mb-4 line-clamp-2">{summary}</p>
+        <p className="text-sm text-gray-600 mb-4 line-clamp-2" dangerouslySetInnerHTML={{ __html: sanitizedSummary }}></p>
         <div className="flex gap-3">
           {document_number && (
             <Link

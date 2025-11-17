@@ -8,8 +8,9 @@ logger = logging.getLogger(__name__)
 # Constants for Grok API calls
 GROK_MODEL = "grok-4-fast"
 GROK_TEMPERATURE = 0.7
-GROK_MAX_TOKENS = 300
-SUMMARY_MAX_FALLBACK = 200
+# Use settings if available, otherwise defaults
+GROK_MAX_TOKENS = getattr(settings, 'GROK_MAX_TOKENS', 300)
+SUMMARY_MAX_FALLBACK = getattr(settings, 'SUMMARY_MAX_FALLBACK', 200)
 
 # Prompt for generating viral, engaging summaries
 VIRAL_SUMMARY_PROMPT = """You are an expert at writing engaging, viral-worthy \

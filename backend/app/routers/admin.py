@@ -17,7 +17,7 @@ router = APIRouter(prefix="/api/admin", tags=["admin"])
 async def manual_scrape(request: Request, background_tasks: BackgroundTasks):
     """Manually trigger Federal Register scrape (10 req/min limit)"""
     logger.info("Manual scrape triggered")
-    # Add async coroutine to background tasks - FastAPI handles it properly
+    # FastAPI's BackgroundTasks supports async functions directly
     background_tasks.add_task(fetch_and_process)
     return {"status": "queued", "message": "Scrape job queued in background"}
 

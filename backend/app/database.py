@@ -4,7 +4,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.pool import StaticPool
 from app.config import settings
 
-# Synchronous engine (for existing code)
+# Synchronous engine (for existing code - use sparingly, prefer async)
 engine = create_engine(
     settings.DATABASE_URL,
     connect_args={
@@ -16,7 +16,7 @@ engine = create_engine(
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Async engine (for fastapi-users)
+# Async engine (for fastapi-users and workers)
 # Convert sqlite:/// to sqlite+aiosqlite:///
 async_database_url = settings.DATABASE_URL.replace("sqlite:///", "sqlite+aiosqlite:///")
 async_engine = create_async_engine(
@@ -30,5 +30,8 @@ AsyncSessionLocal = async_sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False,
 )
+
+# Alias for workers/background tasks
+WorkerAsyncSessionLocal = AsyncSessionLocal
 
 Base = declarative_base()

@@ -15,15 +15,20 @@ router = APIRouter(prefix="/api/feed", tags=["feed"])
 
 @router.get("", response_model=FeedResponse)
 @limiter.limit("100/minute")
-async def get_feed(
+def get_feed(
     request: Request,
     response: Response,
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
-    sort: str = Query("newest", regex="^(newest|oldest)$", description="Sort order"),
+    sort: str = Query("newest", pattern="^(newest|oldest)$", description="Sort order"),
     db: Session = Depends(get_db),
 ):
     """Get paginated list of articles with rate limiting (100 req/min)"""
+    # Prevent DoS from large offsets
+    MAX_OFFSET = 10000
+    offset = (page - 1) * limit
+    if offset > MAX_OFFSET:
+        raise HTTPException(status_code=400, detail="Page number too high")
 
     # Build query with joined federal_register to get document_number
     query = db.query(Article).options(joinedload(Article.federal_register_entry))
@@ -38,8 +43,7 @@ async def get_feed(
         query = query.order_by(Article.published_at)
 
     # Paginate
-    skip = (page - 1) * limit
-    articles = query.offset(skip).limit(limit).all()
+    articles = query.offset(offset).limit(limit).all()
 
     # Add cache headers (5 minute TTL)
     response.headers["Cache-Control"] = "public, max-age=300"
@@ -61,7 +65,7 @@ async def get_feed(
     # Build article responses with document_number
     article_responses = []
     for article in articles:
-        article_dict = ArticleResponse.from_orm(article).model_dump()
+        article_dict = ArticleResponse.model_validate(article).model_dump()
         if article.federal_register_entry:
             article_dict["document_number"] = article.federal_register_entry.document_number
         article_responses.append(ArticleResponse(**article_dict))
@@ -71,13 +75,13 @@ async def get_feed(
         page=page,
         limit=limit,
         total=total,
-        has_next=(skip + limit) < total,
+        has_next=(offset + limit) < total,
     )
 
 
 @router.get("/document/{document_number}", response_model=ArticleDetail)
 @limiter.limit("100/minute")
-async def get_article_by_document_number(
+def get_article_by_document_number(
     request: Request,
     document_number: str,
     db: Session = Depends(get_db)
@@ -100,7 +104,7 @@ async def get_article_by_document_number(
         )
 
     # Build response with document_number
-    article_dict = ArticleDetail.from_orm(article).model_dump()
+    article_dict = ArticleDetail.model_validate(article).model_dump()
     article_dict["document_number"] = article.federal_register_entry.document_number
 
     return ArticleDetail(**article_dict)
@@ -108,7 +112,7 @@ async def get_article_by_document_number(
 
 @router.get("/{article_id}", response_model=ArticleDetail)
 @limiter.limit("100/minute")
-async def get_article(request: Request, article_id: int, db: Session = Depends(get_db)):
+def get_article(request: Request, article_id: int, db: Session = Depends(get_db)):
     """Get specific article details with rate limiting"""
 
     article = (
@@ -122,7 +126,7 @@ async def get_article(request: Request, article_id: int, db: Session = Depends(g
         raise HTTPException(status_code=404, detail="Article not found")
 
     # Build response with document_number if available
-    article_dict = ArticleDetail.from_orm(article).model_dump()
+    article_dict = ArticleDetail.model_validate(article).model_dump()
     if article.federal_register_entry:
         article_dict["document_number"] = article.federal_register_entry.document_number
 

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
+import { jwtDecode } from 'jwt-decode'
 
 interface User {
   id: number
@@ -12,6 +13,11 @@ interface User {
   created_at: string
   updated_at: string
   last_login_at: string | null
+}
+
+interface JWTPayload {
+  exp: number
+  [key: string]: any
 }
 
 interface AuthState {
@@ -29,8 +35,8 @@ interface AuthState {
 // Calculate token expiration from JWT
 const getTokenExpiration = (token: string): number => {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    return payload.exp * 1000 // Convert to milliseconds
+    const decoded = jwtDecode<JWTPayload>(token)
+    return decoded.exp * 1000 // Convert to milliseconds
   } catch {
     return 0
   }

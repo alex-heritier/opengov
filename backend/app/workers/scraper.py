@@ -1,7 +1,8 @@
 import logging
 from datetime import datetime, timezone
-from sqlalchemy.orm import Session
-from app.database import SessionLocal
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.database import WorkerAsyncSessionLocal
 from app.models import Article, FederalRegister
 from app.services.federal_register import fetch_recent_documents
 from app.services.grok import summarize_text
@@ -13,23 +14,31 @@ logger = logging.getLogger(__name__)
 BATCH_SIZE = 50
 
 
-async def _insert_batch(db: Session, new_fed_entries: list, new_articles: list) -> None:
+async def _insert_batch(
+    db: AsyncSession, new_fed_entries: list, new_articles: list
+) -> None:
     """Insert a batch of federal entries and articles into the database."""
     if not new_fed_entries:
         return
-    
-    logger.debug(f"Inserting batch of {len(new_fed_entries)} fed_entries and {len(new_articles)} articles")
+
+    logger.debug(
+        f"Inserting batch of {len(new_fed_entries)} fed_entries and "
+        f"{len(new_articles)} articles"
+    )
     db.add_all(new_fed_entries)
-    db.flush()
-    
+    await db.flush()
+
     # Link articles to fed entries
     for fed_entry, article in zip(new_fed_entries, new_articles):
         article.federal_register_id = fed_entry.id
-    
+
     db.add_all(new_articles)
-    db.commit()
-    logger.info(f"✓ Batch persisted: {len(new_fed_entries)} entries and {len(new_articles)} articles")
-    
+    await db.commit()
+    logger.info(
+        f"✓ Batch persisted: {len(new_fed_entries)} entries and "
+        f"{len(new_articles)} articles"
+    )
+
     # Clear the lists
     new_fed_entries.clear()
     new_articles.clear()
@@ -45,14 +54,19 @@ async def fetch_and_process():
     3. Summarizes with Grok API
     4. Inserts Article rows
     """
-    db: Session = SessionLocal()
+    db: AsyncSession = WorkerAsyncSessionLocal()
 
     try:
-        logger.info(f"Starting scraper (looking back {settings.SCRAPER_DAYS_LOOKBACK} day(s))")
+        logger.info(
+            f"Starting scraper (looking back "
+            f"{settings.SCRAPER_DAYS_LOOKBACK} day(s))"
+        )
 
         # Fetch documents from Federal Register API
         logger.info("Fetching documents from Federal Register API...")
-        documents = await fetch_recent_documents(days=settings.SCRAPER_DAYS_LOOKBACK)
+        documents = await fetch_recent_documents(
+            days=settings.SCRAPER_DAYS_LOOKBACK
+        )
 
         if not documents:
             logger.warning("No documents fetched from Federal Register API")
@@ -72,20 +86,30 @@ async def fetch_and_process():
             try:
                 doc_number = doc.get("document_number", "UNKNOWN")
                 title = doc.get("title", "Untitled")
-                logger.debug(f"[{i}/{len(documents)}] Processing: {doc_number} - {title[:60]}")
+                logger.debug(
+                    f"[{i}/{len(documents)}] Processing: "
+                    f"{doc_number} - {title[:60]}"
+                )
 
                 # Prepare source URL for duplicate check
                 source_url = doc.get("html_url", "")
-                
-                # Check for duplicates by source_url (unique constraint) or document_number (in FederalRegister)
-                existing_article = db.query(Article).filter(
-                    Article.source_url == source_url
-                ).first()
-                
-                existing_fed_entry = db.query(FederalRegister).filter(
-                    FederalRegister.document_number == doc_number
-                ).first()
-                
+
+                # Check for duplicates by source_url (unique constraint) or
+                # document_number (in FederalRegister)
+                existing_article_result = await db.execute(
+                    select(Article).where(Article.source_url == source_url)
+                )
+                existing_article = existing_article_result.scalar_one_or_none()
+
+                existing_fed_entry_result = await db.execute(
+                    select(FederalRegister).where(
+                        FederalRegister.document_number == doc_number
+                    )
+                )
+                existing_fed_entry = (
+                    existing_fed_entry_result.scalar_one_or_none()
+                )
+
                 if existing_article or existing_fed_entry:
                     logger.debug("  → Already in database, skipping")
                     skipped_count += 1
@@ -96,7 +120,7 @@ async def fetch_and_process():
                     document_number=doc_number,
                     raw_data=doc,
                     fetched_at=datetime.now(timezone.utc),
-                    processed=True,  # Mark as processed since we're adding the article
+                    processed=True,  # Mark as processed since adding article
                 )
                 new_fed_entries.append(fed_entry)
 
@@ -116,7 +140,7 @@ async def fetch_and_process():
                 except (ValueError, TypeError):
                     published_at = datetime.now(timezone.utc)
 
-                # Prepare article (don't set federal_register_id yet, will be set after flush)
+                # Prepare article (don't set federal_register_id yet)
                 article = Article(
                     title=title,
                     summary=summary,
@@ -127,10 +151,13 @@ async def fetch_and_process():
 
                 processed_count += 1
                 logger.info(f"  ✓ Article prepared: {doc_number}")
-                
+
                 # Flush batch if threshold reached
                 if len(new_fed_entries) >= BATCH_SIZE:
-                    logger.info(f"Batch size {len(new_fed_entries)} reached, persisting...")
+                    logger.info(
+                        f"Batch size {len(new_fed_entries)} reached, "
+                        "persisting..."
+                    )
                     await _insert_batch(db, new_fed_entries, new_articles)
 
             except Exception as e:
@@ -138,15 +165,22 @@ async def fetch_and_process():
                 logger.error(
                     f"  ✗ Error processing document "
                     f"{doc.get('document_number', 'UNKNOWN')}: {e}",
-                    exc_info=True
+                    exc_info=True,
                 )
                 continue  # Skip failed items, don't rollback
 
-        logger.info(f"Processing complete. Final batch: {len(new_fed_entries)} fed_entries, {len(new_articles)} articles")
-        
+        logger.info(
+            f"Processing complete. Final batch: "
+            f"{len(new_fed_entries)} fed_entries, "
+            f"{len(new_articles)} articles"
+        )
+
         # Insert remaining articles
         if new_fed_entries:
-            logger.info(f"Persisting final batch of {len(new_fed_entries)} entries...")
+            logger.info(
+                f"Persisting final batch of {len(new_fed_entries)} "
+                "entries..."
+            )
             await _insert_batch(db, new_fed_entries, new_articles)
 
         logger.info(
@@ -156,7 +190,7 @@ async def fetch_and_process():
 
     except Exception as e:
         logger.error(f"Fatal error in scraper: {e}", exc_info=True)
-        db.rollback()  # Rollback entire batch on fatal error
+        await db.rollback()  # Rollback entire batch on fatal error
 
     finally:
-        db.close()
+        await db.close()
