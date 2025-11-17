@@ -98,11 +98,11 @@ export default function ArticleDetailPage() {
       </Button>
 
       {/* Article Header */}
-      <article className="bg-white rounded-lg shadow-lg overflow-hidden">
+      <article className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {/* Title Banner */}
-        <div className="bg-gradient-to-r from-blue-600 to-cyan-600 px-4 sm:px-8 py-4 sm:py-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-3">{article.title}</h1>
-          <div className="flex flex-wrap gap-3 sm:gap-4 text-white/90 text-xs sm:text-sm">
+        <div className="bg-gray-50 border-b border-gray-200 px-4 sm:px-8 py-4 sm:py-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">{article.title}</h1>
+          <div className="flex flex-wrap gap-3 sm:gap-4 text-gray-600 text-xs sm:text-sm">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               <span>{formattedPublishedDate}</span>
