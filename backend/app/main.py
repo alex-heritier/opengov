@@ -91,6 +91,14 @@ async def lifespan(app: FastAPI):
     finally:
         db.close()
 
+    # Run scraper once on startup
+    try:
+        logger.info("Running initial scraper on startup...")
+        await fetch_and_process()
+        logger.info("Initial scraper run completed")
+    except Exception as e:
+        logger.error(f"Initial scraper run failed: {e}", exc_info=True)
+
     scheduler.add_job(
         fetch_and_process,
         "interval",
