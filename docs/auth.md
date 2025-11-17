@@ -1,175 +1,279 @@
-# Authentication System
+# Authentication System Documentation
 
 ## Overview
 
-OpenGov uses **Google OAuth 2.0** for authentication with **JWT tokens** stored in **localStorage**. This provides secure, user-friendly authentication without managing passwords.
-
-## Design Principles
-
-- **Trust Google**: Leverage Google's authentication infrastructure
-- **Simplicity**: No refresh tokens, no database token storage - stateless JWT only
-- **Sliding Window**: Active users can renew tokens without re-authenticating
+The OpenGov API uses **fastapi-users** with **cookie-based authentication** for secure, session-like user management. This provides a Laravel-style authentication experience with HTTP-only secure cookies.
 
 ## Architecture
 
-### Flow
+- **Library**: `fastapi-users` v12.x
+- **Transport**: Cookie-based (HTTP-only, secure)
+- **Strategy**: JWT tokens stored in cookies
+- **Password Hashing**: bcrypt via passlib
+- **Database**: Async SQLAlchemy with SQLite (aiosqlite)
 
-1. User clicks "Sign in with Google"
-2. Redirect to Google OAuth consent screen
-3. Google redirects back with authorization code
-4. Backend exchanges code for user info, creates/updates user
-5. Backend issues JWT token (1 hour expiration)
-6. Frontend stores token in localStorage
-7. API calls include token in `Authorization: Bearer <token>` header
-8. Frontend auto-renews token when 50% expired (~30 min)
+## Authentication Flow
 
-### Token Strategy
+1. **Registration**: User creates account with email/password
+2. **Login**: Credentials validated, JWT token set in HTTP-only cookie
+3. **Authenticated Requests**: Cookie automatically sent with each request
+4. **Logout**: Cookie cleared from client
 
-- **Type**: Single JWT access token (no refresh tokens)
-- **Expiration**: 1 hour
-- **Storage**: localStorage via Zustand persist
-- **Renewal**: Exchange non-expired token for fresh token via `POST /api/auth/renew`
-- **Auto-Renewal**: Frontend renews when <10 minutes remaining
+## API Endpoints
 
-## Implementation
+### Public Endpoints
 
-### Backend
+#### Register
+```http
+POST /api/auth/register
+Content-Type: application/json
 
-**Environment Variables:**
+{
+  "email": "user@example.com",
+  "password": "securepassword123",
+  "name": "John Doe" (optional)
+}
+```
+
+**Response** (201 Created):
+```json
+{
+  "id": 1,
+  "email": "user@example.com",
+  "name": "John Doe",
+  "is_active": true,
+  "is_superuser": false,
+  "is_verified": false,
+  "created_at": "2025-11-17T04:27:59.488665",
+  "updated_at": "2025-11-17T04:27:59.488669"
+}
+```
+
+#### Login
+```http
+POST /api/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=user@example.com&password=securepassword123
+```
+
+**Response** (204 No Content):
+- Sets `opengov_auth` cookie with JWT token
+- Cookie is HTTP-only, secure (in production), SameSite=lax
+
+#### Logout
+```http
+POST /api/auth/logout
+```
+
+**Response** (204 No Content):
+- Clears authentication cookie
+
+#### Forgot Password
+```http
+POST /api/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "user@example.com"
+}
+```
+
+### Protected Endpoints
+
+All protected endpoints require a valid authentication cookie.
+
+#### Get Current User
+```http
+GET /api/users/me
+```
+
+**Response** (200 OK):
+```json
+{
+  "id": 1,
+  "email": "user@example.com",
+  "name": "John Doe",
+  "is_active": true,
+  "is_superuser": false,
+  "is_verified": false
+}
+```
+
+#### Update Current User
+```http
+PATCH /api/users/me
+Content-Type: application/json
+
+{
+  "name": "Jane Doe",
+  "picture_url": "https://example.com/avatar.jpg"
+}
+```
+
+## Security Features
+
+### Cookie Configuration
+
+The authentication cookie (`opengov_auth`) has the following security attributes:
+
+- **HttpOnly**: `true` - Prevents JavaScript access (XSS protection)
+- **Secure**: Configurable via `COOKIE_SECURE` environment variable
+  - `false` in development (HTTP)
+  - `true` in production (HTTPS required)
+- **SameSite**: `lax` - CSRF protection
+- **Max-Age**: Configurable via `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` (default: 60 minutes)
+
+### Password Security
+
+- **Hashing Algorithm**: bcrypt (work factor automatically managed by passlib)
+- **Minimum Password Length**: Enforced by fastapi-users (8 characters)
+- **Password Reset**: Secure token-based flow
+
+### JWT Token Security
+
+- **Secret Key**: Configured via `JWT_SECRET_KEY` environment variable
+- **Algorithm**: HS256
+- **Lifetime**: Configurable via `JWT_ACCESS_TOKEN_EXPIRE_MINUTES`
+- **Audience**: `fastapi-users:auth`
+
+## Environment Configuration
+
+### Required Variables
+
 ```bash
-GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your-client-secret
-GOOGLE_REDIRECT_URI=http://localhost:8000/api/auth/google/callback
-JWT_SECRET_KEY=your-random-secret-key-min-32-chars
+# JWT Configuration
+JWT_SECRET_KEY=<minimum 32 characters, use secrets.token_urlsafe(32)>
 JWT_ALGORITHM=HS256
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES=60
-FRONTEND_URL=http://localhost:5173
+
+# Database (async support required)
+DATABASE_URL=sqlite:///./opengov.db
+
+# Authentication Security
+COOKIE_SECURE=false  # Set to 'true' in production with HTTPS
 ```
 
-**Dependencies:**
-```txt
-authlib==1.3.0
-python-jose[cryptography]==3.3.0
-python-multipart==0.0.6
-```
+### Production Checklist
 
-**Database (Users only - no tokens table):**
+- [ ] Set `COOKIE_SECURE=true`
+- [ ] Use HTTPS/TLS for all connections
+- [ ] Generate strong `JWT_SECRET_KEY` (32+ characters)
+- [ ] Configure proper CORS origins
+- [ ] Set `ENVIRONMENT=production`
+- [ ] Enable `BEHIND_PROXY=true` if using reverse proxy
+- [ ] Configure email sending for password reset (future)
+
+## Database Schema
+
+### Users Table
+
 ```sql
 CREATE TABLE users (
     id INTEGER PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
+    hashed_password VARCHAR(1024) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    is_superuser BOOLEAN DEFAULT FALSE NOT NULL,
+    is_verified BOOLEAN DEFAULT FALSE NOT NULL,
+
+    -- Optional OAuth fields (for future Google OAuth)
     google_id VARCHAR(255) UNIQUE,
     name VARCHAR(255),
     picture_url VARCHAR(500),
-    is_active BOOLEAN DEFAULT TRUE,
-    is_verified BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
-    last_login_at TIMESTAMP
+
+    -- Timestamps
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    last_login_at DATETIME
 );
 ```
 
-**API Endpoints:**
-- `GET /api/auth/google/login` - Initiate OAuth
-- `GET /api/auth/google/callback` - Handle OAuth callback
-- `POST /api/auth/renew` - Renew token (requires valid token)
-- `POST /api/auth/logout` - Client-side only
-- `GET /api/auth/me` - Get current user
+## Migration from Old Auth System
 
-### Frontend
+If upgrading from the previous manual JWT/OAuth system:
 
-**Auth Store (Zustand):**
-```typescript
-interface AuthState {
-  user: User | null
-  accessToken: string | null
-  tokenExpiresAt: number | null
-  isAuthenticated: boolean
+1. **Backup database**: `cp opengov.db opengov.db.backup`
+2. **Run migrations**: `alembic upgrade head`
+3. **Existing users**: Will need to use password reset flow to set passwords
+4. **OAuth users**: Google OAuth fields preserved for Phase 2
 
-  setAuth: (accessToken: string, user: User) => void
-  clearAuth: () => void
-  isTokenExpiringSoon: () => boolean
-}
+## Development
 
-// Persists to localStorage automatically
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({ /* ... */ }),
-    { name: 'opengov-auth', storage: createJSONStorage(() => localStorage) }
-  )
-)
+### Testing Authentication
+
+```bash
+# Register a user
+curl -X POST http://localhost:8000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"testpass123"}'
+
+# Login (saves cookie)
+curl -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=test@example.com&password=testpass123" \
+  -c cookies.txt
+
+# Access protected endpoint
+curl -X GET http://localhost:8000/api/users/me \
+  -b cookies.txt
+
+# Logout
+curl -X POST http://localhost:8000/api/auth/logout \
+  -b cookies.txt \
+  -c cookies.txt
 ```
 
-**API Client Interceptor:**
-```typescript
-// Auto-renew token if expiring soon (<10 min)
-apiClient.interceptors.request.use(async (config) => {
-  const { accessToken, isTokenExpiringSoon, setAuth, clearAuth } = useAuthStore.getState()
+### Custom User Manager Events
 
-  if (accessToken && isTokenExpiringSoon()) {
-    try {
-      const { data } = await axios.post('/api/auth/renew', {}, {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      })
-      const user = await fetchCurrentUser(data.access_token)
-      setAuth(data.access_token, user)
-      config.headers.Authorization = `Bearer ${data.access_token}`
-    } catch {
-      clearAuth()
-      window.location.href = '/login'
-    }
-  } else if (accessToken) {
-    config.headers.Authorization = `Bearer ${accessToken}`
-  }
+The `UserManager` class in `app/auth.py` provides hooks for custom logic:
 
-  return config
-})
-```
+- `on_after_register`: Called after successful registration
+- `on_after_forgot_password`: Called when password reset requested
+- `on_after_request_verify`: Called when email verification requested
 
-## Security
+## Common Issues
 
-**Token Security:**
-- 1-hour expiration limits exposure
-- Stateless JWT - no database lookups
-- HTTPS only in production
-- Strong secret key (32+ characters)
+### Cookie Not Being Set
 
-**XSS Mitigation:**
-- Content Security Policy headers
-- Input sanitization
-- Short token lifetime
+**Cause**: CORS configuration blocking credentials
 
-**Headers (Backend):**
+**Solution**: Ensure frontend sends `credentials: 'include'` and backend has proper CORS config:
 ```python
-response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';"
-response.headers["X-Frame-Options"] = "DENY"
-response.headers["X-Content-Type-Options"] = "nosniff"
+allow_credentials=True,
+allow_origins=["http://localhost:5173"]  # Your frontend URL
 ```
 
-## Google Cloud Setup
+### 401 Unauthorized on Protected Endpoints
 
-1. Go to https://console.cloud.google.com/
-2. Create OAuth client ID (Web application)
-3. Add authorized redirect URIs:
-   - Dev: `http://localhost:8000/api/auth/google/callback`
-   - Prod: `https://yourdomain.com/api/auth/google/callback`
-4. Copy Client ID and Secret to `.env`
+**Cause**: Cookie not being sent or expired
 
-## Trade-offs
+**Solutions**:
+1. Check cookie exists in browser DevTools
+2. Verify cookie domain matches request domain
+3. Ensure cookie hasn't expired
+4. Check `COOKIE_SECURE` matches protocol (HTTP vs HTTPS)
 
-**Advantages:**
-- Simple - no token database, no refresh logic
-- Fast - no database lookups
-- Stateless - easy to scale
-- Good UX - users stay logged in, auto-renewal
+### bcrypt Warning
 
-**Disadvantages:**
-- Can't revoke tokens before expiration
-- localStorage vulnerable to XSS (mitigated by CSP + short expiration)
-- No multi-device logout
+**Issue**: Warning about `pkg_resources` deprecation
 
-## Future Enhancements
+**Impact**: Non-critical, doesn't affect functionality
 
-- Token blacklist for immediate revocation
-- httpOnly cookies for enhanced security
-- Refresh tokens for longer sessions
+**Fix**: This is a known passlib/bcrypt compatibility issue. It's handled by pinning bcrypt to v4.x.
+
+## Future Enhancements (Phase 2)
+
+- [ ] Google OAuth integration
+- [ ] Email verification workflow
+- [ ] Password reset email notifications
+- [ ] Two-factor authentication
+- [ ] Session management (revocation)
+- [ ] Remember me functionality
+- [ ] Account deletion workflow
+
+## References
+
+- [fastapi-users Documentation](https://fastapi-users.github.io/fastapi-users/)
+- [Cookie Authentication Transport](https://fastapi-users.github.io/fastapi-users/configuration/authentication/transports/#cookie)
+- [JWT Strategy](https://fastapi-users.github.io/fastapi-users/configuration/authentication/strategies/jwt/)
