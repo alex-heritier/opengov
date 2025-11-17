@@ -2,38 +2,27 @@
 
 ## Database Schema
 
-### Article
-Represents a processed government update.
+### FRArticle
+Unified model combining Federal Register raw data and processed article content. Each Federal Register document becomes one article with both raw API data and AI-processed summary for the public feed.
 
 | Field | Type | Notes |
 |-------|------|-------|
 | id | Integer | Primary key |
-| federal_register_id | Integer | Foreign key to FederalRegister (indexed, **nullable**) |
+| document_number | String(50) | Unique Federal Register ID (unique, indexed) |
+| raw_data | JSON | Complete API response (for audit/debugging) |
+| fetched_at | DateTime | When raw data was fetched from API (indexed) |
 | title | String(500) | Article headline |
 | summary | Text | AI-generated viral summary |
-| source_url | String(500) | Link to Federal Register (unique) |
+| source_url | String(500) | Link to Federal Register (unique, indexed) |
 | published_at | DateTime | Publication date (indexed) |
 | created_at | DateTime | When inserted into database |
 | updated_at | DateTime | Last update time |
 
 **Indexes:**
-- `published_at` - For efficient sorting/filtering
-- `source_url` - Enforces uniqueness, prevents duplicate articles
-
-### FederalRegister
-Raw entries from Federal Register API.
-
-| Field | Type | Notes |
-|-------|------|-------|
-| id | Integer | Primary key |
-| document_number | String(50) | Unique Federal Register ID (indexed) |
-| raw_data | JSON | Complete API response |
-| fetched_at | DateTime | When fetched (indexed) |
-| processed | Boolean | Whether Article was created (indexed) |
-
-**Indexes:**
-- `document_number` - For deduplication
-- `(processed, fetched_at)` - For finding unprocessed entries
+- `document_number` - For deduplication and lookups (unique)
+- `source_url` - Enforces uniqueness, prevents duplicate articles (unique)
+- `published_at` - For efficient sorting/filtering by date
+- `fetched_at` - For tracking scraper runs
 
 ### ScraperRun
 Execution records for scraper jobs (monitoring/observability).
@@ -80,35 +69,28 @@ Federal government agencies from Federal Register API.
 
 ## Entity Relationship
 
-```
-FederalRegister (1) ----> (many) Article
-        (id)           federal_register_id [nullable]
-```
-
-Each Federal Register entry can optionally produce an Article. The `federal_register_id` foreign key is **optional** and can be NULL, allowing articles to exist independently. When set, it ensures traceability from Article back to its source document and enables lookup by `document_number`.
+**FRArticle** is a standalone entity with no foreign key relationships to other tables. Each Federal Register document maps to exactly one FRArticle.
 
 **Duplicate Prevention:**
-- Articles are prevented from having duplicate `source_url` values (unique constraint)
-- The scraper checks for both `source_url` and `federal_register_id` matches before creating new articles
+- `document_number` has a unique constraint - prevents duplicate Federal Register documents
+- `source_url` has a unique constraint - prevents duplicate articles
+- The scraper checks both fields before creating new FRArticles
 
 **API Usage:**
 - Articles can be retrieved by ID: `GET /api/feed/{article_id}`
-- Articles can be retrieved by Federal Register document_number: `GET /api/feed/document/{document_number}` (requires federal_register_id to be set)
+- Articles can be retrieved by Federal Register document_number: `GET /api/feed/document/{document_number}`
 
 ## Pydantic Schemas
 
 ### ArticleResponse
-Used for API responses listing articles.
-- id, title, summary, source_url, published_at, created_at
-
-**Note:** In actual API responses from `/api/feed` endpoints, `document_number` (string, from FederalRegister table) is dynamically added when the article has an associated FederalRegister entry. This is not part of the base schema but always included in feed responses.
+Used for API responses listing articles (based on FRArticle model).
+- id, document_number, title, summary, source_url, published_at, created_at
 
 ### ArticleDetail
 Extended response for single article views.
-- All of ArticleResponse + updated_at
-- Plus dynamically added `document_number` field (when federal_register_id is set)
+- All of ArticleResponse + updated_at, fetched_at
 
 ### FeedResponse
 Paginated feed of articles.
-- articles: List[ArticleResponse]  (each includes document_number from FederalRegister)
+- articles: List[ArticleResponse]
 - page, limit, total, has_next

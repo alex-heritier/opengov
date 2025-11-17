@@ -3,9 +3,9 @@ import hashlib
 import json
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, Request
 from sqlalchemy import desc
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 from app.routers.common import get_db, limiter
-from app.models import Article, FederalRegister
+from app.models import FRArticle
 from app.schemas import ArticleResponse, ArticleDetail, FeedResponse
 
 logger = logging.getLogger(__name__)
@@ -30,17 +30,17 @@ def get_feed(
     if offset > MAX_OFFSET:
         raise HTTPException(status_code=400, detail="Page number too high")
 
-    # Build query with joined federal_register to get document_number
-    query = db.query(Article).options(joinedload(Article.federal_register_entry))
+    # Build query - no joins needed, document_number is a direct field
+    query = db.query(FRArticle)
 
     # Count total
     total = query.count()
 
     # Sort
     if sort == "newest":
-        query = query.order_by(desc(Article.published_at))
+        query = query.order_by(desc(FRArticle.published_at))
     else:
-        query = query.order_by(Article.published_at)
+        query = query.order_by(FRArticle.published_at)
 
     # Paginate
     articles = query.offset(offset).limit(limit).all()
@@ -62,13 +62,8 @@ def get_feed(
     etag_hash = hashlib.sha256(articles_json.encode()).hexdigest()
     response.headers["ETag"] = f'"{etag_hash}"'
 
-    # Build article responses with document_number
-    article_responses = []
-    for article in articles:
-        article_dict = ArticleResponse.model_validate(article).model_dump()
-        if article.federal_register_entry:
-            article_dict["document_number"] = article.federal_register_entry.document_number
-        article_responses.append(ArticleResponse(**article_dict))
+    # Build article responses - document_number is now a direct field
+    article_responses = [ArticleResponse.model_validate(article) for article in articles]
 
     return FeedResponse(
         articles=article_responses,
@@ -88,12 +83,10 @@ def get_article_by_document_number(
 ):
     """Get article by Federal Register document number with rate limiting"""
 
-    # Query article with joined federal_register_entry to get document_number
+    # Query article directly by document_number (no join needed)
     article = (
-        db.query(Article)
-        .join(FederalRegister, Article.federal_register_id == FederalRegister.id)
-        .filter(FederalRegister.document_number == document_number)
-        .options(joinedload(Article.federal_register_entry))
+        db.query(FRArticle)
+        .filter(FRArticle.document_number == document_number)
         .first()
     )
 
@@ -103,11 +96,7 @@ def get_article_by_document_number(
             detail=f"Article with document number '{document_number}' not found"
         )
 
-    # Build response with document_number
-    article_dict = ArticleDetail.model_validate(article).model_dump()
-    article_dict["document_number"] = article.federal_register_entry.document_number
-
-    return ArticleDetail(**article_dict)
+    return ArticleDetail.model_validate(article)
 
 
 @router.get("/{article_id}", response_model=ArticleDetail)
@@ -116,18 +105,12 @@ def get_article(request: Request, article_id: int, db: Session = Depends(get_db)
     """Get specific article details with rate limiting"""
 
     article = (
-        db.query(Article)
-        .options(joinedload(Article.federal_register_entry))
-        .filter(Article.id == article_id)
+        db.query(FRArticle)
+        .filter(FRArticle.id == article_id)
         .first()
     )
 
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
 
-    # Build response with document_number if available
-    article_dict = ArticleDetail.model_validate(article).model_dump()
-    if article.federal_register_entry:
-        article_dict["document_number"] = article.federal_register_entry.document_number
-
-    return ArticleDetail(**article_dict)
+    return ArticleDetail.model_validate(article)

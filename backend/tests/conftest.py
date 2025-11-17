@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from app.database import Base
 
 # Import all models to register them with Base.metadata BEFORE creating engine
-from app.models import Article, FederalRegister, Agency, User  # noqa: F401
+from app.models import FRArticle, Agency, User  # noqa: F401
 
 # Import app and other dependencies
 from app.main import app
