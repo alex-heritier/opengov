@@ -1,6 +1,10 @@
 import { Link } from '@tanstack/react-router'
+import { useAuthStore } from '@/stores/authStore'
+import { Bookmark } from 'lucide-react'
 
 export default function Header() {
+  const { isAuthenticated } = useAuthStore()
+
   return (
     <header className="border-b border-gray-200 bg-white sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
@@ -20,6 +24,15 @@ export default function Header() {
           >
             Feed
           </Link>
+          {isAuthenticated && (
+            <Link
+              to="/bookmarks"
+              className="text-sm sm:text-base font-medium text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors min-h-[44px] flex items-center gap-1"
+            >
+              <Bookmark className="w-4 h-4" />
+              Bookmarks
+            </Link>
+          )}
         </nav>
       </div>
     </header>

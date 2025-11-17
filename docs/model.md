@@ -67,24 +67,51 @@ Federal government agencies from Federal Register API.
 - `slug` - For lookups by slug
 - `name` - For searching/filtering by name
 
+### Bookmark
+User bookmarks for articles. Allows authenticated users to save articles for later reading.
+
+| Field | Type | Notes |
+|-------|------|-------|
+| id | Integer | Primary key |
+| user_id | Integer | Foreign key to users.id (indexed, cascade delete) |
+| frarticle_id | Integer | Foreign key to frarticles.id (indexed, cascade delete) |
+| is_bookmarked | Boolean | Bookmark status (default: True) |
+| created_at | DateTime | When bookmark was created |
+| updated_at | DateTime | Last update time |
+
+**Indexes:**
+- `user_id` - For efficient user bookmark queries
+- `frarticle_id` - For article bookmark lookups
+- `(user_id, is_bookmarked)` - Composite index for filtering active bookmarks
+- Unique constraint on `(user_id, frarticle_id)` - Prevents duplicate bookmarks
+
 ## Entity Relationship
 
 **FRArticle** is a standalone entity with no foreign key relationships to other tables. Each Federal Register document maps to exactly one FRArticle.
+
+**Bookmark** creates a many-to-many relationship between Users and FRArticles:
+- One user can bookmark many articles
+- One article can be bookmarked by many users
+- The unique constraint ensures each user can only bookmark an article once
 
 **Duplicate Prevention:**
 - `document_number` has a unique constraint - prevents duplicate Federal Register documents
 - `source_url` has a unique constraint - prevents duplicate articles
 - The scraper checks both fields before creating new FRArticles
+- Bookmarks have a unique constraint on `(user_id, frarticle_id)` to prevent duplicate bookmarks
 
 **API Usage:**
 - Articles can be retrieved by ID: `GET /api/feed/{article_id}`
 - Articles can be retrieved by Federal Register document_number: `GET /api/feed/document/{document_number}`
+- Toggle bookmark: `POST /api/bookmarks/toggle` with `{frarticle_id: <id>}`
+- Get user bookmarks: `GET /api/bookmarks`
+- Remove bookmark: `DELETE /api/bookmarks/{frarticle_id}`
 
 ## Pydantic Schemas
 
 ### ArticleResponse
 Used for API responses listing articles (based on FRArticle model).
-- id, document_number, title, summary, source_url, published_at, created_at
+- id, document_number, title, summary, source_url, published_at, created_at, is_bookmarked (optional, indicates if current user has bookmarked)
 
 ### ArticleDetail
 Extended response for single article views.
@@ -94,3 +121,15 @@ Extended response for single article views.
 Paginated feed of articles.
 - articles: List[ArticleResponse]
 - page, limit, total, has_next
+
+### BookmarkToggle
+Request schema for toggling bookmark status.
+- frarticle_id: int
+
+### BookmarkResponse
+Response schema for bookmark operations.
+- id, user_id, frarticle_id, is_bookmarked, created_at, updated_at
+
+### BookmarkedArticleResponse
+Response schema for bookmarked articles with article details.
+- id, document_number, title, summary, source_url, published_at, created_at, bookmarked_at

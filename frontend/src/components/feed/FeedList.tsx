@@ -80,6 +80,7 @@ export const FeedList: React.FC = () => {
             source_url={article.source_url}
             published_at={article.published_at}
             document_number={article.document_number}
+            is_bookmarked={article.is_bookmarked}
           />
         ))}
       </div>

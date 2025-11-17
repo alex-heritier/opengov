@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 from pydantic import BaseModel, ConfigDict
 
 
@@ -13,6 +14,7 @@ class ArticleResponse(BaseModel):
     source_url: str
     published_at: datetime
     created_at: datetime
+    is_bookmarked: Optional[bool] = False  # Whether current user has bookmarked this article
 
 
 class ArticleDetail(ArticleResponse):
