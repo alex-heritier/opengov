@@ -68,8 +68,9 @@ export const FeedList: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+    <div className="space-y-0">
+      {/* Articles List */}
+      <div className="divide-y divide-gray-200 border-t border-gray-200">
         {allArticles.map((article) => (
           <ArticleCard
             key={article.id}
@@ -85,30 +86,25 @@ export const FeedList: React.FC = () => {
 
       {/* Loading indicator */}
       {isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="divide-y divide-gray-200 border-t border-gray-200">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="rounded-lg overflow-hidden h-72 flex flex-col">
-              <Skeleton className="w-full h-32 sm:h-40" />
-              <div className="p-3 sm:p-4 flex flex-col flex-1 space-y-2">
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-2/3" />
-                <div className="mt-auto pt-4 flex gap-2">
-                  <Skeleton className="h-8 w-24" />
-                  <Skeleton className="h-8 w-32" />
-                </div>
+            <div key={i} className="py-4 sm:py-6 space-y-3">
+              <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-5/6" />
+              <div className="flex gap-2 pt-2">
+                <Skeleton className="h-8 w-24" />
+                <Skeleton className="h-8 w-32" />
               </div>
             </div>
           ))}
         </div>
       )}
 
-
-
       {/* End of feed message */}
       {!hasMore && allArticles.length > 0 && (
-        <div className="text-center py-8">
-          <p className="text-gray-500">No more articles to load.</p>
+        <div className="text-center py-8 border-t border-gray-200">
+          <p className="text-sm text-gray-500">No more articles to load.</p>
         </div>
       )}
     </div>
