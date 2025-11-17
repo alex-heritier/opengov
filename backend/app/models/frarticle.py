@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, JSON, DateTime, Boolean, Index
+from sqlalchemy import Column, Integer, String, Text, JSON, DateTime, Index
 from app.database import Base
 
 

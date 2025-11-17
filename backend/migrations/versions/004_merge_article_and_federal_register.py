@@ -9,7 +9,6 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import sqlite
 
 # revision identifiers, used by Alembic.
 revision: str = '004_merge_article_federal_register'
@@ -53,11 +52,36 @@ def upgrade() -> None:
 
     # Create indexes
     op.create_index('ix_frarticles_id', 'frarticles', ['id'], unique=False)
-    op.create_index('ix_frarticles_document_number', 'frarticles', ['document_number'], unique=True)
-    op.create_index('ix_frarticles_source_url', 'frarticles', ['source_url'], unique=True)
-    op.create_index('ix_frarticles_published_at', 'frarticles', ['published_at'], unique=False)
-    op.create_index('ix_frarticles_fetched_at', 'frarticles', ['fetched_at'], unique=False)
-    op.create_index('idx_frarticles_published_at_desc', 'frarticles', ['published_at'], unique=False)
+    op.create_index(
+        'ix_frarticles_document_number',
+        'frarticles',
+        ['document_number'],
+        unique=True
+    )
+    op.create_index(
+        'ix_frarticles_source_url',
+        'frarticles',
+        ['source_url'],
+        unique=True
+    )
+    op.create_index(
+        'ix_frarticles_published_at',
+        'frarticles',
+        ['published_at'],
+        unique=False
+    )
+    op.create_index(
+        'ix_frarticles_fetched_at',
+        'frarticles',
+        ['fetched_at'],
+        unique=False
+    )
+    op.create_index(
+        'idx_frarticles_published_at_desc',
+        'frarticles',
+        ['published_at'],
+        unique=False
+    )
 
     # Migrate data from old tables
     # This SQL joins articles with federal_register_entries and inserts into frarticles
@@ -114,10 +138,30 @@ def downgrade() -> None:
     )
 
     # Create indexes for federal_register_entries
-    op.create_index('ix_federal_register_entries_id', 'federal_register_entries', ['id'], unique=False)
-    op.create_index('ix_federal_register_entries_document_number', 'federal_register_entries', ['document_number'], unique=True)
-    op.create_index('ix_federal_register_entries_processed', 'federal_register_entries', ['processed'], unique=False)
-    op.create_index('idx_processed_fetched', 'federal_register_entries', ['processed', 'fetched_at'], unique=False)
+    op.create_index(
+        'ix_federal_register_entries_id',
+        'federal_register_entries',
+        ['id'],
+        unique=False
+    )
+    op.create_index(
+        'ix_federal_register_entries_document_number',
+        'federal_register_entries',
+        ['document_number'],
+        unique=True
+    )
+    op.create_index(
+        'ix_federal_register_entries_processed',
+        'federal_register_entries',
+        ['processed'],
+        unique=False
+    )
+    op.create_index(
+        'idx_processed_fetched',
+        'federal_register_entries',
+        ['processed', 'fetched_at'],
+        unique=False
+    )
 
     # Recreate articles table
     op.create_table(
@@ -136,10 +180,30 @@ def downgrade() -> None:
 
     # Create indexes for articles
     op.create_index('ix_articles_id', 'articles', ['id'], unique=False)
-    op.create_index('ix_articles_federal_register_id', 'articles', ['federal_register_id'], unique=False)
-    op.create_index('ix_articles_source_url', 'articles', ['source_url'], unique=True)
-    op.create_index('ix_articles_published_at', 'articles', ['published_at'], unique=False)
-    op.create_index('idx_published_at_desc', 'articles', ['published_at'], unique=False)
+    op.create_index(
+        'ix_articles_federal_register_id',
+        'articles',
+        ['federal_register_id'],
+        unique=False
+    )
+    op.create_index(
+        'ix_articles_source_url',
+        'articles',
+        ['source_url'],
+        unique=True
+    )
+    op.create_index(
+        'ix_articles_published_at',
+        'articles',
+        ['published_at'],
+        unique=False
+    )
+    op.create_index(
+        'idx_published_at_desc',
+        'articles',
+        ['published_at'],
+        unique=False
+    )
 
     # Migrate data back from frarticles
     # First insert into federal_register_entries

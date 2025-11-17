@@ -64,19 +64,23 @@ def populate_test_data(num_articles: int = 150):
 
         # Test 1: Get paginated feed (page 1, 20 items)
         start = time.time()
-        results = db.query(FRArticle).order_by(FRArticle.published_at.desc()).limit(20).offset(0).all()
+        _ = db.query(FRArticle).order_by(
+            FRArticle.published_at.desc()
+        ).limit(20).offset(0).all()
         elapsed = time.time() - start
         print(f"  Paginated query (20 items): {elapsed*1000:.2f}ms")
 
         # Test 2: Get paginated feed (page 5, 20 items)
         start = time.time()
-        results = db.query(FRArticle).order_by(FRArticle.published_at.desc()).limit(20).offset(80).all()
+        _ = db.query(FRArticle).order_by(
+            FRArticle.published_at.desc()
+        ).limit(20).offset(80).all()
         elapsed = time.time() - start
         print(f"  Pagination offset 80: {elapsed*1000:.2f}ms")
 
         # Test 3: Get single article by ID
         start = time.time()
-        results = db.query(FRArticle).filter(FRArticle.id == 50).first()
+        _ = db.query(FRArticle).filter(FRArticle.id == 50).first()
         elapsed = time.time() - start
         print(f"  Single article lookup: {elapsed*1000:.2f}ms")
 
