@@ -2,40 +2,27 @@ import pytest
 from datetime import datetime, timezone
 from httpx import AsyncClient
 from sqlalchemy.orm import Session
-from app.models import Article
-from app.models.federal_register import FederalRegister
+from app.models import FRArticle
 
 
 @pytest.fixture
 def setup_test_data(db_session: Session):
     """Setup test articles"""
-    # Create federal register entries first
-    fed_entry1 = FederalRegister(
-        document_number="TEST-2024-001",
-        raw_data={"test": "data"},
-        fetched_at=datetime.now(timezone.utc),
-        processed=True
-    )
-    fed_entry2 = FederalRegister(
-        document_number="TEST-2024-002",
-        raw_data={"test": "data2"},
-        fetched_at=datetime.now(timezone.utc),
-        processed=True
-    )
-    db_session.add_all([fed_entry1, fed_entry2])
-    db_session.flush()
-
-    # Then create articles with foreign key references
+    # Create unified FRArticle objects (combining raw and processed data)
     articles = [
-        Article(
-            federal_register_id=fed_entry1.id,
+        FRArticle(
+            document_number="TEST-2024-001",
+            raw_data={"test": "data", "title": "Test Article 1"},
+            fetched_at=datetime.now(timezone.utc),
             title="Test Article 1",
             summary="This is a test summary",
             source_url="https://example.com/1",
             published_at=datetime.now(timezone.utc),
         ),
-        Article(
-            federal_register_id=fed_entry2.id,
+        FRArticle(
+            document_number="TEST-2024-002",
+            raw_data={"test": "data2", "title": "Test Article 2"},
+            fetched_at=datetime.now(timezone.utc),
             title="Test Article 2",
             summary="Another test summary",
             source_url="https://example.com/2",

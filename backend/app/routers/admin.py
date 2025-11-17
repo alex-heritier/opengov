@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Query, Request, BackgroundTasks, HTTPException
 from sqlalchemy.orm import Session
 from app.routers.common import get_db, limiter
-from app.models import Article, FederalRegister, Agency
+from app.models import FRArticle, Agency
 from app.workers.scraper import fetch_and_process
 from app.services.federal_register import fetch_agencies, store_agencies
 
@@ -26,11 +26,11 @@ async def manual_scrape(request: Request, background_tasks: BackgroundTasks):
 @limiter.limit("50/minute")
 async def get_stats(request: Request, db: Session = Depends(get_db)):
     """Get article statistics and scraper status (50 req/min limit)"""
-    total_articles = db.query(Article).count()
+    total_articles = db.query(FRArticle).count()
 
-    # Get last scrape time
-    last_entry = db.query(FederalRegister).order_by(
-        FederalRegister.fetched_at.desc()
+    # Get last scrape time from most recent article
+    last_entry = db.query(FRArticle).order_by(
+        FRArticle.fetched_at.desc()
     ).first()
     last_scrape_time = last_entry.fetched_at if last_entry else None
 
