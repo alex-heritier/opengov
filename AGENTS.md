@@ -118,51 +118,35 @@ Error responses:
 
 ## Commands
 
-### Backend (using **uv**)
+Run all commands from the project root. Use `make help` to display all available commands.
 
-```bash
-# Run these from ./backend/ (cd backend && ...)
+### Installation
+- `make install` - Install all dependencies
+- `make install-backend` - Install Python dependencies only
+- `make install-frontend` - Install Node dependencies only
 
-# 1. Install / update dependencies + create/use .venv automatically
-uv sync                                   # Install all dependencies (including dev)
-uv sync --frozen                          # Install without updating uv.lock (perfect for CI)
+### Development
+- `make dev` - Start both backend (localhost:8000) and frontend (localhost:5173) servers
+- `make dev-backend` - Start backend dev server
+- `make dev-frontend` - Start frontend dev server
 
-# 2. Add a new dependency
-uv add fastapi uvicorn[standard]          # Production dependency
-uv add ruff pytest alembic --dev          # Dev / test dependencies
-uv add sqlalchemy psycopg2-binary         # Example regular deps
+### Code Quality
+- `make lint` - Check code style
+- `make fix` - Auto-fix code style and format
 
-# 3. Development server
-uv run dev                                # Run development server
+### Testing
+- `make test` - Run all tests (backend + frontend)
+- `make test-backend` - Run all backend tests
+- `make test-backend-fast` - Run backend tests, stop on first failure
+- `make test-backend-coverage` - Run backend tests with coverage report
+- `make test-frontend` - Run frontend tests
 
-# 4. Linting & formatting
-uv run lint                               # Check the whole project
-uv run fix                                # Auto-fix and format code
+### Database
+- `make db-migrate msg="description"` - Create new migration
+- `make db-upgrade` - Apply all pending migrations
+- `make db-downgrade` - Rollback last migration
+- `make db-current` - Show current migration
 
-# 5. Tests
-uv run test                               # Run all tests
-uv run pytest -x --ff                     # Stop on first failure + run failed first
-uv run pytest --cov=app                   # With coverage
-
-# 6. Database migrations (Alembic)
-alembic revision --autogenerate -m "description"   # Create new migration
-alembic upgrade head                                   # Apply migrations to latest
-alembic downgrade -1                                   # Rollback last migration
-alembic current                                        # Show current revision
-```
-
-### Frontend
-```bash
-# Run these from ./frontend/ (cd frontend && ...)
-
-npm run dev        # Dev server
-npm install        # Dependencies
-npm test           # Tests
-npm run build      # Production build
-```
-
-### Makefile
-- `make build` - Build project
-- `make run` - Run development environment
-- `make deploy` - Deploy application
-- `make test` - Run tests
+### Build & Cleanup
+- `make build` - Build frontend for production
+- `make clean` - Clean up generated files and caches
