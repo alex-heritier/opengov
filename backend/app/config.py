@@ -86,6 +86,10 @@ class Settings(BaseSettings):
 
     # Environment
     DEBUG: bool = Field(default=False, description="Enable debug mode")
+    ENVIRONMENT: str = Field(
+        default="development",
+        description="Environment: development, staging, or production"
+    )
     BEHIND_PROXY: bool = Field(
         default=False,
         description="Whether app is behind a proxy (for IP extraction)"
@@ -93,6 +97,12 @@ class Settings(BaseSettings):
     USE_MOCK_GROK: bool = Field(
         default=False,
         description="Use mock Grok responses for testing"
+    )
+
+    # Authentication Security
+    COOKIE_SECURE: bool = Field(
+        default=False,
+        description="Set secure flag on cookies (should be True in production with HTTPS)"
     )
 
     # Google OAuth

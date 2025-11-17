@@ -62,7 +62,7 @@ cookie_transport = CookieTransport(
     cookie_name="opengov_auth",
     cookie_max_age=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # Convert to seconds
     cookie_httponly=True,
-    cookie_secure=False,  # Set to True in production with HTTPS
+    cookie_secure=settings.COOKIE_SECURE,  # Auto-configured from environment
     cookie_samesite="lax",
 )
 
