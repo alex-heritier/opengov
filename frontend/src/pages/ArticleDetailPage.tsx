@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from '@tanstack/react-router'
-import { ArrowLeft, ExternalLink, Calendar, Clock } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Calendar, Clock, AlertCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface ArticleDetail {
   id: number
@@ -45,27 +48,29 @@ export default function ArticleDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-3/4"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-32 bg-gray-200 rounded"></div>
-        </div>
+      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-4">
+        <Skeleton className="h-8 w-3/4" />
+        <Skeleton className="h-4 w-1/4" />
+        <Skeleton className="h-32 w-full" />
       </div>
     )
   }
 
   if (error || !article) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <h2 className="text-xl font-bold text-red-800 mb-2">Error Loading Article</h2>
-          <p className="text-red-600">{error || 'Article not found'}</p>
-          <Link to="/feed" className="inline-flex items-center gap-2 mt-4 text-blue-600 hover:text-blue-800">
+      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {error || 'Article not found'}
+          </AlertDescription>
+        </Alert>
+        <Button asChild variant="outline" className="mt-4">
+          <Link to="/feed" className="inline-flex items-center gap-2">
             <ArrowLeft className="w-4 h-4" />
             Back to Feed
           </Link>
-        </div>
+        </Button>
       </div>
     )
   }
@@ -82,22 +87,21 @@ export default function ArticleDetailPage() {
   })
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
       {/* Back Button */}
-      <Link
-        to="/feed"
-        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-6"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Feed
-      </Link>
+      <Button asChild variant="ghost" className="mb-4 sm:mb-6 text-sm sm:text-base">
+        <Link to="/feed" className="inline-flex items-center gap-2">
+          <ArrowLeft className="w-4 h-4" />
+          Back to Feed
+        </Link>
+      </Button>
 
       {/* Article Header */}
       <article className="bg-white rounded-lg shadow-lg overflow-hidden">
         {/* Title Banner */}
-        <div className="bg-gradient-to-r from-blue-600 to-cyan-600 px-8 py-6">
-          <h1 className="text-3xl font-bold text-white mb-3">{article.title}</h1>
-          <div className="flex flex-wrap gap-4 text-white/90 text-sm">
+        <div className="bg-gradient-to-r from-blue-600 to-cyan-600 px-4 sm:px-8 py-4 sm:py-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-3">{article.title}</h1>
+          <div className="flex flex-wrap gap-3 sm:gap-4 text-white/90 text-xs sm:text-sm">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               <span>{formattedPublishedDate}</span>
@@ -109,36 +113,37 @@ export default function ArticleDetailPage() {
             {article.document_number && (
               <div className="flex items-center gap-2">
                 <span className="font-semibold">Doc #:</span>
-                <span className="font-mono">{article.document_number}</span>
+                <span className="font-mono text-xs">{article.document_number}</span>
               </div>
             )}
           </div>
         </div>
 
         {/* Article Content */}
-        <div className="px-8 py-6 space-y-6">
+        <div className="px-4 sm:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
           {/* Summary */}
           <div>
-            <h2 className="text-xl font-bold text-gray-900 mb-3">Summary</h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{article.summary}</p>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">Summary</h2>
+            <p className="text-sm sm:text-base text-gray-700 leading-relaxed whitespace-pre-wrap">{article.summary}</p>
           </div>
 
           {/* Source Link */}
-          <div className="pt-6 border-t border-gray-200">
-            <a
-              href={article.source_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <ExternalLink className="w-5 h-5" />
-              View Full Document on Federal Register
-            </a>
+          <div className="pt-4 sm:pt-6 border-t border-gray-200">
+            <Button asChild className="text-sm sm:text-base">
+              <a
+                href={article.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5" />
+                View Full Document on Federal Register
+              </a>
+            </Button>
           </div>
 
           {/* Metadata */}
-          <div className="pt-6 border-t border-gray-200 text-sm text-gray-500">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="pt-4 sm:pt-6 border-t border-gray-200 text-xs sm:text-sm text-gray-500">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <span className="font-semibold">Created:</span>{' '}
                 {new Date(article.created_at).toLocaleDateString()}

@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useFeedQuery } from '@/api/queries'
 import { useFeedStore } from '@/stores/feedStore'
 import { ArticleCard } from './ArticleCard'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AlertCircle } from 'lucide-react'
 
 export const FeedList: React.FC = () => {
   const [page, setPage] = useState(1)
@@ -47,9 +50,12 @@ export const FeedList: React.FC = () => {
 
   if (error) {
     return (
-      <div className="p-4 bg-red-50 border border-red-300 rounded-lg text-red-700">
-        Failed to load articles. Please try again later.
-      </div>
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Failed to load articles. Please try again later.
+        </AlertDescription>
+      </Alert>
     )
   }
 
@@ -63,7 +69,7 @@ export const FeedList: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {allArticles.map((article) => (
           <ArticleCard
             key={article.id}
@@ -79,12 +85,20 @@ export const FeedList: React.FC = () => {
 
       {/* Loading indicator */}
       {isLoading && (
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {[...Array(3)].map((_, i) => (
-            <div
-              key={i}
-              className="rounded-lg overflow-hidden bg-gray-200 animate-pulse h-72"
-            />
+            <div key={i} className="rounded-lg overflow-hidden h-72 flex flex-col">
+              <Skeleton className="w-full h-32 sm:h-40" />
+              <div className="p-3 sm:p-4 flex flex-col flex-1 space-y-2">
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3" />
+                <div className="mt-auto pt-4 flex gap-2">
+                  <Skeleton className="h-8 w-24" />
+                  <Skeleton className="h-8 w-32" />
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       )}
