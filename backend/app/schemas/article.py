@@ -15,6 +15,9 @@ class ArticleResponse(BaseModel):
     published_at: datetime
     created_at: datetime
     is_bookmarked: Optional[bool] = False  # Whether current user has bookmarked this article
+    user_like_status: Optional[bool] = None  # None = no vote, True = liked, False = disliked
+    likes_count: int = 0  # Total number of likes
+    dislikes_count: int = 0  # Total number of dislikes
 
 
 class ArticleDetail(ArticleResponse):

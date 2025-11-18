@@ -9,7 +9,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from app.config import settings
-from app.routers import feed, admin, oauth, bookmarks
+from app.routers import feed, admin, oauth, bookmarks, likes
 from app.workers.scraper import fetch_and_process
 from app.database import SessionLocal
 from app.services.federal_register import fetch_agencies, store_agencies
@@ -242,6 +242,7 @@ app.include_router(oauth.router)
 app.include_router(feed.router)
 app.include_router(admin.router)
 app.include_router(bookmarks.router)
+app.include_router(likes.router)
 
 
 @app.get("/health")

@@ -10,6 +10,7 @@ from app.models import FRArticle, User
 from app.schemas import ArticleResponse, ArticleDetail, FeedResponse
 from app.auth import optional_current_user
 from app.services.bookmark import get_bookmark_status
+from app.services.like import get_like_status, get_article_like_counts
 
 logger = logging.getLogger(__name__)
 
@@ -66,15 +67,21 @@ def get_feed(
     etag_hash = hashlib.sha256(articles_json.encode()).hexdigest()
     response.headers["ETag"] = f'"{etag_hash}"'
 
-    # Build article responses with bookmark status
+    # Build article responses with bookmark and like status
     article_responses = []
     for article in articles:
         article_dict = ArticleResponse.model_validate(article).model_dump()
         # Add bookmark status if user is authenticated
         if current_user:
             article_dict["is_bookmarked"] = get_bookmark_status(db, current_user.id, article.id)
+            article_dict["user_like_status"] = get_like_status(db, current_user.id, article.id)
         else:
             article_dict["is_bookmarked"] = False
+            article_dict["user_like_status"] = None
+        # Add like counts
+        counts = get_article_like_counts(db, article.id)
+        article_dict["likes_count"] = counts["likes"]
+        article_dict["dislikes_count"] = counts["dislikes"]
         article_responses.append(ArticleResponse(**article_dict))
 
     return FeedResponse(
@@ -109,12 +116,18 @@ def get_article_by_document_number(
             detail=f"Article with document number '{document_number}' not found"
         )
 
-    # Add bookmark status
+    # Add bookmark and like status
     article_dict = ArticleDetail.model_validate(article).model_dump()
     if current_user:
         article_dict["is_bookmarked"] = get_bookmark_status(db, current_user.id, article.id)
+        article_dict["user_like_status"] = get_like_status(db, current_user.id, article.id)
     else:
         article_dict["is_bookmarked"] = False
+        article_dict["user_like_status"] = None
+    # Add like counts
+    counts = get_article_like_counts(db, article.id)
+    article_dict["likes_count"] = counts["likes"]
+    article_dict["dislikes_count"] = counts["dislikes"]
 
     return ArticleDetail(**article_dict)
 
@@ -138,11 +151,17 @@ def get_article(
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
 
-    # Add bookmark status
+    # Add bookmark and like status
     article_dict = ArticleDetail.model_validate(article).model_dump()
     if current_user:
         article_dict["is_bookmarked"] = get_bookmark_status(db, current_user.id, article.id)
+        article_dict["user_like_status"] = get_like_status(db, current_user.id, article.id)
     else:
         article_dict["is_bookmarked"] = False
+        article_dict["user_like_status"] = None
+    # Add like counts
+    counts = get_article_like_counts(db, article.id)
+    article_dict["likes_count"] = counts["likes"]
+    article_dict["dislikes_count"] = counts["dislikes"]
 
     return ArticleDetail(**article_dict)

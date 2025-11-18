@@ -81,6 +81,9 @@ export const FeedList: React.FC = () => {
             published_at={article.published_at}
             document_number={article.document_number}
             is_bookmarked={article.is_bookmarked}
+            user_like_status={article.user_like_status}
+            likes_count={article.likes_count}
+            dislikes_count={article.dislikes_count}
           />
         ))}
       </div>
