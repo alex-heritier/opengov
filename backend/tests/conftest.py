@@ -152,6 +152,23 @@ async def test_superuser(db_session: AsyncSession, password_helper: PasswordHelp
 
 
 @pytest.fixture
+def sync_test_user(db_session: Session, password_helper: PasswordHelper) -> User:
+    """Create a test user in the synchronous database session"""
+    user = User(
+        email="test@example.com",
+        hashed_password=password_helper.hash("testpassword123"),
+        is_active=True,
+        is_verified=True,
+        is_superuser=False,
+        name="Test User",
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
+@pytest.fixture
 async def authenticated_client(
     client: AsyncClient,
     test_user: User
@@ -162,6 +179,40 @@ async def authenticated_client(
         "/api/auth/login",
         data={
             "username": test_user.email,
+            "password": "testpassword123",
+        },
+    )
+    assert response.status_code == 204, f"Login failed: {response.text}"
+
+    # The cookie is automatically stored in the client
+    yield client
+
+
+@pytest.fixture
+async def authenticated_client_sync(
+    client: AsyncClient,
+    db_session: Session,
+    password_helper: PasswordHelper
+) -> AsyncGenerator[AsyncClient, None]:
+    """Create an authenticated test client using a sync user"""
+    # Create a sync user
+    user = User(
+        email="test@example.com",
+        hashed_password=password_helper.hash("testpassword123"),
+        is_active=True,
+        is_verified=True,
+        is_superuser=False,
+        name="Test User",
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    
+    # Login to get authentication cookie
+    response = await client.post(
+        "/api/auth/login",
+        data={
+            "username": user.email,
             "password": "testpassword123",
         },
     )
