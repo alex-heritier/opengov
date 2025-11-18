@@ -1,10 +1,31 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ArticleCard } from './ArticleCard'
 
+// Create a test QueryClient
+const createTestQueryClient = () =>
+  new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  })
+
 describe('ArticleCard', () => {
+  const queryClient = createTestQueryClient()
+
+  const renderWithProviders = (component: React.ReactNode) => {
+    return render(
+      <QueryClientProvider client={queryClient}>
+        {component}
+      </QueryClientProvider>
+    )
+  }
+
   it('renders article title', () => {
-    render(
+    renderWithProviders(
       <ArticleCard
         title="Test Article"
         summary="Test summary"
@@ -17,7 +38,7 @@ describe('ArticleCard', () => {
   })
 
   it('renders article summary', () => {
-    render(
+    renderWithProviders(
       <ArticleCard
         title="Test Article"
         summary="Test summary"
@@ -30,7 +51,7 @@ describe('ArticleCard', () => {
   })
 
   it('renders source link', () => {
-    render(
+    renderWithProviders(
       <ArticleCard
         title="Test Article"
         summary="Test summary"
