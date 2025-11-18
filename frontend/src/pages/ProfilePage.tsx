@@ -28,7 +28,7 @@ export default function ProfilePage() {
 
     try {
       const updatedUser = await updateProfile.mutateAsync({
-        political_leaning: politicalLeaning || undefined,
+        political_leaning: politicalLeaning === '' ? null : politicalLeaning,
       })
       // Update the user in the auth store
       updateUser(updatedUser)
