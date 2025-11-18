@@ -57,7 +57,7 @@ dev: dev-backend dev-frontend
 dev-backend:
 	@echo "Starting backend dev server..."
 	@echo "Backend: http://localhost:8000"
-	cd backend && uv run dev
+	cd backend && uvicorn app.main:app --reload
 
 dev-frontend:
 	@echo "Starting frontend dev server..."
@@ -67,26 +67,26 @@ dev-frontend:
 # Code Quality
 lint:
 	@echo "Checking code style..."
-	cd backend && uv run lint
+	cd backend && ruff check .
 
 fix:
 	@echo "Auto-fixing code style..."
-	cd backend && uv run fix
+	cd backend && ruff check . --fix
 
 # Testing
 test: test-backend test-frontend
 
 test-backend:
 	@echo "Running backend tests..."
-	cd backend && uv run pytest
+	cd backend && pytest
 
 test-backend-fast:
 	@echo "Running backend tests (fast mode - stop on first failure)..."
-	cd backend && uv run pytest -x --ff
+	cd backend && pytest -x --ff
 
 test-backend-coverage:
 	@echo "Running backend tests with coverage..."
-	cd backend && uv run pytest --cov=app
+	cd backend && pytest --cov=app
 
 test-frontend:
 	@echo "Running frontend tests..."
