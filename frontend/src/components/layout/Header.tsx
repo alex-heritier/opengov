@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useAuthStore } from '@/stores/authStore'
-import { Bookmark } from 'lucide-react'
+import { Bookmark, UserCircle2 } from 'lucide-react'
 
 export default function Header() {
   const { isAuthenticated } = useAuthStore()
@@ -25,13 +25,22 @@ export default function Header() {
             Feed
           </Link>
           {isAuthenticated && (
-            <Link
-              to="/bookmarks"
-              className="text-sm sm:text-base font-medium text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors min-h-[44px] flex items-center gap-1"
-            >
-              <Bookmark className="w-4 h-4" />
-              Bookmarks
-            </Link>
+            <>
+              <Link
+                to="/bookmarks"
+                className="text-sm sm:text-base font-medium text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors min-h-[44px] flex items-center gap-1"
+              >
+                <Bookmark className="w-4 h-4" />
+                Bookmarks
+              </Link>
+              <Link
+                to="/profile"
+                className="text-sm sm:text-base font-medium text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors min-h-[44px] flex items-center gap-1"
+              >
+                <UserCircle2 className="w-4 h-4" />
+                Profile
+              </Link>
+            </>
           )}
         </nav>
       </div>

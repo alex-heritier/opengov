@@ -30,6 +30,11 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     )
     picture_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 
+    # Political leaning
+    political_leaning: Mapped[Optional[str]] = mapped_column(
+        String(50), nullable=True
+    )
+
     # Timestamps (use timezone-aware UTC)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc), nullable=False

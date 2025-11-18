@@ -7,6 +7,7 @@ import ArticleDetailPage from './pages/ArticleDetailPage'
 import AuthLoginPage from './pages/AuthLoginPage'
 import AuthCallbackPage from './pages/AuthCallbackPage'
 import BookmarksPage from './pages/BookmarksPage'
+import ProfilePage from './pages/ProfilePage'
 
 // Root route
 const rootRoute = new RootRoute({
@@ -62,6 +63,13 @@ const bookmarksRoute = new Route({
   component: BookmarksPage,
 })
 
+// Profile route
+const profileRoute = new Route({
+  getParentRoute: () => rootRoute,
+  path: '/profile',
+  component: ProfilePage,
+})
+
 // Create route tree
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -71,6 +79,7 @@ const routeTree = rootRoute.addChildren([
   authLoginRoute,
   authCallbackRoute,
   bookmarksRoute,
+  profileRoute,
 ])
 
 // Create router

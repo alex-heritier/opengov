@@ -8,6 +8,7 @@ interface User {
   name: string | null
   picture_url: string | null
   google_id: string | null
+  political_leaning: string | null
   is_active: boolean
   is_verified: boolean
   created_at: string
@@ -28,6 +29,7 @@ interface AuthState {
 
   // Actions
   setAuth: (accessToken: string, user: User) => void
+  updateUser: (user: User) => void
   clearAuth: () => void
   isTokenExpiringSoon: () => boolean
 }
@@ -58,6 +60,10 @@ export const useAuthStore = create<AuthState>()(
           tokenExpiresAt: expiresAt,
           isAuthenticated: true,
         })
+      },
+
+      updateUser: (user: User) => {
+        set({ user })
       },
 
       clearAuth: () => {

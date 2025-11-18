@@ -142,3 +142,27 @@ export function useRemoveLikeMutation() {
     },
   })
 }
+
+// User profile mutations
+export interface UserUpdate {
+  name?: string
+  picture_url?: string
+  political_leaning?: string
+}
+
+export function useUpdateProfileMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (updates: UserUpdate) => {
+      const { data } = await client.patch('/api/users/me', updates)
+      return data
+    },
+    onSuccess: (data) => {
+      // Update the user in auth store by invalidating the current user query
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] })
+      // Also trigger a refetch of the user from the auth endpoint
+      return data
+    },
+  })
+}
