@@ -2,38 +2,27 @@
 
 ## Database Schema
 
-### Article
-Represents a processed government update.
+### FRArticle
+Unified model combining Federal Register raw data and processed article content. Each Federal Register document becomes one article with both raw API data and AI-processed summary for the public feed.
 
 | Field | Type | Notes |
 |-------|------|-------|
 | id | Integer | Primary key |
-| federal_register_id | Integer | Foreign key to FederalRegister (indexed, **nullable**) |
+| document_number | String(50) | Unique Federal Register ID (unique, indexed) |
+| raw_data | JSON | Complete API response (for audit/debugging) |
+| fetched_at | DateTime | When raw data was fetched from API (indexed) |
 | title | String(500) | Article headline |
 | summary | Text | AI-generated viral summary |
-| source_url | String(500) | Link to Federal Register (unique) |
+| source_url | String(500) | Link to Federal Register (unique, indexed) |
 | published_at | DateTime | Publication date (indexed) |
 | created_at | DateTime | When inserted into database |
 | updated_at | DateTime | Last update time |
 
 **Indexes:**
-- `published_at` - For efficient sorting/filtering
-- `source_url` - Enforces uniqueness, prevents duplicate articles
-
-### FederalRegister
-Raw entries from Federal Register API.
-
-| Field | Type | Notes |
-|-------|------|-------|
-| id | Integer | Primary key |
-| document_number | String(50) | Unique Federal Register ID (indexed) |
-| raw_data | JSON | Complete API response |
-| fetched_at | DateTime | When fetched (indexed) |
-| processed | Boolean | Whether Article was created (indexed) |
-
-**Indexes:**
-- `document_number` - For deduplication
-- `(processed, fetched_at)` - For finding unprocessed entries
+- `document_number` - For deduplication and lookups (unique)
+- `source_url` - Enforces uniqueness, prevents duplicate articles (unique)
+- `published_at` - For efficient sorting/filtering by date
+- `fetched_at` - For tracking scraper runs
 
 ### ScraperRun
 Execution records for scraper jobs (monitoring/observability).
@@ -78,37 +67,111 @@ Federal government agencies from Federal Register API.
 - `slug` - For lookups by slug
 - `name` - For searching/filtering by name
 
+### Bookmark
+User bookmarks for articles. Allows authenticated users to save articles for later reading.
+
+| Field | Type | Notes |
+|-------|------|-------|
+| id | Integer | Primary key |
+| user_id | Integer | Foreign key to users.id (indexed, cascade delete) |
+| frarticle_id | Integer | Foreign key to frarticles.id (indexed, cascade delete) |
+| is_bookmarked | Boolean | Bookmark status (default: True) |
+| created_at | DateTime | When bookmark was created |
+| updated_at | DateTime | Last update time |
+
+**Indexes:**
+- `user_id` - For efficient user bookmark queries
+- `frarticle_id` - For article bookmark lookups
+- `(user_id, is_bookmarked)` - Composite index for filtering active bookmarks
+- Unique constraint on `(user_id, frarticle_id)` - Prevents duplicate bookmarks
+
+### Like
+User likes and dislikes for articles. Allows authenticated users to vote on articles.
+
+| Field | Type | Notes |
+|-------|------|-------|
+| id | Integer | Primary key |
+| user_id | Integer | Foreign key to users.id (indexed, cascade delete) |
+| frarticle_id | Integer | Foreign key to frarticles.id (indexed, cascade delete) |
+| is_positive | Boolean | True for like, False for dislike |
+| created_at | DateTime | When like/dislike was created |
+| updated_at | DateTime | Last update time |
+
+**Indexes:**
+- `user_id` - For efficient user like queries
+- `frarticle_id` - For article like lookups
+- `(user_id, is_positive)` - Composite index for filtering likes/dislikes
+- Unique constraint on `(user_id, frarticle_id)` - Prevents duplicate votes
+
 ## Entity Relationship
 
-```
-FederalRegister (1) ----> (many) Article
-        (id)           federal_register_id [nullable]
-```
+**FRArticle** is a standalone entity with no foreign key relationships to other tables. Each Federal Register document maps to exactly one FRArticle.
 
-Each Federal Register entry can optionally produce an Article. The `federal_register_id` foreign key is **optional** and can be NULL, allowing articles to exist independently. When set, it ensures traceability from Article back to its source document and enables lookup by `document_number`.
+**Bookmark** creates a many-to-many relationship between Users and FRArticles:
+- One user can bookmark many articles
+- One article can be bookmarked by many users
+- The unique constraint ensures each user can only bookmark an article once
+
+**Like** creates a many-to-many relationship between Users and FRArticles:
+- One user can like/dislike many articles
+- One article can be liked/disliked by many users
+- The unique constraint ensures each user can only have one vote per article
+- Clicking the same vote again removes it; clicking a different vote updates it
 
 **Duplicate Prevention:**
-- Articles are prevented from having duplicate `source_url` values (unique constraint)
-- The scraper checks for both `source_url` and `federal_register_id` matches before creating new articles
+- `document_number` has a unique constraint - prevents duplicate Federal Register documents
+- `source_url` has a unique constraint - prevents duplicate articles
+- The scraper checks both fields before creating new FRArticles
+- Bookmarks have a unique constraint on `(user_id, frarticle_id)` to prevent duplicate bookmarks
+- Likes have a unique constraint on `(user_id, frarticle_id)` to prevent duplicate votes
 
 **API Usage:**
 - Articles can be retrieved by ID: `GET /api/feed/{article_id}`
-- Articles can be retrieved by Federal Register document_number: `GET /api/feed/document/{document_number}` (requires federal_register_id to be set)
+- Articles can be retrieved by Federal Register document_number: `GET /api/feed/document/{document_number}`
+- Toggle bookmark: `POST /api/bookmarks/toggle` with `{frarticle_id: <id>}`
+- Get user bookmarks: `GET /api/bookmarks`
+- Remove bookmark: `DELETE /api/bookmarks/{frarticle_id}`
+- Toggle like/dislike: `POST /api/likes/toggle` with `{frarticle_id: <id>, is_positive: <true/false>}`
+- Get like status: `GET /api/likes/status/{frarticle_id}`
+- Get like counts: `GET /api/likes/counts/{frarticle_id}`
+- Remove like: `DELETE /api/likes/{frarticle_id}`
 
 ## Pydantic Schemas
 
 ### ArticleResponse
-Used for API responses listing articles.
-- id, title, summary, source_url, published_at, created_at
-
-**Note:** In actual API responses from `/api/feed` endpoints, `document_number` (string, from FederalRegister table) is dynamically added when the article has an associated FederalRegister entry. This is not part of the base schema but always included in feed responses.
+Used for API responses listing articles (based on FRArticle model).
+- id, document_number, title, summary, source_url, published_at, created_at
+- is_bookmarked (optional, indicates if current user has bookmarked)
+- user_like_status (optional, null = no vote, true = liked, false = disliked)
+- likes_count (total number of likes)
+- dislikes_count (total number of dislikes)
 
 ### ArticleDetail
 Extended response for single article views.
-- All of ArticleResponse + updated_at
-- Plus dynamically added `document_number` field (when federal_register_id is set)
+- All of ArticleResponse + updated_at, fetched_at
 
 ### FeedResponse
 Paginated feed of articles.
-- articles: List[ArticleResponse]  (each includes document_number from FederalRegister)
+- articles: List[ArticleResponse]
 - page, limit, total, has_next
+
+### BookmarkToggle
+Request schema for toggling bookmark status.
+- frarticle_id: int
+
+### BookmarkResponse
+Response schema for bookmark operations.
+- id, user_id, frarticle_id, is_bookmarked, created_at, updated_at
+
+### BookmarkedArticleResponse
+Response schema for bookmarked articles with article details.
+- id, document_number, title, summary, source_url, published_at, created_at, bookmarked_at
+
+### LikeToggle
+Request schema for toggling like/dislike status.
+- frarticle_id: int
+- is_positive: bool (True for like, False for dislike)
+
+### LikeResponse
+Response schema for like operations.
+- id, user_id, frarticle_id, is_positive, created_at, updated_at

@@ -1,12 +1,16 @@
 import logging
 import hashlib
 import json
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, Request
 from sqlalchemy import desc
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 from app.routers.common import get_db, limiter
-from app.models import Article, FederalRegister
+from app.models import FRArticle, User
 from app.schemas import ArticleResponse, ArticleDetail, FeedResponse
+from app.auth import optional_current_user
+from app.services.bookmark import get_bookmark_status
+from app.services.like import get_like_status, get_article_like_counts
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +26,7 @@ def get_feed(
     limit: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
     sort: str = Query("newest", pattern="^(newest|oldest)$", description="Sort order"),
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(optional_current_user),
 ):
     """Get paginated list of articles with rate limiting (100 req/min)"""
     # Prevent DoS from large offsets
@@ -30,17 +35,17 @@ def get_feed(
     if offset > MAX_OFFSET:
         raise HTTPException(status_code=400, detail="Page number too high")
 
-    # Build query with joined federal_register to get document_number
-    query = db.query(Article).options(joinedload(Article.federal_register_entry))
+    # Build query - no joins needed, document_number is a direct field
+    query = db.query(FRArticle)
 
     # Count total
     total = query.count()
 
     # Sort
     if sort == "newest":
-        query = query.order_by(desc(Article.published_at))
+        query = query.order_by(desc(FRArticle.published_at))
     else:
-        query = query.order_by(Article.published_at)
+        query = query.order_by(FRArticle.published_at)
 
     # Paginate
     articles = query.offset(offset).limit(limit).all()
@@ -62,12 +67,21 @@ def get_feed(
     etag_hash = hashlib.sha256(articles_json.encode()).hexdigest()
     response.headers["ETag"] = f'"{etag_hash}"'
 
-    # Build article responses with document_number
+    # Build article responses with bookmark and like status
     article_responses = []
     for article in articles:
         article_dict = ArticleResponse.model_validate(article).model_dump()
-        if article.federal_register_entry:
-            article_dict["document_number"] = article.federal_register_entry.document_number
+        # Add bookmark status if user is authenticated
+        if current_user:
+            article_dict["is_bookmarked"] = get_bookmark_status(db, current_user.id, article.id)
+            article_dict["user_like_status"] = get_like_status(db, current_user.id, article.id)
+        else:
+            article_dict["is_bookmarked"] = False
+            article_dict["user_like_status"] = None
+        # Add like counts
+        counts = get_article_like_counts(db, article.id)
+        article_dict["likes_count"] = counts["likes"]
+        article_dict["dislikes_count"] = counts["dislikes"]
         article_responses.append(ArticleResponse(**article_dict))
 
     return FeedResponse(
@@ -84,16 +98,15 @@ def get_feed(
 def get_article_by_document_number(
     request: Request,
     document_number: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(optional_current_user),
 ):
     """Get article by Federal Register document number with rate limiting"""
 
-    # Query article with joined federal_register_entry to get document_number
+    # Query article directly by document_number (no join needed)
     article = (
-        db.query(Article)
-        .join(FederalRegister, Article.federal_register_id == FederalRegister.id)
-        .filter(FederalRegister.document_number == document_number)
-        .options(joinedload(Article.federal_register_entry))
+        db.query(FRArticle)
+        .filter(FRArticle.document_number == document_number)
         .first()
     )
 
@@ -103,31 +116,52 @@ def get_article_by_document_number(
             detail=f"Article with document number '{document_number}' not found"
         )
 
-    # Build response with document_number
+    # Add bookmark and like status
     article_dict = ArticleDetail.model_validate(article).model_dump()
-    article_dict["document_number"] = article.federal_register_entry.document_number
+    if current_user:
+        article_dict["is_bookmarked"] = get_bookmark_status(db, current_user.id, article.id)
+        article_dict["user_like_status"] = get_like_status(db, current_user.id, article.id)
+    else:
+        article_dict["is_bookmarked"] = False
+        article_dict["user_like_status"] = None
+    # Add like counts
+    counts = get_article_like_counts(db, article.id)
+    article_dict["likes_count"] = counts["likes"]
+    article_dict["dislikes_count"] = counts["dislikes"]
 
     return ArticleDetail(**article_dict)
 
 
 @router.get("/{article_id}", response_model=ArticleDetail)
 @limiter.limit("100/minute")
-def get_article(request: Request, article_id: int, db: Session = Depends(get_db)):
+def get_article(
+    request: Request,
+    article_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(optional_current_user),
+):
     """Get specific article details with rate limiting"""
 
     article = (
-        db.query(Article)
-        .options(joinedload(Article.federal_register_entry))
-        .filter(Article.id == article_id)
+        db.query(FRArticle)
+        .filter(FRArticle.id == article_id)
         .first()
     )
 
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
 
-    # Build response with document_number if available
+    # Add bookmark and like status
     article_dict = ArticleDetail.model_validate(article).model_dump()
-    if article.federal_register_entry:
-        article_dict["document_number"] = article.federal_register_entry.document_number
+    if current_user:
+        article_dict["is_bookmarked"] = get_bookmark_status(db, current_user.id, article.id)
+        article_dict["user_like_status"] = get_like_status(db, current_user.id, article.id)
+    else:
+        article_dict["is_bookmarked"] = False
+        article_dict["user_like_status"] = None
+    # Add like counts
+    counts = get_article_like_counts(db, article.id)
+    article_dict["likes_count"] = counts["likes"]
+    article_dict["dislikes_count"] = counts["dislikes"]
 
     return ArticleDetail(**article_dict)

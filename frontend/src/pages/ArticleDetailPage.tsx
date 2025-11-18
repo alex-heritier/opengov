@@ -4,6 +4,7 @@ import { ArrowLeft, ExternalLink, Calendar, Clock, AlertCircle } from 'lucide-re
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import ShareButtons from '@/components/share/ShareButtons'
 
 interface ArticleDetail {
   id: number
@@ -97,11 +98,11 @@ export default function ArticleDetailPage() {
       </Button>
 
       {/* Article Header */}
-      <article className="bg-white rounded-lg shadow-lg overflow-hidden">
+      <article className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {/* Title Banner */}
-        <div className="bg-gradient-to-r from-blue-600 to-cyan-600 px-4 sm:px-8 py-4 sm:py-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-3">{article.title}</h1>
-          <div className="flex flex-wrap gap-3 sm:gap-4 text-white/90 text-xs sm:text-sm">
+        <div className="bg-gray-50 border-b border-gray-200 px-4 sm:px-8 py-4 sm:py-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">{article.title}</h1>
+          <div className="flex flex-wrap gap-3 sm:gap-4 text-gray-600 text-xs sm:text-sm">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               <span>{formattedPublishedDate}</span>
@@ -125,6 +126,15 @@ export default function ArticleDetailPage() {
           <div>
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">Summary</h2>
             <p className="text-sm sm:text-base text-gray-700 leading-relaxed whitespace-pre-wrap">{article.summary}</p>
+          </div>
+
+          {/* Share Buttons */}
+          <div className="pt-4 sm:pt-6 border-t border-gray-200">
+            <ShareButtons
+              title={article.title}
+              url={typeof window !== 'undefined' ? window.location.href : ''}
+              summary={article.summary}
+            />
           </div>
 
           {/* Source Link */}
