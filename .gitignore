@@ -4,6 +4,7 @@ Thumbs.db
 
 # IDE & Tools
 .claude/
+.cursor/
 
 # Backend
 backend/.env
