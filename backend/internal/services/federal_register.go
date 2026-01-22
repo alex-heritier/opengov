@@ -20,17 +20,9 @@ type FederalRegisterService struct {
 	client   *http.Client
 }
 
-type FRDocument struct {
-	DocumentNumber  string `json:"document_number"`
-	Title           string `json:"title"`
-	Abstract        string `json:"abstract,omitempty"`
-	FullText        string `json:"full_text,omitempty"`
-	HTMLURL         string `json:"html_url"`
-	PublicationDate string `json:"publication_date"`
-}
-
 type FRAgency struct {
 	ID          int     `json:"id"`
+	RawName     string  `json:"raw_name"`
 	Name        string  `json:"name"`
 	ShortName   *string `json:"short_name"`
 	Slug        string  `json:"slug"`
@@ -40,9 +32,25 @@ type FRAgency struct {
 	ParentID    *int    `json:"parent_id,omitempty"`
 }
 
+type FRDocument struct {
+	DocumentNumber         string     `json:"document_number"`
+	Title                  string     `json:"title"`
+	Type                   string     `json:"type"`
+	Abstract               *string    `json:"abstract,omitempty"`
+	HTMLURL                string     `json:"html_url"`
+	PublicationDate        string     `json:"publication_date"`
+	PDFURL                 string     `json:"pdf_url,omitempty"`
+	PublicInspectionPDFURL string     `json:"public_inspection_pdf_url,omitempty"`
+	Excerpts               *string    `json:"excerpts,omitempty"`
+	Agencies               []FRAgency `json:"agencies,omitempty"`
+}
+
 type FRDocumentsResponse struct {
-	Results        []FRDocument `json:"results"`
-	TotalDocuments int          `json:"total_documents"`
+	Description string       `json:"description"`
+	Count       int          `json:"count"`
+	TotalPages  int          `json:"total_pages"`
+	NextPageURL string       `json:"next_page_url,omitempty"`
+	Results     []FRDocument `json:"results"`
 }
 
 type FRAgenciesResponse []FRAgency

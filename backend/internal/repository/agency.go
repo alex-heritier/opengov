@@ -25,7 +25,7 @@ func (r *AgencyRepository) GetAll(ctx context.Context, limit, offset int) ([]mod
 	}
 
 	query = `
-		SELECT id, fr_agency_id, name, short_name, slug, description, url, json_url, parent_id, raw_data, created_at, updated_at
+		SELECT id, fr_agency_id, raw_name, name, short_name, slug, description, url, json_url, parent_id, raw_data, created_at, updated_at
 		FROM agencies
 		ORDER BY name
 		LIMIT ? OFFSET ?
@@ -43,7 +43,7 @@ func (r *AgencyRepository) GetAll(ctx context.Context, limit, offset int) ([]mod
 		var parentID sql.NullInt64
 		var createdAt, updatedAt string
 		if err := rows.Scan(
-			&a.ID, &a.FRAgencyID, &a.Name, &shortName, &a.Slug, &description,
+			&a.ID, &a.FRAgencyID, &a.RawName, &a.Name, &shortName, &a.Slug, &description,
 			&url, &jsonURL, &parentID, &a.RawData, &createdAt, &updatedAt,
 		); err != nil {
 			return nil, 0, fmt.Errorf("failed to scan agency: %w", err)
@@ -74,11 +74,11 @@ func (r *AgencyRepository) GetAll(ctx context.Context, limit, offset int) ([]mod
 
 func (r *AgencyRepository) Create(ctx context.Context, agency *models.Agency) error {
 	query := `
-		INSERT INTO agencies (fr_agency_id, name, short_name, slug, description, url, json_url, parent_id, raw_data, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO agencies (fr_agency_id, raw_name, name, short_name, slug, description, url, json_url, parent_id, raw_data, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.ExecContext(ctx, query,
-		agency.FRAgencyID, agency.Name, agency.ShortName, agency.Slug,
+		agency.FRAgencyID, agency.RawName, agency.Name, agency.ShortName, agency.Slug,
 		agency.Description, agency.URL, agency.JSONURL, agency.ParentID,
 		agency.RawData, agency.CreatedAt, agency.UpdatedAt,
 	)
@@ -105,11 +105,11 @@ func (r *AgencyRepository) Upsert(ctx context.Context, agency *models.Agency) er
 
 	if exists {
 		query := `
-			UPDATE agencies SET name=?, short_name=?, slug=?, description=?, url=?, json_url=?, parent_id=?, raw_data=?, updated_at=?
+			UPDATE agencies SET raw_name=?, name=?, short_name=?, slug=?, description=?, url=?, json_url=?, parent_id=?, raw_data=?, updated_at=?
 			WHERE fr_agency_id=?
 		`
 		_, err = r.db.ExecContext(ctx, query,
-			agency.Name, agency.ShortName, agency.Slug, agency.Description,
+			agency.RawName, agency.Name, agency.ShortName, agency.Slug, agency.Description,
 			agency.URL, agency.JSONURL, agency.ParentID, agency.RawData,
 			agency.UpdatedAt, agency.FRAgencyID,
 		)

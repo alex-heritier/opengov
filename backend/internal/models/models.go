@@ -76,6 +76,7 @@ func (u *User) GetIsVerified() bool {
 type Agency struct {
 	ID          int     `json:"id"`
 	FRAgencyID  int     `json:"fr_agency_id"`
+	RawName     string  `json:"raw_name"`
 	Name        string  `json:"name"`
 	ShortName   *string `json:"short_name,omitempty"`
 	Slug        string  `json:"slug"`
@@ -97,6 +98,8 @@ type FRArticle struct {
 	Summary        string    `json:"summary"`
 	SourceURL      string    `json:"source_url"`
 	PublishedAt    time.Time `json:"published_at"`
+	DocumentType   *string   `json:"document_type,omitempty"`
+	PDFURL         *string   `json:"pdf_url,omitempty"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
 }

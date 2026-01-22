@@ -29,7 +29,7 @@ func (r *ArticleRepository) GetFeed(ctx context.Context, page, limit int, sort s
 	}
 
 	query := fmt.Sprintf(`
-		SELECT id, document_number, raw_data, fetched_at, title, summary, source_url, published_at, created_at, updated_at
+		SELECT id, document_number, raw_data, fetched_at, title, summary, source_url, published_at, document_type, pdf_url, created_at, updated_at
 		FROM frarticles
 		ORDER BY published_at %s
 		LIMIT ? OFFSET ?
@@ -46,10 +46,11 @@ func (r *ArticleRepository) GetFeed(ctx context.Context, page, limit int, sort s
 		var a models.FRArticle
 		var rawData []byte
 		var fetchedAt, publishedAt, createdAt, updatedAt string
+		var documentType, pdfURL sql.NullString
 		err := rows.Scan(
 			&a.ID, &a.DocumentNumber, &rawData, &fetchedAt,
 			&a.Title, &a.Summary, &a.SourceURL, &publishedAt,
-			&createdAt, &updatedAt,
+			&documentType, &pdfURL, &createdAt, &updatedAt,
 		)
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to scan article: %w", err)
@@ -58,6 +59,12 @@ func (r *ArticleRepository) GetFeed(ctx context.Context, page, limit int, sort s
 		a.PublishedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", publishedAt)
 		a.CreatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", createdAt)
 		a.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", updatedAt)
+		if documentType.Valid {
+			a.DocumentType = &documentType.String
+		}
+		if pdfURL.Valid {
+			a.PDFURL = &pdfURL.String
+		}
 		json.Unmarshal(rawData, &a.RawData)
 		articles = append(articles, a)
 	}
@@ -73,16 +80,17 @@ func (r *ArticleRepository) GetFeed(ctx context.Context, page, limit int, sort s
 
 func (r *ArticleRepository) GetByID(ctx context.Context, id int) (*models.FRArticle, error) {
 	query := `
-		SELECT id, document_number, raw_data, fetched_at, title, summary, source_url, published_at, created_at, updated_at
+		SELECT id, document_number, raw_data, fetched_at, title, summary, source_url, published_at, document_type, pdf_url, created_at, updated_at
 		FROM frarticles WHERE id = ?
 	`
 	var a models.FRArticle
 	var rawData []byte
 	var fetchedAt, publishedAt, createdAt, updatedAt string
+	var documentType, pdfURL sql.NullString
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&a.ID, &a.DocumentNumber, &rawData, &fetchedAt,
 		&a.Title, &a.Summary, &a.SourceURL, &publishedAt,
-		&createdAt, &updatedAt,
+		&documentType, &pdfURL, &createdAt, &updatedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -94,22 +102,29 @@ func (r *ArticleRepository) GetByID(ctx context.Context, id int) (*models.FRArti
 	a.PublishedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", publishedAt)
 	a.CreatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", createdAt)
 	a.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", updatedAt)
+	if documentType.Valid {
+		a.DocumentType = &documentType.String
+	}
+	if pdfURL.Valid {
+		a.PDFURL = &pdfURL.String
+	}
 	json.Unmarshal(rawData, &a.RawData)
 	return &a, nil
 }
 
 func (r *ArticleRepository) GetByDocumentNumber(ctx context.Context, docNumber string) (*models.FRArticle, error) {
 	query := `
-		SELECT id, document_number, raw_data, fetched_at, title, summary, source_url, published_at, created_at, updated_at
+		SELECT id, document_number, raw_data, fetched_at, title, summary, source_url, published_at, document_type, pdf_url, created_at, updated_at
 		FROM frarticles WHERE document_number = ?
 	`
 	var a models.FRArticle
 	var rawData []byte
 	var fetchedAt, publishedAt, createdAt, updatedAt string
+	var documentType, pdfURL sql.NullString
 	err := r.db.QueryRowContext(ctx, query, docNumber).Scan(
 		&a.ID, &a.DocumentNumber, &rawData, &fetchedAt,
 		&a.Title, &a.Summary, &a.SourceURL, &publishedAt,
-		&createdAt, &updatedAt,
+		&documentType, &pdfURL, &createdAt, &updatedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -121,6 +136,12 @@ func (r *ArticleRepository) GetByDocumentNumber(ctx context.Context, docNumber s
 	a.PublishedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", publishedAt)
 	a.CreatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", createdAt)
 	a.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", updatedAt)
+	if documentType.Valid {
+		a.DocumentType = &documentType.String
+	}
+	if pdfURL.Valid {
+		a.PDFURL = &pdfURL.String
+	}
 	json.Unmarshal(rawData, &a.RawData)
 	return &a, nil
 }
@@ -151,12 +172,13 @@ func (r *ArticleRepository) Create(ctx context.Context, article *models.FRArticl
 	article.FetchedAt = now
 
 	query := `
-		INSERT INTO frarticles (document_number, raw_data, fetched_at, title, summary, source_url, published_at, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO frarticles (document_number, raw_data, fetched_at, title, summary, source_url, published_at, document_type, pdf_url, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.ExecContext(ctx, query,
 		article.DocumentNumber, rawData, article.FetchedAt.Format("2006-01-02T15:04:05Z07:00"),
 		article.Title, article.Summary, article.SourceURL, article.PublishedAt.Format("2006-01-02T15:04:05Z07:00"),
+		article.DocumentType, article.PDFURL,
 		article.CreatedAt.Format("2006-01-02T15:04:05Z07:00"), article.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	)
 	if err != nil {
@@ -176,7 +198,7 @@ func (r *ArticleRepository) Count(ctx context.Context) (int, error) {
 
 func (r *ArticleRepository) GetLatest(ctx context.Context) (*models.FRArticle, error) {
 	query := `
-		SELECT id, document_number, raw_data, fetched_at, title, summary, source_url, published_at, created_at, updated_at
+		SELECT id, document_number, raw_data, fetched_at, title, summary, source_url, published_at, document_type, pdf_url, created_at, updated_at
 		FROM frarticles
 		ORDER BY fetched_at DESC
 		LIMIT 1
@@ -184,10 +206,11 @@ func (r *ArticleRepository) GetLatest(ctx context.Context) (*models.FRArticle, e
 	var a models.FRArticle
 	var rawData []byte
 	var fetchedAt, publishedAt, createdAt, updatedAt string
+	var documentType, pdfURL sql.NullString
 	err := r.db.QueryRowContext(ctx, query).Scan(
 		&a.ID, &a.DocumentNumber, &rawData, &fetchedAt,
 		&a.Title, &a.Summary, &a.SourceURL, &publishedAt,
-		&createdAt, &updatedAt,
+		&documentType, &pdfURL, &createdAt, &updatedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -199,6 +222,12 @@ func (r *ArticleRepository) GetLatest(ctx context.Context) (*models.FRArticle, e
 	a.PublishedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", publishedAt)
 	a.CreatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", createdAt)
 	a.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", updatedAt)
+	if documentType.Valid {
+		a.DocumentType = &documentType.String
+	}
+	if pdfURL.Valid {
+		a.PDFURL = &pdfURL.String
+	}
 	json.Unmarshal(rawData, &a.RawData)
 	return &a, nil
 }

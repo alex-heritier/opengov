@@ -15,16 +15,16 @@ const batchSize = 50
 
 type ScraperService struct {
 	frService   *FederalRegisterService
-	grokService *GrokService
+	summarizer  Summarizer
 	articleRepo *repository.ArticleRepository
 	agencyRepo  *repository.AgencyRepository
 	scraperDays int
 }
 
-func NewScraperService(cfg *config.Config, frService *FederalRegisterService, grokService *GrokService, articleRepo *repository.ArticleRepository, agencyRepo *repository.AgencyRepository) *ScraperService {
+func NewScraperService(cfg *config.Config, frService *FederalRegisterService, summarizer Summarizer, articleRepo *repository.ArticleRepository, agencyRepo *repository.AgencyRepository) *ScraperService {
 	return &ScraperService{
 		frService:   frService,
-		grokService: grokService,
+		summarizer:  summarizer,
 		articleRepo: articleRepo,
 		agencyRepo:  agencyRepo,
 		scraperDays: cfg.ScraperDaysLookback,
@@ -65,15 +65,18 @@ func (s *ScraperService) Run(ctx context.Context) {
 			continue
 		}
 
-		abstract := doc.Abstract
-		if abstract == "" {
-			abstract = doc.FullText
+		abstract := ""
+		if doc.Abstract != nil {
+			abstract = *doc.Abstract
+		}
+		if abstract == "" && doc.Excerpts != nil {
+			abstract = *doc.Excerpts
 		}
 		if len(abstract) > 1000 {
 			abstract = abstract[:1000]
 		}
 
-		summary, err := s.grokService.Summarize(ctx, abstract)
+		summary, err := s.summarizer.Summarize(ctx, abstract)
 		if err != nil {
 			log.Printf("Failed to summarize %s: %v", doc.DocumentNumber, err)
 			summary = abstract
@@ -87,9 +90,15 @@ func (s *ScraperService) Run(ctx context.Context) {
 			Summary:        summary,
 			SourceURL:      doc.HTMLURL,
 			PublishedAt:    pubDate,
+			DocumentType:   &doc.Type,
+			PDFURL:         &doc.PDFURL,
 			RawData: models.JSONMap{
-				"abstract":  doc.Abstract,
-				"full_text": doc.FullText,
+				"abstract":                  doc.Abstract,
+				"excerpts":                  doc.Excerpts,
+				"pdf_url":                   doc.PDFURL,
+				"public_inspection_pdf_url": doc.PublicInspectionPDFURL,
+				"type":                      doc.Type,
+				"agencies":                  doc.Agencies,
 			},
 		}
 
@@ -146,6 +155,7 @@ func (s *ScraperService) SyncAgencies(ctx context.Context) (int, error) {
 		now := time.Now().UTC().Format("2006-01-02T15:04:05Z07:00")
 		agency := &models.Agency{
 			FRAgencyID:  frAgency.ID,
+			RawName:     frAgency.RawName,
 			Name:        frAgency.Name,
 			ShortName:   frAgency.ShortName,
 			Slug:        frAgency.Slug,
