@@ -1,12 +1,13 @@
 import React, { useState } from 'react'
 import { useAuthStore } from '@/stores/authStore'
+import { useAuth } from '@/contexts/AuthContext'
 import { useUpdateProfileMutation } from '@/api/queries'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { CheckCircle2, User, Mail, Calendar } from 'lucide-react'
+import { CheckCircle2, User, Mail, Calendar, LogOut } from 'lucide-react'
 
 const POLITICAL_LEANINGS = [
   { value: 'democrat', label: 'Democrat' },
@@ -19,6 +20,7 @@ const POLITICAL_LEANINGS = [
 
 export default function ProfilePage() {
   const { user, updateUser } = useAuthStore()
+  const { logout } = useAuth()
   const updateProfile = useUpdateProfileMutation()
   const [politicalLeaning, setPoliticalLeaning] = useState<string | undefined>(user?.political_leaning || undefined)
   const [showSuccess, setShowSuccess] = useState(false)
@@ -143,6 +145,24 @@ export default function ProfilePage() {
               {updateProfile.isPending ? 'Saving...' : 'Save Changes'}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Account Actions */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Account Actions</CardTitle>
+          <CardDescription>Manage your account session</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            onClick={logout}
+            variant="destructive"
+            className="w-full sm:w-auto flex items-center gap-2"
+          >
+            <LogOut className="w-4 h-4" />
+            Log Out
+          </Button>
         </CardContent>
       </Card>
     </div>
