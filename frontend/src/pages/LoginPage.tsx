@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { GoogleLogin } from '../components/auth/GoogleLogin'
+import { TestLogin } from '../components/auth/TestLogin'
 import { useAuth } from '../contexts/AuthContext'
 import { FileText, Bookmark, ThumbsUp } from 'lucide-react'
 
@@ -24,8 +25,9 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="mb-8">
+        <div className="mb-8 space-y-3">
           <GoogleLogin />
+          <TestLogin />
         </div>
 
         <div className="space-y-4 mb-8">

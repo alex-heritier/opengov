@@ -148,6 +148,12 @@ func main() {
 			googleAuth.GET("/callback", oauthHandler.GoogleCallback)
 		}
 
+		// Test login endpoint (development only)
+		testAuth := api.Group("/auth/test")
+		{
+			testAuth.GET("/login", oauthHandler.TestLogin)
+		}
+
 		feed := api.Group("/feed")
 		{
 			feed.GET("", feedHandler.GetFeed)

@@ -237,6 +237,85 @@ type AuthUserResponse struct {
 	LastLoginAt      *string `json:"last_login_at,omitempty"`
 }
 
+// TestLogin handles test authentication for development environments only.
+// It creates or retrieves a test user and logs them in, mimicking the Google OAuth flow
+// to avoid special cases in the frontend.
+func (h *OAuthHandler) TestLogin(c *gin.Context) {
+	// Only allow test login in development environment
+	if h.cfg.Environment != "development" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Test login is only available in development environment"})
+		return
+	}
+
+	ctx := c.Request.Context()
+
+	// Test user credentials
+	testEmail := "testuser@opengov.test"
+	testGoogleID := "test-google-id-12345"
+	testName := "Test User"
+	testPicture := "https://api.dicebear.com/7.x/avataaars/svg?seed=testuser"
+
+	// Try to find existing test user by Google ID
+	user, err := h.userRepo.GetByGoogleID(ctx, testGoogleID)
+	if err != nil {
+		log.Printf("Database error getting test user: %v", err)
+		c.Redirect(http.StatusTemporaryRedirect, h.cfg.FrontendURL+"/login?error=test_login_error")
+		return
+	}
+
+	if user == nil {
+		// Check if email exists (might have been created differently)
+		user, err = h.userRepo.GetByEmail(ctx, testEmail)
+		if err != nil {
+			log.Printf("Database error getting user by email: %v", err)
+			c.Redirect(http.StatusTemporaryRedirect, h.cfg.FrontendURL+"/login?error=test_login_error")
+			return
+		}
+
+		if user != nil {
+			// Link Google ID to existing user
+			user.GoogleID = &testGoogleID
+			user.Name = &testName
+			user.PictureURL = &testPicture
+		} else {
+			// Create new test user
+			user = &models.User{
+				Email:       testEmail,
+				GoogleID:    &testGoogleID,
+				Name:        &testName,
+				PictureURL:  &testPicture,
+				IsActive:    1,
+				IsSuperuser: 0,
+				IsVerified:  1,
+				CreatedAt:   time.Now().UTC().Format("2006-01-02T15:04:05Z07:00"),
+				UpdatedAt:   time.Now().UTC().Format("2006-01-02T15:04:05Z07:00"),
+			}
+			if err := h.userRepo.CreateFromGoogle(ctx, user); err != nil {
+				log.Printf("Failed to create test user: %v", err)
+				c.Redirect(http.StatusTemporaryRedirect, h.cfg.FrontendURL+"/login?error=test_login_error")
+				return
+			}
+			log.Printf("Created test user with email: %s", testEmail)
+		}
+	}
+
+	// Generate JWT token (same as Google OAuth flow)
+	jwtToken, err := h.authService.GenerateToken(user)
+	if err != nil {
+		log.Printf("Failed to generate JWT token for test user: %v", err)
+		c.Redirect(http.StatusTemporaryRedirect, h.cfg.FrontendURL+"/login?error=test_login_error")
+		return
+	}
+
+	// Update last login time
+	h.userRepo.UpdateLoginTime(ctx, user.ID)
+
+	// Set auth cookie and redirect to frontend (matching Google OAuth behavior)
+	c.SetCookie("opengov_auth", jwtToken, h.cfg.JWTAccessTokenExpireMin*60, "/", "", h.cfg.CookieSecure, true)
+	log.Printf("Test user logged in: %s", testEmail)
+	c.Redirect(http.StatusTemporaryRedirect, h.cfg.FrontendURL+"/feed")
+}
+
 func userToAuthResponse(u *models.User) *AuthUserResponse {
 	var lastLoginAt *string
 	if u.LastLoginAt != nil {
