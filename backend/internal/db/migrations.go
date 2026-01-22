@@ -1,7 +1,6 @@
 package db
 
 import (
-	"database/sql"
 	"fmt"
 	"strings"
 )
@@ -42,12 +41,15 @@ CREATE TABLE IF NOT EXISTS agencies (
 
 CREATE TABLE IF NOT EXISTS frarticles (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    document_number TEXT NOT NULL UNIQUE,
+    source TEXT NOT NULL,
+    source_id TEXT NOT NULL,
+    unique_key TEXT NOT NULL UNIQUE,
+    document_number TEXT NOT NULL,
     raw_data TEXT NOT NULL,
     fetched_at TEXT NOT NULL DEFAULT (datetime('now')),
     title TEXT NOT NULL,
     summary TEXT NOT NULL,
-    source_url TEXT NOT NULL UNIQUE,
+    source_url TEXT NOT NULL,
     published_at TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -94,28 +96,37 @@ func (db *DB) RunMigrations() error {
 }
 
 func (db *DB) addMissingColumns() error {
-	var rawName string
-	err := db.QueryRow("SELECT raw_name FROM agencies LIMIT 1").Scan(&rawName)
-	if err == nil {
-		return nil
-	}
-	if err != sql.ErrNoRows {
-		return err
-	}
+	var count int
 
-	_, err = db.Exec("ALTER TABLE agencies ADD COLUMN raw_name TEXT NOT NULL DEFAULT ''")
-	if err != nil && !strings.Contains(err.Error(), "duplicate column name") {
+	err := db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('frarticles') WHERE name='source'").Scan(&count)
+	if err != nil {
 		return err
 	}
+	if count == 0 {
+		_, err = db.Exec("ALTER TABLE frarticles ADD COLUMN source TEXT NOT NULL DEFAULT 'fedreg'")
+		if err != nil && !strings.Contains(err.Error(), "duplicate column name") {
+			return err
+		}
 
-	_, err = db.Exec("ALTER TABLE frarticles ADD COLUMN document_type TEXT")
-	if err != nil && !strings.Contains(err.Error(), "duplicate column name") {
-		return err
-	}
+		_, err = db.Exec("ALTER TABLE frarticles ADD COLUMN source_id TEXT NOT NULL DEFAULT ''")
+		if err != nil && !strings.Contains(err.Error(), "duplicate column name") {
+			return err
+		}
 
-	_, err = db.Exec("ALTER TABLE frarticles ADD COLUMN pdf_url TEXT")
-	if err != nil && !strings.Contains(err.Error(), "duplicate column name") {
-		return err
+		_, err = db.Exec("ALTER TABLE frarticles ADD COLUMN unique_key TEXT")
+		if err != nil && !strings.Contains(err.Error(), "duplicate column name") {
+			return err
+		}
+
+		_, err = db.Exec("UPDATE frarticles SET source = 'fedreg', source_id = document_number, unique_key = 'fedreg:' || document_number WHERE source IS NULL OR source = ''")
+		if err != nil {
+			return fmt.Errorf("failed to backfill source columns: %w", err)
+		}
+
+		_, err = db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_frarticles_unique_key ON frarticles(unique_key)")
+		if err != nil && !strings.Contains(err.Error(), "index") {
+			return fmt.Errorf("failed to create unique_key index: %w", err)
+		}
 	}
 
 	return nil

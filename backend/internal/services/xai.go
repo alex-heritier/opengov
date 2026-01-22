@@ -16,6 +16,7 @@ import (
 type XAISummarizer struct {
 	baseURL string
 	apiKey  string
+	model   string
 	timeout time.Duration
 	client  *http.Client
 }
@@ -24,6 +25,7 @@ func NewXAISummarizer(cfg *config.Config) *XAISummarizer {
 	return &XAISummarizer{
 		baseURL: cfg.GrokAPIURL,
 		apiKey:  cfg.GrokAPIKey,
+		model:   cfg.GrokModel,
 		timeout: time.Duration(cfg.GrokTimeout) * time.Second,
 		client: &http.Client{
 			Timeout: time.Duration(cfg.GrokTimeout) * time.Second,
@@ -75,7 +77,7 @@ func (s *XAISummarizer) Summarize(ctx context.Context, text string) (string, err
 	prompt := fmt.Sprintf(viralSummaryPrompt, text)
 
 	reqBody := grokRequest{
-		Model:       "grok-4-fast",
+		Model:       s.model,
 		Messages:    []grokMessage{{Role: "user", Content: prompt}},
 		Temperature: 0.7,
 		MaxTokens:   300,

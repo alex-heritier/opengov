@@ -15,6 +15,7 @@ type Config struct {
 	// External APIs
 	FederalRegisterAPIURL string
 	GrokAPIURL            string
+	GrokModel             string
 
 	// Database
 	DatabaseURL string
@@ -79,6 +80,7 @@ func Load() (*Config, error) {
 		JWTAlgorithm:            "HS256",
 		JWTAccessTokenExpireMin: 60,
 		FrontendURL:             "http://localhost:5173",
+		GrokModel:               "grok-4.1-fast",
 	}
 
 	// Override with environment variables
@@ -198,6 +200,10 @@ func Load() (*Config, error) {
 
 	if v := os.Getenv("FRONTEND_URL"); v != "" {
 		c.FrontendURL = v
+	}
+
+	if v := os.Getenv("GROK_MODEL"); v != "" {
+		c.GrokModel = v
 	}
 
 	return c, nil

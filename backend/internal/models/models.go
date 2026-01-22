@@ -91,7 +91,10 @@ type Agency struct {
 
 type FRArticle struct {
 	ID             int       `json:"id"`
+	Source         string    `json:"source"`
+	SourceID       string    `json:"source_id"`
 	DocumentNumber string    `json:"document_number"`
+	UniqueKey      string    `json:"unique_key"`
 	RawData        JSONMap   `json:"raw_data"`
 	FetchedAt      time.Time `json:"fetched_at"`
 	Title          string    `json:"title"`

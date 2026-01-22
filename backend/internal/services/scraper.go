@@ -13,6 +13,8 @@ import (
 
 const batchSize = 50
 
+const FederalRegisterSource = "fedreg"
+
 type ScraperService struct {
 	frService   *FederalRegisterService
 	summarizer  Summarizer
@@ -56,10 +58,9 @@ func (s *ScraperService) Run(ctx context.Context) {
 		default:
 		}
 
-		existsByDoc, _ := s.articleRepo.ExistsByDocumentNumber(ctx, doc.DocumentNumber)
-		existsByURL, _ := s.articleRepo.ExistsBySourceURL(ctx, doc.HTMLURL)
+		exists, _ := s.articleRepo.ExistsByUniqueKey(ctx, FederalRegisterSource+":"+doc.DocumentNumber)
 
-		if existsByDoc || existsByURL {
+		if exists {
 			log.Printf("Skipping duplicate: %s", doc.DocumentNumber)
 			skippedCount++
 			continue
@@ -85,6 +86,9 @@ func (s *ScraperService) Run(ctx context.Context) {
 		pubDate, _ := time.Parse("2006-01-02", doc.PublicationDate)
 
 		article := &models.FRArticle{
+			Source:         FederalRegisterSource,
+			SourceID:       doc.DocumentNumber,
+			UniqueKey:      FederalRegisterSource + ":" + doc.DocumentNumber,
 			DocumentNumber: doc.DocumentNumber,
 			Title:          doc.Title,
 			Summary:        summary,
