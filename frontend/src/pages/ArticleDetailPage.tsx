@@ -15,10 +15,11 @@ interface ArticleDetail {
   created_at: string
   updated_at: string
   document_number: string | null
+  unique_key: string
 }
 
 export default function ArticleDetailPage() {
-  const { documentNumber } = useParams({ from: '/articles/$documentNumber' })
+  const { slug } = useParams({ from: '/articles/$slug' })
   const [article, setArticle] = useState<ArticleDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -29,7 +30,7 @@ export default function ArticleDetailPage() {
         setLoading(true)
         setError(null)
 
-        const response = await fetch(`http://localhost:8000/api/feed/document/${documentNumber}`)
+        const response = await fetch(`http://localhost:8000/api/feed/slug/${slug}`)
 
         if (!response.ok) {
           throw new Error(`Article not found (${response.status})`)
@@ -45,7 +46,7 @@ export default function ArticleDetailPage() {
     }
 
     fetchArticle()
-  }, [documentNumber])
+  }, [slug])
 
   if (loading) {
     return (

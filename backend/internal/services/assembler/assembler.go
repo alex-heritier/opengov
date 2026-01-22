@@ -26,7 +26,10 @@ type ArticleResponse struct {
 	Summary        string `json:"summary"`
 	SourceURL      string `json:"source_url"`
 	DocumentNumber string `json:"document_number"`
+	UniqueKey      string `json:"unique_key"`
 	PublishedAt    string `json:"published_at"`
+	CreatedAt      string `json:"created_at"`
+	UpdatedAt      string `json:"updated_at"`
 	IsBookmarked   bool   `json:"is_bookmarked,omitempty"`
 	UserLikeStatus *bool  `json:"user_like_status,omitempty"`
 	LikesCount     int    `json:"likes_count"`
@@ -40,7 +43,10 @@ func (a *ArticleAssembler) EnrichArticle(c *gin.Context, article models.FRArticl
 		Summary:        article.Summary,
 		SourceURL:      article.SourceURL,
 		DocumentNumber: article.DocumentNumber,
+		UniqueKey:      article.UniqueKey,
 		PublishedAt:    article.PublishedAt.Format("2006-01-02T15:04:05Z07:00"),
+		CreatedAt:      article.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:      article.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 
 	userID, hasAuth := middleware.GetUserID(c)

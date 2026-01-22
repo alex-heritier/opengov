@@ -153,6 +153,7 @@ func main() {
 			feed.GET("", feedHandler.GetFeed)
 			feed.GET("/:id", feedHandler.GetArticle)
 			feed.GET("/document/:document_number", feedHandler.GetArticleByDocumentNumber)
+			feed.GET("/slug/:unique_key", feedHandler.GetArticleByUniqueKey)
 		}
 
 		bookmarks := api.Group("/bookmarks")

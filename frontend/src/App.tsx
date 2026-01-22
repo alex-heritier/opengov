@@ -39,7 +39,7 @@ const adminRoute = new Route({
 // Article detail route
 const articleDetailRoute = new Route({
   getParentRoute: () => rootRoute,
-  path: '/articles/$documentNumber',
+  path: '/articles/$slug',
   component: ArticleDetailPage,
 })
 

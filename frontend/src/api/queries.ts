@@ -10,6 +10,7 @@ export interface Article {
   created_at: string
   is_bookmarked?: boolean
   document_number?: string
+  unique_key?: string
   user_like_status?: boolean | null  // null = no vote, true = liked, false = disliked
   likes_count?: number
   dislikes_count?: number
@@ -18,6 +19,7 @@ export interface Article {
 export interface BookmarkedArticle {
   id: number
   document_number: string
+  unique_key: string
   title: string
   summary: string
   source_url: string

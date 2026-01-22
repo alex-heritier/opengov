@@ -104,3 +104,19 @@ func (h *FeedHandler) GetArticleByDocumentNumber(c *gin.Context) {
 
 	c.JSON(http.StatusOK, h.assembler.EnrichArticle(c, *article))
 }
+
+func (h *FeedHandler) GetArticleByUniqueKey(c *gin.Context) {
+	uniqueKey := c.Param("unique_key")
+
+	article, err := h.articleRepo.GetByUniqueKey(c.Request.Context(), uniqueKey)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch article"})
+		return
+	}
+	if article == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Article not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, h.assembler.EnrichArticle(c, *article))
+}

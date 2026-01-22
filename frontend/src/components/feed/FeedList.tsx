@@ -69,7 +69,7 @@ export const FeedList: React.FC = () => {
             summary={article.summary}
             source_url={article.source_url}
             published_at={article.published_at}
-            document_number={article.document_number}
+            unique_key={article.unique_key}
             is_bookmarked={article.is_bookmarked}
             user_like_status={article.user_like_status}
             likes_count={article.likes_count}

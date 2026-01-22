@@ -87,7 +87,7 @@ export default function BookmarksPage() {
                 summary={article.summary}
                 source_url={article.source_url}
                 published_at={article.published_at}
-                document_number={article.document_number}
+                unique_key={article.unique_key}
                 is_bookmarked={true}
               />
             ))}

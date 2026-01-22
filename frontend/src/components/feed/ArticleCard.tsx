@@ -11,7 +11,7 @@ interface ArticleCardProps {
   summary: string
   source_url: string
   published_at: string
-  document_number?: string | null
+  unique_key?: string | null
   is_bookmarked?: boolean
   user_like_status?: boolean | null
   likes_count?: number
@@ -24,7 +24,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   summary,
   source_url,
   published_at: _published_at,
-  document_number,
+  unique_key,
   is_bookmarked = false,
   user_like_status = null,
   likes_count = 0,
@@ -64,10 +64,10 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     <article className="border-b border-gray-200 py-4 sm:py-6 hover:bg-gray-50 transition-colors">
       <div className="space-y-3">
         <h3 className="text-base sm:text-lg font-bold text-gray-900 leading-snug">
-          {document_number ? (
+          {unique_key ? (
             <Link
-              to="/articles/$documentNumber"
-              params={{ documentNumber: document_number }}
+              to="/articles/$slug"
+              params={{ slug: unique_key }}
               className="hover:underline hover:text-blue-700 transition-colors"
             >
               {title}
@@ -82,10 +82,10 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         />
 
         <div className="flex flex-wrap gap-2 pt-2">
-          {document_number && (
+          {unique_key && (
             <Link
-              to="/articles/$documentNumber"
-              params={{ documentNumber: document_number }}
+              to="/articles/$slug"
+              params={{ slug: unique_key }}
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium bg-gray-100 hover:bg-gray-200 transition-colors text-gray-900 no-underline"
             >
               <FileText className="w-4 h-4" />

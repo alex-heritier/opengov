@@ -42,21 +42,21 @@ describe('ArticleCard', () => {
     expect(screen.getByText('Test Article')).toBeInTheDocument()
   })
 
-  it('renders article title as link when document_number is present', () => {
+  it('renders article title as link when unique_key is present', () => {
     renderWithProviders(
       <ArticleCard
         title="Test Article with Link"
         summary="Test summary"
         source_url="https://example.com"
         published_at="2024-01-01T00:00:00Z"
-        document_number="2024-12345"
+        unique_key="fedreg:2024-12345"
       />
     )
 
     const link = screen.getByRole('link', { name: 'Test Article with Link' })
     expect(link).toBeInTheDocument()
     // Since we mocked Link to put 'to' in 'href'
-    expect(link).toHaveAttribute('href', '/articles/$documentNumber')
+    expect(link).toHaveAttribute('href', '/articles/$slug')
   })
 
   it('renders article summary', () => {
