@@ -8,94 +8,139 @@ OpenGov publishes real-time updates from the Federal Register with AI-powered su
 
 ## Tech Stack
 
-- **Backend**: FastAPI + SQLite + SQLAlchemy
+- **Backend**: Go + Gin + PostgreSQL
 - **Frontend**: React + Vite + TypeScript + TanStack Router/Query
 - **External APIs**: Federal Register API, Grok (xAI)
 
 ## Prerequisites
 
-- Python 3.11+
+- Go 1.25+
 - Node.js 18+
-- [uv](https://github.com/astral-sh/uv) (Python package manager)
+- PostgreSQL 14+
 - npm
 
 ## Installation
 
 ```bash
-# Install dependencies for both backend and frontend
-make install
+# Install Go dependencies
+cd backend
+go mod download
+go mod tidy
+
+# Install frontend dependencies
+cd ../frontend
+npm install
 ```
 
 ## Development
 
 ```bash
-# Start development servers (backend + frontend)
+# Setup database
+createdb opengov
+psql opengov -f migrations/001_initial_schema.sql
+
+# Set environment variables
+cp backend/.env.example backend/.env
+# Edit backend/.env with your configuration
+
+# Start backend (from backend directory)
 make run
+
+# Start frontend (from frontend directory)
+npm run dev
 
 # Backend: http://localhost:8000
 # Frontend: http://localhost:5173
-# API Docs: http://localhost:8000/docs
 ```
 
 ## Testing
 
 ```bash
-# Run all tests
+# Backend tests
+cd backend
 make test
 
-# Or individually:
-cd backend && pytest
-cd frontend && npm test
+# Frontend tests
+cd frontend
+npm test
 ```
 
 ## Building
 
 ```bash
-# Build frontend for production
+# Build backend
+cd backend
 make build
+
+# Build frontend
+cd frontend
+npm run build
 ```
 
 ## Project Structure
 
 ```
 opengov/
-├── backend/                    # FastAPI application
-│   ├── app/
-│   │   ├── main.py            # App entry point
-│   │   ├── config.py          # Configuration
-│   │   ├── database.py        # SQLAlchemy setup
-│   │   ├── models/            # Data models
-│   │   ├── services/          # External API clients
-│   │   ├── routers/           # API endpoints
-│   │   ├── schemas/           # Pydantic schemas
-│   │   └── workers/           # Background tasks
-│   ├── tests/
-│   └── requirements.txt
+├── backend/                    # Go application
+│   ├── cmd/server/            # Application entry point
+│   ├── internal/
+│   │   ├── config/           # Configuration loading
+│   │   ├── db/               # Database connection
+│   │   ├── handlers/         # HTTP handlers
+│   │   ├── middleware/       # Auth, logging middleware
+│   │   ├── models/           # Data models
+│   │   ├── repository/       # Data access layer
+│   │   └── services/         # External API clients
+│   ├── migrations/           # SQL migrations
+│   └── Makefile
 │
 ├── frontend/                   # React + Vite application
 │   ├── src/
-│   │   ├── main.tsx           # Entry point
-│   │   ├── api/               # API integration
-│   │   ├── components/        # React components
-│   │   ├── stores/            # Zustand state
-│   │   └── styles/            # Tailwind CSS
+│   │   ├── main.tsx          # Entry point
+│   │   ├── api/              # API integration
+│   │   ├── components/       # React components
+│   │   ├── stores/           # Zustand state
+│   │   └── styles/           # Tailwind CSS
 │   └── package.json
 │
 └── docs/
-    ├── model.md               # Database schema
-    ├── api.md                 # API documentation
-    └── style.md               # UI style guide
+    ├── model.md              # Database schema
+    ├── api.md                # API documentation
+    └── style.md              # UI style guide
 ```
+
+## API Endpoints
+
+### Health
+- `GET /health` - Health check
+
+### Auth
+- `POST /api/auth/login` - Login
+- `POST /api/auth/register` - Register
+- `GET /api/auth/me` - Get current user
+- `POST /api/auth/refresh` - Refresh token
+
+### Feed
+- `GET /api/feed` - Get paginated articles
+- `GET /api/feed/:id` - Get article by ID
+- `GET /api/feed/document/:document_number` - Get article by document number
+
+### Bookmarks
+- `GET /api/bookmarks` - Get user bookmarks
+- `POST /api/bookmarks/:article_id` - Toggle bookmark
+
+### Likes
+- `GET /api/likes/:article_id` - Get like counts
+- `POST /api/likes/:article_id` - Toggle like
 
 ## Configuration
 
 ### Backend Environment Variables
 Create `backend/.env`:
 ```
-GROK_API_KEY=your_key_here
-FEDERAL_REGISTER_API_URL=https://www.federalregister.gov/api/v1
-SCRAPER_INTERVAL_MINUTES=15
-SCRAPER_DAYS_LOOKBACK=1
+DATABASE_URL=postgres://localhost/opengov?sslmode=disable
+JWT_SECRET_KEY=your-secret-key-min-32-chars
+GROK_API_KEY=your-key-here
 ```
 
 ### Frontend Environment Variables
@@ -103,20 +148,6 @@ Create `frontend/.env.local`:
 ```
 VITE_API_URL=http://localhost:8000
 ```
-
-## API Documentation
-
-Full API documentation available at `http://localhost:8000/docs` when running the backend.
-
-See `docs/api.md` for detailed endpoint information.
-
-## Database Schema
-
-See `docs/model.md` for complete data model documentation.
-
-## UI Style Guide
-
-See `docs/style.md` for component patterns and design decisions.
 
 ## Roadmap
 

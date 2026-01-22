@@ -2,12 +2,12 @@ import { useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { GoogleLogin } from '../components/auth/GoogleLogin'
 import { useAuth } from '../contexts/AuthContext'
+import { FileText, Bookmark, ThumbsUp } from 'lucide-react'
 
 export default function LoginPage() {
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
       navigate({ to: '/feed' })
@@ -24,8 +24,23 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="mb-6">
+        <div className="mb-8">
           <GoogleLogin />
+        </div>
+
+        <div className="space-y-4 mb-8">
+          <div className="flex items-start gap-3 text-sm text-gray-600">
+            <FileText className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <p>Access real-time Federal Register updates as they happen</p>
+          </div>
+          <div className="flex items-start gap-3 text-sm text-gray-600">
+            <Bookmark className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <p>Bookmark important documents for quick access later</p>
+          </div>
+          <div className="flex items-start gap-3 text-sm text-gray-600">
+            <ThumbsUp className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <p>Track which issues matter most to you</p>
+          </div>
         </div>
 
         <div className="text-center">

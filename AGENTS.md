@@ -10,31 +10,29 @@ Refer to TODO.md for tasks.
 
 ## Tech Stack
 
-- **Backend**: FastAPI + SQLite + SQLAlchemy
+- **Backend**: Go + Gin + SQLite
 - **Frontend**: React + Vite + TypeScript
 - **External APIs**: Federal Register API, Grok API
-- **Dependency Management**: `uv` (Python) and `npm` (Node)
+- **Dependency Management**: `go mod` (Go) and `bun` (Node)
 
 ## Project Structure
 
 ```
 opengov/
 ├── backend/
-│   ├── app/                        # FastAPI application code
-│   │   ├── main.py                 # App entry point
-│   │   ├── config.py
-│   │   ├── database.py
-│   │   ├── models/
-│   │   ├── services/
-│   │   ├── routers/
-│   │   ├── schemas/
-│   │   └── workers/
-│   ├── migrations/                 # Alembic database migrations
-│   ├── tests/                      # Test suite
-│   ├── pyproject.toml              # Python dependencies & config
-│   ├── alembic.ini
-│   ├── pytest.ini
-│   └── .env.example
+│   ├── cmd/
+│   │   └── server/                   # Application entry point
+│   ├── internal/
+│   │   ├── config/                   # Configuration
+│   │   ├── db/                       # Database connection
+│   │   ├── handlers/                 # HTTP handlers
+│   │   ├── middleware/               # Auth middleware
+│   │   ├── models/                   # Data models
+│   │   ├── repository/               # Data access layer
+│   │   └── services/                 # Business logic & external APIs
+│   ├── bin/                          # Compiled binaries
+│   ├── go.mod
+│   └── go.sum
 │
 ├── frontend/
 │   ├── src/
@@ -50,44 +48,21 @@ opengov/
 │   ├── tsconfig.json
 │   └── .env.example
 │
-├── docs/                           # Documentation (model.md, api.md, auth.md, etc.)
+├── docs/                             # Documentation
 ├── Makefile
 └── TODO.md
-```
-
-### Response Format
-
-All API responses follow this structure:
-```json
-{
-  "success": true,
-  "data": { ... },
-  "error": null
-}
-```
-
-Error responses:
-```json
-{
-  "success": false,
-  "data": null,
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Human readable error message"
-  }
-}
 ```
 
 ## Implementation Guidelines
 
 ### Backend
-- Use FastAPI async/await for all endpoints and external calls
-- SQLite + SQLAlchemy for data persistence
+- Use standard library + Gin for HTTP routing
+- SQLite + sqlx/database/sql for data persistence
 - Separate service modules for external API integrations
 - Environment variables for API keys and configuration
-- Background workers for periodic jobs
+- Background goroutines for periodic jobs
 
-**Authentication:** fastapi-users with Google OAuth 2.0 fields, JWT tokens in HTTP-only cookies, email/password login
+**Authentication:** JWT tokens in HTTP-only cookies, email/password login
 
 ### Frontend
 - TypeScript throughout
@@ -99,14 +74,14 @@ Error responses:
 ## Testing
 
 - Tests required for all features
-- Backend: pytest
+- Backend: built-in `go test`
 - Frontend: Vitest + React Testing Library
 - Mock external API integrations
 - Run tests before commits
 
 ## Documentation
 
-- `docs/model.md` - Keep data models in sync (SQLAlchemy, Pydantic)
+- `docs/model.md` - Keep data models in sync
 - `docs/style.md` - UI component patterns and design decisions
 
 ## Development Rules
@@ -122,7 +97,7 @@ Run all commands from the project root. Use `make help` to display all available
 
 ### Installation
 - `make install` - Install all dependencies
-- `make install-backend` - Install Python dependencies only
+- `make install-backend` - Install Go dependencies only
 - `make install-frontend` - Install Node dependencies only
 
 ### Development
@@ -137,16 +112,8 @@ Run all commands from the project root. Use `make help` to display all available
 ### Testing
 - `make test` - Run all tests (backend + frontend)
 - `make test-backend` - Run all backend tests
-- `make test-backend-fast` - Run backend tests, stop on first failure
-- `make test-backend-coverage` - Run backend tests with coverage report
 - `make test-frontend` - Run frontend tests
 
-### Database
-- `make db-migrate msg="description"` - Create new migration
-- `make db-upgrade` - Apply all pending migrations
-- `make db-downgrade` - Rollback last migration
-- `make db-current` - Show current migration
-
 ### Build & Cleanup
-- `make build` - Build frontend for production
+- `make build` - Build backend and frontend for production
 - `make clean` - Clean up generated files and caches

@@ -20,7 +20,7 @@ const POLITICAL_LEANINGS = [
 export default function ProfilePage() {
   const { user, updateUser } = useAuthStore()
   const updateProfile = useUpdateProfileMutation()
-  const [politicalLeaning, setPoliticalLeaning] = useState<string>(user?.political_leaning || '')
+  const [politicalLeaning, setPoliticalLeaning] = useState<string | undefined>(user?.political_leaning || undefined)
   const [showSuccess, setShowSuccess] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,7 +28,7 @@ export default function ProfilePage() {
 
     try {
       const updatedUser = await updateProfile.mutateAsync({
-        political_leaning: politicalLeaning === '' ? null : politicalLeaning,
+        political_leaning: politicalLeaning || null,
       })
       // Update the user in the auth store
       updateUser(updatedUser)

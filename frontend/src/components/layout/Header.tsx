@@ -1,9 +1,11 @@
 import { Link } from '@tanstack/react-router'
 import { useAuthStore } from '@/stores/authStore'
-import { Bookmark, UserCircle2 } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
+import { Bookmark, UserCircle2, LogOut } from 'lucide-react'
 
 export default function Header() {
   const { isAuthenticated } = useAuthStore()
+  const { logout, user } = useAuth()
 
   return (
     <header className="border-b border-gray-200 bg-white sticky top-0 z-50 shadow-sm">
@@ -24,7 +26,7 @@ export default function Header() {
           >
             Feed
           </Link>
-          {isAuthenticated && (
+          {isAuthenticated ? (
             <>
               <Link
                 to="/bookmarks"
@@ -38,9 +40,23 @@ export default function Header() {
                 className="text-sm sm:text-base font-medium text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors min-h-[44px] flex items-center gap-1"
               >
                 <UserCircle2 className="w-4 h-4" />
-                Profile
+                {user?.name?.split(' ')[0] || 'Profile'}
               </Link>
+              <button
+                onClick={logout}
+                className="text-sm sm:text-base font-medium text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors min-h-[44px] flex items-center gap-1"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
             </>
+          ) : (
+            <Link
+              to="/login"
+              className="text-sm sm:text-base font-medium text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors min-h-[44px] flex items-center"
+            >
+              Sign In
+            </Link>
           )}
         </nav>
       </div>

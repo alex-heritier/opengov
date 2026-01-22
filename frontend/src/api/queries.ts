@@ -145,9 +145,9 @@ export function useRemoveLikeMutation() {
 
 // User profile mutations
 export interface UserUpdate {
-  name?: string
-  picture_url?: string
-  political_leaning?: string
+  name?: string | null
+  picture_url?: string | null
+  political_leaning?: string | null
 }
 
 export function useUpdateProfileMutation() {

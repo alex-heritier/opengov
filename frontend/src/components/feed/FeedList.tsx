@@ -8,27 +8,25 @@ import { AlertCircle } from 'lucide-react'
 
 export const FeedList: React.FC = () => {
   const [page, setPage] = useState(1)
-  const [allArticles, setAllArticles] = useState<any[]>([])
+  const [articles, setArticles] = useState<any[]>([])
   const [hasMore, setHasMore] = useState(true)
   const { sort, pageSize } = useFeedStore()
   const { data, isLoading, error } = useFeedQuery(page, pageSize, sort)
   const loadingRef = useRef(false)
 
-  // Accumulate articles from each page
   useEffect(() => {
-    if (data?.articles && data.articles.length > 0) {
-      setAllArticles((prev) => {
+    if (data?.articles) {
+      setArticles((prev) => {
         const newArticles = data.articles.filter(
           (article) => !prev.some((a) => a.id === article.id)
         )
         return [...prev, ...newArticles]
       })
-      setHasMore(data.has_next)
+      setHasMore(data.has_next ?? false)
       loadingRef.current = false
     }
   }, [data])
 
-  // Handle scroll with window scroll event
   const handleScroll = useCallback(() => {
     if (loadingRef.current || !hasMore || isLoading) return
     
@@ -36,7 +34,6 @@ export const FeedList: React.FC = () => {
     const scrollTop = document.documentElement.scrollTop
     const clientHeight = window.innerHeight
     
-    // Trigger when near bottom (300px)
     if (scrollTop + clientHeight >= scrollHeight - 300) {
       loadingRef.current = true
       setPage((p) => p + 1)
@@ -59,19 +56,12 @@ export const FeedList: React.FC = () => {
     )
   }
 
-  if (allArticles.length === 0 && !isLoading) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-500 text-lg">No articles found.</p>
-      </div>
-    )
-  }
+  const showEmptyState = articles.length === 0 && !isLoading
 
   return (
     <div className="space-y-0">
-      {/* Articles List */}
       <div className="divide-y divide-gray-200 border-t border-gray-200">
-        {allArticles.map((article) => (
+        {articles.map((article) => (
           <ArticleCard
             key={article.id}
             id={article.id}
@@ -88,7 +78,12 @@ export const FeedList: React.FC = () => {
         ))}
       </div>
 
-      {/* Loading indicator */}
+      {showEmptyState && (
+        <div className="text-center py-12">
+          <p className="text-gray-500 text-lg">No articles found.</p>
+        </div>
+      )}
+
       {isLoading && (
         <div className="divide-y divide-gray-200 border-t border-gray-200">
           {[...Array(3)].map((_, i) => (
@@ -105,8 +100,7 @@ export const FeedList: React.FC = () => {
         </div>
       )}
 
-      {/* End of feed message */}
-      {!hasMore && allArticles.length > 0 && (
+      {!hasMore && articles.length > 0 && (
         <div className="text-center py-8 border-t border-gray-200">
           <p className="text-sm text-gray-500">No more articles to load.</p>
         </div>

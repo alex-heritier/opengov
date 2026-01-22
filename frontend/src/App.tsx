@@ -43,7 +43,7 @@ const articleDetailRoute = new Route({
   component: ArticleDetailPage,
 })
 
-// Auth login route
+// Auth login route (redirects to main login)
 const authLoginRoute = new Route({
   getParentRoute: () => rootRoute,
   path: '/auth/login',

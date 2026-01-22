@@ -2,7 +2,6 @@ import React from 'react'
 import { ExternalLink, FileText, Bookmark, BookmarkCheck, ThumbsUp, ThumbsDown } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import DOMPurify from 'dompurify'
-import { Button } from '@/components/ui/button'
 import { useToggleBookmarkMutation, useToggleLikeMutation } from '@/api/queries'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -35,103 +34,110 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const toggleBookmark = useToggleBookmarkMutation()
   const toggleLike = useToggleLikeMutation()
 
-  // Sanitize summary to prevent XSS attacks
   const sanitizedSummary = DOMPurify.sanitize(summary, {
     ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'br', 'p'],
     ALLOWED_ATTR: []
   })
 
-  const handleToggleBookmark = async () => {
+  const handleToggleBookmark = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
     if (!id) return
     await toggleBookmark.mutateAsync(id)
   }
 
-  const handleLike = async () => {
+  const handleLike = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
     if (!id) return
     await toggleLike.mutateAsync({ articleId: id, isPositive: true })
   }
 
-  const handleDislike = async () => {
+  const handleDislike = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
     if (!id) return
     await toggleLike.mutateAsync({ articleId: id, isPositive: false })
   }
 
   return (
     <article className="border-b border-gray-200 py-4 sm:py-6 hover:bg-gray-50 transition-colors">
-      {/* Content */}
       <div className="space-y-3">
         <h3 className="text-base sm:text-lg font-bold text-gray-900 leading-snug">
-          {title}
+          {document_number ? (
+            <Link
+              to="/articles/$documentNumber"
+              params={{ documentNumber: document_number }}
+              className="hover:underline hover:text-blue-700 transition-colors"
+            >
+              {title}
+            </Link>
+          ) : (
+            title
+          )}
         </h3>
         <p
           className="text-sm text-gray-600 line-clamp-3 leading-relaxed"
           dangerouslySetInnerHTML={{ __html: sanitizedSummary }}
         />
 
-        {/* Actions */}
         <div className="flex flex-wrap gap-2 pt-2">
           {document_number && (
-            <Button
-              asChild
-              variant="ghost"
-              size="sm"
-              className="text-xs sm:text-sm h-8 px-3"
+            <Link
+              to="/articles/$documentNumber"
+              params={{ documentNumber: document_number }}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium bg-gray-100 hover:bg-gray-200 transition-colors text-gray-900 no-underline"
             >
-              <Link
-                to="/articles/$documentNumber"
-                params={{ documentNumber: document_number }}
-              >
-                <FileText className="w-4 h-4" />
-                View Details
-              </Link>
-            </Button>
+              <FileText className="w-4 h-4" />
+              View Details
+            </Link>
           )}
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="text-xs sm:text-sm h-8 px-3"
+          <a
+            href={source_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Read on Federal Register"
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium border border-gray-300 bg-white hover:bg-gray-50 transition-colors cursor-pointer text-gray-900 no-underline"
           >
-            <a
-              href={source_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Read on Federal Register"
-            >
-              <ExternalLink className="w-4 h-4" />
-              Federal Register
-            </a>
-          </Button>
+            <ExternalLink className="w-4 h-4" />
+            Federal Register
+          </a>
           {isAuthenticated && (
             <>
-              <Button
-                variant={user_like_status === true ? "default" : "outline"}
-                size="sm"
+              <button
                 onClick={handleLike}
                 disabled={toggleLike.isPending}
-                className="text-xs sm:text-sm h-8 px-3"
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+                  user_like_status === true
+                    ? 'bg-green-600 text-white'
+                    : 'border border-gray-300 bg-white hover:bg-gray-50'
+                }`}
                 aria-label="Like article"
               >
                 <ThumbsUp className="w-4 h-4" />
-                {likes_count > 0 && <span className="ml-1">{likes_count}</span>}
-              </Button>
-              <Button
-                variant={user_like_status === false ? "default" : "outline"}
-                size="sm"
+                {likes_count > 0 && <span>{likes_count}</span>}
+              </button>
+              <button
                 onClick={handleDislike}
                 disabled={toggleLike.isPending}
-                className="text-xs sm:text-sm h-8 px-3"
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+                  user_like_status === false
+                    ? 'bg-red-600 text-white'
+                    : 'border border-gray-300 bg-white hover:bg-gray-50'
+                }`}
                 aria-label="Dislike article"
               >
                 <ThumbsDown className="w-4 h-4" />
-                {dislikes_count > 0 && <span className="ml-1">{dislikes_count}</span>}
-              </Button>
-              <Button
-                variant={is_bookmarked ? "default" : "outline"}
-                size="sm"
+                {dislikes_count > 0 && <span>{dislikes_count}</span>}
+              </button>
+              <button
                 onClick={handleToggleBookmark}
                 disabled={toggleBookmark.isPending}
-                className="text-xs sm:text-sm h-8 px-3"
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+                  is_bookmarked
+                    ? 'bg-blue-600 text-white'
+                    : 'border border-gray-300 bg-white hover:bg-gray-50'
+                }`}
                 aria-label={is_bookmarked ? "Remove bookmark" : "Bookmark article"}
               >
                 {is_bookmarked ? (
@@ -145,7 +151,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                     Bookmark
                   </>
                 )}
-              </Button>
+              </button>
             </>
           )}
         </div>
