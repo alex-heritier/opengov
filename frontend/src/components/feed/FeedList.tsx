@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { useFeedQuery } from '@/api/queries'
-import { useFeedStore } from '@/stores/feedStore'
+import { useFeedQuery, useFeedStore } from '@/hooks'
 import { ArticleCard } from './ArticleCard'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
