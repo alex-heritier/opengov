@@ -49,7 +49,7 @@ describe('ArticleCard', () => {
         summary="Test summary"
         source_url="https://example.com"
         published_at="2024-01-01T00:00:00Z"
-        unique_key="fedreg:2024-12345"
+        unique_key="fedreg_2024-12345"
       />
     )
 

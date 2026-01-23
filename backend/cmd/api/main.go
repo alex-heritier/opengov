@@ -16,7 +16,6 @@ import (
 	"github.com/alex/opengov-go/internal/config"
 	"github.com/alex/opengov-go/internal/db"
 	"github.com/alex/opengov-go/internal/handlers"
-	"github.com/alex/opengov-go/internal/middleware"
 	"github.com/alex/opengov-go/internal/repository"
 	"github.com/alex/opengov-go/internal/services"
 	"github.com/alex/opengov-go/internal/services/assembler"
@@ -68,6 +67,17 @@ func main() {
 	adminHandler := handlers.NewAdminAPIHandler(articleRepo, agencyRepo)
 	oauthHandler := handlers.NewOAuthHandler(authService, userRepo, cfg)
 
+	deps := RouteDeps{
+		DB:              database,
+		AuthService:     authService,
+		FeedHandler:     feedHandler,
+		BookmarkHandler: bookmarkHandler,
+		LikeHandler:     likeHandler,
+		AuthHandler:     authHandler,
+		AdminHandler:    adminHandler,
+		OAuthHandler:    oauthHandler,
+	}
+
 	log.Println("Starting OpenGov API")
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -108,78 +118,7 @@ func main() {
 
 	router.Use(requestSizeLimitMiddleware(cfg))
 
-	router.GET("/health", func(c *gin.Context) {
-		if err := database.HealthCheck(); err != nil {
-			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "error", "database": "disconnected"})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
-
-	router.GET("/health/db", func(c *gin.Context) {
-		if err := database.HealthCheck(); err != nil {
-			c.JSON(http.StatusServiceUnavailable, gin.H{
-				"status":   "error",
-				"database": "disconnected",
-				"error":    err.Error(),
-			})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"status":   "ok",
-			"database": "connected",
-		})
-	})
-
-	api := router.Group("/api")
-	{
-		auth := api.Group("/auth")
-		{
-			auth.POST("/login", authHandler.Login)
-			auth.POST("/register", authHandler.Register)
-			auth.POST("/logout", authHandler.Logout)
-			auth.GET("/me", middleware.AuthMiddleware(authService), authHandler.Me)
-			auth.POST("/refresh", middleware.AuthMiddleware(authService), authHandler.Refresh)
-		}
-
-		googleAuth := api.Group("/auth/google")
-		{
-			googleAuth.GET("/login", oauthHandler.GoogleLogin)
-			googleAuth.GET("/callback", oauthHandler.GoogleCallback)
-		}
-
-		feed := api.Group("/feed")
-		{
-			feed.GET("", feedHandler.GetFeed)
-			feed.GET("/:id", feedHandler.GetArticle)
-			feed.GET("/document/:document_number", feedHandler.GetArticleByDocumentNumber)
-			feed.GET("/slug/:unique_key", feedHandler.GetArticleByUniqueKey)
-		}
-
-		bookmarks := api.Group("/bookmarks")
-		bookmarks.Use(middleware.AuthMiddleware(authService))
-		{
-			bookmarks.POST("/:article_id", bookmarkHandler.Toggle)
-			bookmarks.GET("", bookmarkHandler.GetBookmarks)
-			bookmarks.DELETE("/:article_id", bookmarkHandler.Remove)
-			bookmarks.GET("/status/:article_id", bookmarkHandler.GetStatus)
-		}
-
-		likes := api.Group("/likes")
-		likes.Use(middleware.AuthMiddleware(authService))
-		{
-			likes.POST("/:article_id", likeHandler.Toggle)
-			likes.GET("/counts/:article_id", likeHandler.GetCounts)
-			likes.DELETE("/:article_id", likeHandler.Remove)
-			likes.GET("/status/:article_id", likeHandler.GetStatus)
-		}
-
-		admin := api.Group("/admin")
-		{
-			admin.GET("/stats", adminHandler.GetStats)
-			admin.GET("/agencies", adminHandler.GetAgencies)
-		}
-	}
+	setupRoutes(router, cfg, deps)
 
 	go func() {
 		sigChan := make(chan os.Signal, 1)

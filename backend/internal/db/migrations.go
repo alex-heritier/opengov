@@ -129,5 +129,29 @@ func (db *DB) addMissingColumns() error {
 		}
 	}
 
+	// Add document_type column if it doesn't exist
+	err = db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('frarticles') WHERE name='document_type'").Scan(&count)
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		_, err = db.Exec("ALTER TABLE frarticles ADD COLUMN document_type TEXT")
+		if err != nil && !strings.Contains(err.Error(), "duplicate column name") {
+			return err
+		}
+	}
+
+	// Add pdf_url column if it doesn't exist
+	err = db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('frarticles') WHERE name='pdf_url'").Scan(&count)
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		_, err = db.Exec("ALTER TABLE frarticles ADD COLUMN pdf_url TEXT")
+		if err != nil && !strings.Contains(err.Error(), "duplicate column name") {
+			return err
+		}
+	}
+
 	return nil
 }

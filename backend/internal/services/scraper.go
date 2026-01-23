@@ -58,7 +58,7 @@ func (s *ScraperService) Run(ctx context.Context) {
 		default:
 		}
 
-		exists, _ := s.articleRepo.ExistsByUniqueKey(ctx, FederalRegisterSource+":"+doc.DocumentNumber)
+		exists, _ := s.articleRepo.ExistsByUniqueKey(ctx, FederalRegisterSource+"_"+doc.DocumentNumber)
 
 		if exists {
 			log.Printf("Skipping duplicate: %s", doc.DocumentNumber)
@@ -88,7 +88,7 @@ func (s *ScraperService) Run(ctx context.Context) {
 		article := &models.FRArticle{
 			Source:         FederalRegisterSource,
 			SourceID:       doc.DocumentNumber,
-			UniqueKey:      FederalRegisterSource + ":" + doc.DocumentNumber,
+			UniqueKey:      FederalRegisterSource + "_" + doc.DocumentNumber,
 			DocumentNumber: doc.DocumentNumber,
 			Title:          doc.Title,
 			Summary:        summary,

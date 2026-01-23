@@ -80,7 +80,7 @@ func Load() (*Config, error) {
 		JWTAlgorithm:            "HS256",
 		JWTAccessTokenExpireMin: 60,
 		FrontendURL:             "http://localhost:5173",
-		GrokModel:               "grok-4.1-fast",
+		GrokModel:               "grok-4-1-fast-non-reasoning",
 	}
 
 	// Override with environment variables
