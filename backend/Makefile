@@ -1,10 +1,10 @@
-.PHONY: all build build-api build-scraping run run-api run-scraping test clean deps lint
+.PHONY: all build build-api build-scraper run run-api run-scraper test clean deps lint
 
 # Go variables
 GOCMD=go
 GOBIN=$(PWD)/bin
 API_BINARY=api
-SCRAPING_BINARY=scraping
+SCRAPER_BINARY=scraper
 
 # Build flags
 LDFLAGS=-s -w
@@ -15,13 +15,13 @@ deps:
 	$(GOCMD) mod download
 	$(GOCMD) mod tidy
 
-build: build-api build-scraping
+build: build-api build-scraper
 
 build-api:
 	$(GOCMD) build -ldflags "$(LDFLAGS)" -o $(GOBIN)/$(API_BINARY) ./cmd/api
 
-build-scraping:
-	$(GOCMD) build -ldflags "$(LDFLAGS)" -o $(GOBIN)/$(SCRAPING_BINARY) ./cmd/scraping
+build-scraper:
+	$(GOCMD) build -ldflags "$(LDFLAGS)" -o $(GOBIN)/$(SCRAPER_BINARY) ./cmd/scraper
 
 run: build
 	$(GOBIN)/$(API_BINARY)
@@ -29,8 +29,8 @@ run: build
 run-api: build-api
 	$(GOBIN)/$(API_BINARY)
 
-run-scraping: build-scraping
-	$(GOBIN)/$(SCRAPING_BINARY)
+run-scraper: build-scraper
+	$(GOBIN)/$(SCRAPER_BINARY)
 
 test:
 	$(GOCMD) test -v ./...
