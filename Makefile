@@ -2,6 +2,8 @@
         install install-backend install-frontend \
         dev dev-backend dev-frontend \
         test test-backend test-frontend \
+        lint lint-backend lint-frontend \
+        fix fix-backend fix-frontend \
         build clean
 
 help:
@@ -21,6 +23,10 @@ help:
 	@echo "  make test                 - Run all tests (backend + frontend)"
 	@echo "  make test-backend         - Run all backend tests"
 	@echo "  make test-frontend        - Run frontend tests"
+	@echo ""
+	@echo "CODE QUALITY"
+	@echo "  make lint                 - Check code style"
+	@echo "  make fix                  - Auto-fix code style and format"
 	@echo ""
 	@echo "BUILD & CLEANUP"
 	@echo "  make build                - Build backend and frontend for production"
@@ -73,3 +79,23 @@ clean:
 	cd backend && make clean
 	rm -rf frontend/dist frontend/node_modules/.vite
 	@echo "✓ Clean complete"
+
+lint: lint-backend lint-frontend
+
+lint-backend:
+	@echo "Linting backend..."
+	cd backend && make lint
+
+lint-frontend:
+	@echo "Linting frontend..."
+	cd frontend && bun run lint
+
+fix: fix-backend fix-frontend
+
+fix-backend:
+	@echo "Fixing backend..."
+	cd backend && make fmt
+
+fix-frontend:
+	@echo "Fixing frontend..."
+	cd frontend && bun run fix
