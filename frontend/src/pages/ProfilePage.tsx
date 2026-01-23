@@ -1,13 +1,12 @@
 import React, { useState } from 'react'
 import { useAuthStore } from '@/stores/authStore'
-import { useAuth } from '@/contexts/AuthContext'
-import { useUpdateProfileMutation } from '@/api/queries'
+import { useAuth, useUpdateProfileMutation } from '@/hooks'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { CheckCircle2, User, Mail, Calendar, LogOut } from 'lucide-react'
+import { CheckCircle2, User as UserIcon, Mail, Calendar, LogOut } from 'lucide-react'
 
 const POLITICAL_LEANINGS = [
   { value: 'democrat', label: 'Democrat' },
@@ -29,9 +28,9 @@ export default function ProfilePage() {
     e.preventDefault()
 
     try {
-      const updatedUser = await updateProfile.mutateAsync({
-        political_leaning: politicalLeaning || null,
-      })
+       const updatedUser = await updateProfile.mutateAsync({
+         political_leaning: politicalLeaning === 'prefer-not-to-say' ? null : politicalLeaning || null,
+       })
       // Update the user in the auth store
       updateUser(updatedUser)
       setShowSuccess(true)
@@ -74,7 +73,7 @@ export default function ProfilePage() {
 
           {user.name && (
             <div className="flex items-center gap-3">
-              <User className="w-5 h-5 text-gray-500" />
+              <UserIcon className="w-5 h-5 text-gray-500" />
               <div>
                 <p className="text-sm text-gray-500">Name</p>
                 <p className="font-medium">{user.name}</p>
@@ -118,8 +117,8 @@ export default function ProfilePage() {
                   <SelectValue placeholder="Select your political leaning" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Prefer not to say</SelectItem>
-                  {POLITICAL_LEANINGS.map((option) => (
+                   <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                   {POLITICAL_LEANINGS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
