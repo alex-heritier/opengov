@@ -19,70 +19,12 @@ Refer to TODO.md for tasks.
 
 ```
 opengov/
-├── backend/
-│   ├── cmd/
-│   │   └── server/                   # Application entry point
-│   ├── internal/
-│   │   ├── config/                   # Configuration
-│   │   ├── db/                       # Database connection
-│   │   ├── handlers/                 # HTTP handlers
-│   │   ├── middleware/               # Auth middleware
-│   │   ├── models/                   # Data models
-│   │   ├── repository/               # Data access layer
-│   │   └── services/                 # Business logic & external APIs
-│   ├── bin/                          # Compiled binaries
-│   ├── go.mod
-│   └── go.sum
-│
-├── frontend/
-│   ├── src/
-│   │   ├── main.tsx
-│   │   ├── App.tsx
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── stores/
-│   │   ├── api/
-│   │   └── styles/
-│   ├── package.json
-│   ├── vite.config.ts
-│   ├── tsconfig.json
-│   └── .env.example
-│
-├── docs/                             # Documentation
+├── backend/          # Go API server
+├── frontend/         # React web app
+├── docs/             # Documentation
 ├── Makefile
 └── TODO.md
 ```
-
-## Implementation Guidelines
-
-### Backend
-- Use standard library + Gin for HTTP routing
-- SQLite + sqlx/database/sql for data persistence
-- Separate service modules for external API integrations
-- Environment variables for API keys and configuration
-- Background goroutines for periodic jobs
-
-**Authentication:** JWT tokens in HTTP-only cookies, email/password login
-
-### Frontend
-- TypeScript throughout
-- Zustand for state management
-- TanStack Router + Query for routing and data fetching
-- shadcn/ui + Tailwind CSS for styling
-- Responsive design with loading states and error boundaries
-
-## Testing
-
-- Tests required for all features
-- Backend: built-in `go test`
-- Frontend: Vitest + React Testing Library
-- Mock external API integrations
-- Run tests before commits
-
-## Documentation
-
-- `docs/model.md` - Keep data models in sync
-- `docs/style.md` - UI component patterns and design decisions
 
 ## Development Rules
 

@@ -5,6 +5,8 @@ Thumbs.db
 # IDE & Tools
 .claude/
 .cursor/
+CLAUDE.md
+GEMINI.md
 
 # Backend
 backend/.env

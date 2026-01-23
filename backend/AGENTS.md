@@ -3,3 +3,57 @@
 ## Architecture layer overview
 
 Handler -> Service -> Repository -> DB
+
+## Project Structure
+
+```
+backend/
+├── cmd/
+│   └── server/                   # Application entry point
+├── internal/
+│   ├── config/                   # Configuration
+│   ├── db/                       # Database connection
+│   ├── handlers/                 # HTTP handlers
+│   ├── middleware/               # Auth middleware
+│   ├── models/                   # Data models
+│   ├── repository/               # Data access layer
+│   └── services/                 # Business logic & external APIs
+├── bin/                          # Compiled binaries
+├── go.mod
+└── go.sum
+```
+
+## Implementation Guidelines
+
+- Use standard library + Gin for HTTP routing
+- SQLite + sqlx/database/sql for data persistence
+- Separate service modules for external API integrations
+- Environment variables for API keys and configuration
+- Background goroutines for periodic jobs
+
+**Authentication:** JWT tokens in HTTP-only cookies, email/password login
+
+## Testing
+
+- Tests required for all features
+- Backend: built-in `go test`
+- Mock external API integrations
+- Run tests before commits
+
+## Documentation
+
+- `docs/model.md` - Keep data models in sync
+
+## Commands
+
+### Installation
+- `make install-backend` - Install Go dependencies
+
+### Development
+- `make dev-backend` - Start backend dev server
+
+### Testing
+- `make test-backend` - Run all backend tests
+
+### Build
+- `make build` - Build backend for production
