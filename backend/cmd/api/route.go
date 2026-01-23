@@ -64,6 +64,11 @@ func setupRoutes(router *gin.Engine, cfg *config.Config, deps RouteDeps) {
 			googleAuth.GET("/callback", deps.OAuthHandler.GoogleCallback)
 		}
 
+		testAuth := api.Group("/auth/test")
+		{
+			testAuth.GET("/login", deps.OAuthHandler.TestLogin)
+		}
+
 		feed := api.Group("/feed")
 		{
 			feed.GET("", deps.FeedHandler.GetFeed)
