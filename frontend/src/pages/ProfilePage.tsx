@@ -1,44 +1,67 @@
-import React, { useState } from 'react'
-import { useAuthStore } from '@/store/authStore'
-import { useAuth, useProfile } from '@/hook'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { CheckCircle2, User as UserIcon, Mail, Calendar, LogOut } from 'lucide-react'
+import React, { useState } from "react";
+import { useAuthStore } from "@/store/authStore";
+import { useAuth, useProfile } from "@/hook";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  CheckCircle2,
+  User as UserIcon,
+  Mail,
+  Calendar,
+  LogOut,
+} from "lucide-react";
 
 const POLITICAL_LEANINGS = [
-  { value: 'democrat', label: 'Democrat' },
-  { value: 'republican', label: 'Republican' },
-  { value: 'libertarian', label: 'Libertarian' },
-  { value: 'maga', label: 'MAGA' },
-  { value: 'america_first', label: 'America First' },
-  { value: 'socialist', label: 'Socialist' },
-]
+  { value: "democrat", label: "Democrat" },
+  { value: "republican", label: "Republican" },
+  { value: "libertarian", label: "Libertarian" },
+  { value: "maga", label: "MAGA" },
+  { value: "america_first", label: "America First" },
+  { value: "socialist", label: "Socialist" },
+];
 
 export default function ProfilePage() {
-  const { user, updateUser } = useAuthStore()
-  const { logout } = useAuth()
-  const { updateProfileAsync, isUpdating } = useProfile()
-  const [politicalLeaning, setPoliticalLeaning] = useState<string | undefined>(user?.political_leaning || undefined)
-  const [showSuccess, setShowSuccess] = useState(false)
+  const { user, updateUser } = useAuthStore();
+  const { logout } = useAuth();
+  const { updateProfileAsync, isUpdating } = useProfile();
+  const [politicalLeaning, setPoliticalLeaning] = useState<string | undefined>(
+    user?.political_leaning || undefined,
+  );
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     try {
-       const updatedUser = await updateProfileAsync({
-         political_leaning: politicalLeaning === 'prefer-not-to-say' ? null : politicalLeaning || null,
-       })
+      const updatedUser = await updateProfileAsync({
+        political_leaning:
+          politicalLeaning === "prefer-not-to-say"
+            ? null
+            : politicalLeaning || null,
+      });
       // Update the user in the auth store
-      updateUser(updatedUser)
-      setShowSuccess(true)
-      setTimeout(() => setShowSuccess(false), 3000)
+      updateUser(updatedUser);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
-      console.error('Failed to update profile:', error)
+      console.error("Failed to update profile:", error);
     }
-  }
+  };
 
   if (!user) {
     return (
@@ -49,7 +72,7 @@ export default function ProfilePage() {
           </AlertDescription>
         </Alert>
       </div>
-    )
+    );
   }
 
   return (
@@ -86,10 +109,10 @@ export default function ProfilePage() {
             <div>
               <p className="text-sm text-gray-500">Member Since</p>
               <p className="font-medium">
-                {new Date(user.created_at).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
+                {new Date(user.created_at).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
                 })}
               </p>
             </div>
@@ -102,7 +125,8 @@ export default function ProfilePage() {
         <CardHeader>
           <CardTitle>Political Preferences</CardTitle>
           <CardDescription>
-            Help us personalize your experience by sharing your political leaning
+            Help us personalize your experience by sharing your political
+            leaning
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -117,8 +141,10 @@ export default function ProfilePage() {
                   <SelectValue placeholder="Select your political leaning" />
                 </SelectTrigger>
                 <SelectContent>
-                   <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
-                   {POLITICAL_LEANINGS.map((option) => (
+                  <SelectItem value="prefer-not-to-say">
+                    Prefer not to say
+                  </SelectItem>
+                  {POLITICAL_LEANINGS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -141,7 +167,7 @@ export default function ProfilePage() {
               disabled={isUpdating}
               className="w-full sm:w-auto"
             >
-              {isUpdating ? 'Saving...' : 'Save Changes'}
+              {isUpdating ? "Saving..." : "Save Changes"}
             </Button>
           </form>
         </CardContent>
@@ -165,5 +191,5 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

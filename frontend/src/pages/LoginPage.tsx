@@ -1,19 +1,19 @@
-import { useEffect } from 'react'
-import { useNavigate } from '@tanstack/react-router'
-import { GoogleLogin } from '../components/auth/GoogleLogin'
-import { TestLogin } from '../components/auth/TestLogin'
-import { useAuth } from '../hook'
-import { FileText, Bookmark, ThumbsUp } from 'lucide-react'
+import { useEffect } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { GoogleLogin } from "../components/auth/GoogleLogin";
+import { TestLogin } from "../components/auth/TestLogin";
+import { useAuth } from "../hook";
+import { FileText, Bookmark, ThumbsUp } from "lucide-react";
 
 export default function LoginPage() {
-  const navigate = useNavigate()
-  const { isAuthenticated } = useAuth()
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate({ to: '/feed' })
+      navigate({ to: "/feed" });
     }
-  }, [isAuthenticated, navigate])
+  }, [isAuthenticated, navigate]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
@@ -52,5 +52,5 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

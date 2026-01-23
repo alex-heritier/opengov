@@ -9,6 +9,7 @@ import (
 
 	"github.com/alex/opengov-go/internal/db"
 	"github.com/alex/opengov-go/internal/models"
+	"github.com/alex/opengov-go/internal/timeformat"
 )
 
 type BookmarkRepository struct {
@@ -35,8 +36,8 @@ func (r *BookmarkRepository) GetByUserAndArticle(ctx context.Context, userID, ar
 	if err != nil {
 		return nil, err
 	}
-	b.CreatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", createdAt)
-	b.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", updatedAt)
+	b.CreatedAt, _ = time.Parse(timeformat.DBTime, createdAt)
+	b.UpdatedAt, _ = time.Parse(timeformat.DBTime, updatedAt)
 	return &b, nil
 }
 
@@ -67,10 +68,10 @@ func (r *BookmarkRepository) GetBookmarkedArticles(ctx context.Context, userID i
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan article: %w", err)
 		}
-		a.FetchedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", fetchedAt)
-		a.PublishedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", publishedAt)
-		a.CreatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", createdAt)
-		a.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", updatedAt)
+		a.FetchedAt, _ = time.Parse(timeformat.DBTime, fetchedAt)
+		a.PublishedAt, _ = time.Parse(timeformat.DBTime, publishedAt)
+		a.CreatedAt, _ = time.Parse(timeformat.DBTime, createdAt)
+		a.UpdatedAt, _ = time.Parse(timeformat.DBTime, updatedAt)
 		json.Unmarshal(rawData, &a.RawData)
 		articles = append(articles, a)
 	}
@@ -78,7 +79,7 @@ func (r *BookmarkRepository) GetBookmarkedArticles(ctx context.Context, userID i
 }
 
 func (r *BookmarkRepository) Toggle(ctx context.Context, userID, articleID int) (*models.Bookmark, error) {
-	now := time.Now().UTC().Format("2006-01-02T15:04:05Z07:00")
+	now := time.Now().UTC().Format(timeformat.DBTime)
 
 	existing, err := r.GetByUserAndArticle(ctx, userID, articleID)
 	if err != nil {
@@ -115,7 +116,7 @@ func (r *BookmarkRepository) Toggle(ctx context.Context, userID, articleID int) 
 
 func (r *BookmarkRepository) Remove(ctx context.Context, userID, articleID int) error {
 	query := "UPDATE bookmarks SET is_bookmarked = 0, updated_at = ? WHERE user_id = ? AND frarticle_id = ?"
-	_, err := r.db.ExecContext(ctx, query, time.Now().UTC().Format("2006-01-02T15:04:05Z07:00"), userID, articleID)
+	_, err := r.db.ExecContext(ctx, query, time.Now().UTC().Format(timeformat.DBTime), userID, articleID)
 	return err
 }
 

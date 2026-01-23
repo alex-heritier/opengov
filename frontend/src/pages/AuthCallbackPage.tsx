@@ -1,48 +1,48 @@
-import { useEffect, useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
-import { useAuthStore } from '../store/authStore'
-import client from '../api/client'
+import { useEffect, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { useAuthStore } from "../store/authStore";
+import client from "../api/client";
 
 export default function AuthCallbackPage() {
-  const navigate = useNavigate()
-  const { setAuth } = useAuthStore()
-  const [error, setError] = useState<string | null>(null)
+  const navigate = useNavigate();
+  const { setAuth } = useAuthStore();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const handleCallback = async () => {
       try {
         // Get access token from URL fragment
-        const hash = window.location.hash.substring(1)
-        const params = new URLSearchParams(hash)
-        const accessToken = params.get('access_token')
+        const hash = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash);
+        const accessToken = params.get("access_token");
 
         if (!accessToken) {
-          setError('No access token received')
-          return
+          setError("No access token received");
+          return;
         }
 
         // Fetch user info
-        const response = await client.get('/api/auth/me', {
+        const response = await client.get("/api/auth/me", {
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },
-        })
+        });
 
-        const user = response.data
+        const user = response.data;
 
         // Store auth data
-        setAuth(accessToken, user)
+        setAuth(accessToken, user);
 
         // Redirect to feed
-        navigate({ to: '/feed' })
+        navigate({ to: "/feed" });
       } catch (err) {
-        console.error('Auth callback error:', err)
-        setError('Authentication failed. Please try again.')
+        console.error("Auth callback error:", err);
+        setError("Authentication failed. Please try again.");
       }
-    }
+    };
 
-    handleCallback()
-  }, [navigate, setAuth])
+    handleCallback();
+  }, [navigate, setAuth]);
 
   if (error) {
     return (
@@ -68,14 +68,14 @@ export default function AuthCallbackPage() {
           </h2>
           <p className="mb-4 text-center text-gray-600">{error}</p>
           <button
-            onClick={() => navigate({ to: '/auth/login' })}
+            onClick={() => navigate({ to: "/auth/login" })}
             className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
           >
             Try Again
           </button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -105,5 +105,5 @@ export default function AuthCallbackPage() {
         <p className="text-lg text-gray-600">Completing authentication...</p>
       </div>
     </div>
-  )
+  );
 }

@@ -1,6 +1,6 @@
-import { afterEach, vi } from 'vitest'
-import { cleanup } from '@testing-library/react'
-import '@testing-library/jest-dom'
+import { afterEach, vi } from "vitest";
+import { cleanup } from "@testing-library/react";
+import "@testing-library/jest-dom";
 
 const localStorageMock = {
   getItem: vi.fn(),
@@ -9,27 +9,27 @@ const localStorageMock = {
   clear: vi.fn(),
   length: 0,
   key: vi.fn(),
-}
+};
 
-Object.defineProperty(window, 'localStorage', {
+Object.defineProperty(window, "localStorage", {
   value: localStorageMock,
-})
+});
 
 const locationMock = {
-  href: '',
-  pathname: '',
-  search: '',
-  hash: '',
+  href: "",
+  pathname: "",
+  search: "",
+  hash: "",
   assign: vi.fn(),
   replace: vi.fn(),
   reload: vi.fn(),
-}
+};
 
-Object.defineProperty(window, 'location', {
+Object.defineProperty(window, "location", {
   value: locationMock,
-})
+});
 
 afterEach(() => {
-  cleanup()
-  vi.clearAllMocks()
-})
+  cleanup();
+  vi.clearAllMocks();
+});

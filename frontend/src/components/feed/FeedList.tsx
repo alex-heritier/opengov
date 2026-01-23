@@ -1,39 +1,43 @@
-import { useEffect, useCallback, useMemo } from 'react'
-import { useFeedQuery, useFeedStore, Article } from '@/hook'
-import type { FeedResponse } from '@/query'
-import { ArticleCard } from './ArticleCard'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AlertCircle } from 'lucide-react'
+import { useEffect, useCallback, useMemo } from "react";
+import { useFeedQuery, useFeedStore, Article } from "@/hook";
+import type { FeedResponse } from "@/query";
+import { ArticleCard } from "./ArticleCard";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 export const FeedList: React.FC = () => {
-  const { sort, pageSize } = useFeedStore()
-  const { data, isLoading, isFetchingNextPage, error, hasNextPage, fetchNextPage } = useFeedQuery(
-    pageSize,
-    sort
-  )
+  const { sort, pageSize } = useFeedStore();
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    error,
+    hasNextPage,
+    fetchNextPage,
+  } = useFeedQuery(pageSize, sort);
 
   const articles = useMemo<Article[]>(
     () => data?.pages.flatMap((page: FeedResponse) => page.articles) ?? [],
-    [data]
-  )
+    [data],
+  );
 
   const handleScroll = useCallback(() => {
-    if (isFetchingNextPage || !hasNextPage) return
+    if (isFetchingNextPage || !hasNextPage) return;
 
-    const scrollHeight = document.documentElement.scrollHeight
-    const scrollTop = document.documentElement.scrollTop
-    const clientHeight = window.innerHeight
+    const scrollHeight = document.documentElement.scrollHeight;
+    const scrollTop = document.documentElement.scrollTop;
+    const clientHeight = window.innerHeight;
 
     if (scrollTop + clientHeight >= scrollHeight - 300) {
-      fetchNextPage()
+      fetchNextPage();
     }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   useEffect(() => {
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [handleScroll])
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [handleScroll]);
 
   if (error) {
     return (
@@ -43,11 +47,11 @@ export const FeedList: React.FC = () => {
           Failed to load articles. Please try again later.
         </AlertDescription>
       </Alert>
-    )
+    );
   }
 
-  const showEmptyState = articles.length === 0 && !isLoading
-  const showLoadingMore = isFetchingNextPage
+  const showEmptyState = articles.length === 0 && !isLoading;
+  const showLoadingMore = isFetchingNextPage;
 
   return (
     <div className="space-y-0">
@@ -97,5 +101,5 @@ export const FeedList: React.FC = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};

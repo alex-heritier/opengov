@@ -1,27 +1,27 @@
-import { useBookmarks } from '@/hook'
-import type { BookmarkedArticle } from '@/hook/types'
-import { ArticleCard } from '@/components/feed/ArticleCard'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AlertCircle, Bookmark } from 'lucide-react'
-import { useAuthStore } from '@/store/authStore'
-import { useNavigate } from '@tanstack/react-router'
-import { useEffect } from 'react'
+import { useBookmarks } from "@/hook";
+import type { BookmarkedArticle } from "@/hook/types";
+import { ArticleCard } from "@/components/feed/ArticleCard";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, Bookmark } from "lucide-react";
+import { useAuthStore } from "@/store/authStore";
+import { useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 export default function BookmarksPage() {
-  const navigate = useNavigate()
-  const { isAuthenticated } = useAuthStore()
-  const { bookmarks, isLoading, error } = useBookmarks()
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
+  const { bookmarks, isLoading, error } = useBookmarks();
 
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate({ to: '/auth/login' })
+      navigate({ to: "/auth/login" });
     }
-  }, [isAuthenticated, navigate])
+  }, [isAuthenticated, navigate]);
 
   if (!isAuthenticated) {
-    return null // Will redirect
+    return null; // Will redirect
   }
 
   if (error) {
@@ -34,7 +34,7 @@ export default function BookmarksPage() {
           </AlertDescription>
         </Alert>
       </div>
-    )
+    );
   }
 
   if (isLoading) {
@@ -63,7 +63,7 @@ export default function BookmarksPage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -104,5 +104,5 @@ export default function BookmarksPage() {
         )}
       </div>
     </div>
-  )
+  );
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/alex/opengov-go/internal/config"
 	"github.com/alex/opengov-go/internal/models"
 	"github.com/alex/opengov-go/internal/repository"
+	"github.com/alex/opengov-go/internal/timeformat"
 )
 
 const batchSize = 50
@@ -156,7 +157,7 @@ func (s *ScraperService) SyncAgencies(ctx context.Context) (int, error) {
 	for _, frAgency := range agencies {
 		rawData, _ := json.Marshal(frAgency)
 
-		now := time.Now().UTC().Format("2006-01-02T15:04:05Z07:00")
+		now := time.Now().UTC().Format(timeformat.DBTime)
 		agency := &models.Agency{
 			FRAgencyID:  frAgency.ID,
 			RawName:     frAgency.RawName,

@@ -1,14 +1,14 @@
-import { useState } from 'react'
-import { Link } from '@tanstack/react-router'
-import { FeedList } from '../components/feed/FeedList'
-import { Input } from '../components/ui/input'
-import { Button } from '../components/ui/button'
-import { Search, Bookmark, ThumbsUp } from 'lucide-react'
-import { useAuthStore } from '../store/authStore'
+import { useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { FeedList } from "../components/feed/FeedList";
+import { Input } from "../components/ui/input";
+import { Button } from "../components/ui/button";
+import { Search, Bookmark, ThumbsUp } from "lucide-react";
+import { useAuthStore } from "../store/authStore";
 
 export default function FeedPage() {
-  const [searchQuery, setSearchQuery] = useState('')
-  const { isAuthenticated } = useAuthStore()
+  const [searchQuery, setSearchQuery] = useState("");
+  const { isAuthenticated } = useAuthStore();
 
   return (
     <div className="w-full max-w-5xl mx-auto px-4 sm:px-6">
@@ -28,9 +28,12 @@ export default function FeedPage() {
 
         {!isAuthenticated && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-6">
-            <h3 className="text-lg font-semibold text-blue-900 mb-2">Sign in to unlock all features</h3>
+            <h3 className="text-lg font-semibold text-blue-900 mb-2">
+              Sign in to unlock all features
+            </h3>
             <p className="text-sm text-blue-700 mb-4">
-              Create a free account to bookmark articles, track what matters to you, and get personalized updates.
+              Create a free account to bookmark articles, track what matters to
+              you, and get personalized updates.
             </p>
             <div className="flex flex-wrap gap-3">
               <Button asChild size="sm">
@@ -55,10 +58,12 @@ export default function FeedPage() {
 
         {/* Section Header */}
         <div className="space-y-4 sm:space-y-6">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Latest Updates</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+            Latest Updates
+          </h2>
           <FeedList />
         </div>
       </div>
     </div>
-  )
+  );
 }

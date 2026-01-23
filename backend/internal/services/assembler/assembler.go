@@ -6,6 +6,7 @@ import (
 	"github.com/alex/opengov-go/internal/middleware"
 	"github.com/alex/opengov-go/internal/models"
 	"github.com/alex/opengov-go/internal/repository"
+	"github.com/alex/opengov-go/internal/timeformat"
 )
 
 type ArticleAssembler struct {
@@ -44,9 +45,9 @@ func (a *ArticleAssembler) EnrichArticle(c *gin.Context, article models.FRArticl
 		SourceURL:      article.SourceURL,
 		DocumentNumber: article.DocumentNumber,
 		UniqueKey:      article.UniqueKey,
-		PublishedAt:    article.PublishedAt.Format("2006-01-02T15:04:05Z07:00"),
-		CreatedAt:      article.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt:      article.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		PublishedAt:    article.PublishedAt.Format(timeformat.DBTime),
+		CreatedAt:      article.CreatedAt.Format(timeformat.DBTime),
+		UpdatedAt:      article.UpdatedAt.Format(timeformat.DBTime),
 	}
 
 	userID, hasAuth := middleware.GetUserID(c)

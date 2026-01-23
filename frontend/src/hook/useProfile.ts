@@ -2,10 +2,10 @@
  * Domain hook for profile operations.
  * Orchestrates profile mutations.
  */
-import { useUpdateProfileMutation, UserUpdate } from '@/query'
+import { useUpdateProfileMutation, UserUpdate } from "@/query";
 
 export function useProfile() {
-  const mutation = useUpdateProfileMutation()
+  const mutation = useUpdateProfileMutation();
 
   return {
     updateProfile: mutation.mutate,
@@ -13,7 +13,7 @@ export function useProfile() {
     isUpdating: mutation.isPending,
     isError: mutation.isError,
     error: mutation.error,
-  }
+  };
 }
 
-export type { UserUpdate }
+export type { UserUpdate };

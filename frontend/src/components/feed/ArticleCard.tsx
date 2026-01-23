@@ -1,22 +1,29 @@
-import React from 'react'
-import { ExternalLink, FileText, Bookmark, BookmarkCheck, ThumbsUp, ThumbsDown } from 'lucide-react'
-import { Link, useNavigate } from '@tanstack/react-router'
-import DOMPurify from 'dompurify'
-import { useToggleBookmarkMutation, useToggleLikeMutation } from '@/hook'
-import { useAuthStore } from '@/store/authStore'
-import { useArticleUIStore, type LikeStatus } from '@/store/article-ui-store'
+import React from "react";
+import {
+  ExternalLink,
+  FileText,
+  Bookmark,
+  BookmarkCheck,
+  ThumbsUp,
+  ThumbsDown,
+} from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import DOMPurify from "dompurify";
+import { useToggleBookmarkMutation, useToggleLikeMutation } from "@/hook";
+import { useAuthStore } from "@/store/authStore";
+import { useArticleUIStore, type LikeStatus } from "@/store/article-ui-store";
 
 interface ArticleCardProps {
-  id?: number
-  title: string
-  summary: string
-  source_url: string
-  published_at: string
-  unique_key?: string | null
-  is_bookmarked?: boolean
-  user_like_status?: boolean | null
-  likes_count?: number
-  dislikes_count?: number
+  id?: number;
+  title: string;
+  summary: string;
+  source_url: string;
+  published_at: string;
+  unique_key?: string | null;
+  is_bookmarked?: boolean;
+  user_like_status?: boolean | null;
+  likes_count?: number;
+  dislikes_count?: number;
 }
 
 export const ArticleCard: React.FC<ArticleCardProps> = ({
@@ -31,51 +38,51 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   likes_count = 0,
   dislikes_count = 0,
 }) => {
-  const navigate = useNavigate()
-  const { isAuthenticated } = useAuthStore()
-  const toggleBookmark = useToggleBookmarkMutation()
-  const toggleLike = useToggleLikeMutation()
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
+  const toggleBookmark = useToggleBookmarkMutation();
+  const toggleLike = useToggleLikeMutation();
 
-  const ui = useArticleUIStore((s) => (id ? s.byId[id] : undefined))
+  const ui = useArticleUIStore((s) => (id ? s.byId[id] : undefined));
 
-  const bookmarked = ui?.is_bookmarked ?? is_bookmarked
-  const likeStatus: LikeStatus = ui?.user_like_status ?? user_like_status
-  const likesCount = ui?.likes_count ?? likes_count
-  const dislikesCount = ui?.dislikes_count ?? dislikes_count
+  const bookmarked = ui?.is_bookmarked ?? is_bookmarked;
+  const likeStatus: LikeStatus = ui?.user_like_status ?? user_like_status;
+  const likesCount = ui?.likes_count ?? likes_count;
+  const dislikesCount = ui?.dislikes_count ?? dislikes_count;
 
   const requireAuth = () => {
     if (!isAuthenticated) {
-      navigate({ to: '/login' })
-      return false
+      navigate({ to: "/login" });
+      return false;
     }
-    return true
-  }
+    return true;
+  };
 
   const sanitizedSummary = DOMPurify.sanitize(summary, {
-    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'br', 'p'],
-    ALLOWED_ATTR: []
-  })
+    ALLOWED_TAGS: ["b", "i", "em", "strong", "br", "p"],
+    ALLOWED_ATTR: [],
+  });
 
   const handleToggleBookmark = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!requireAuth() || !id) return
-    toggleBookmark.mutate(id)
-  }
+    e.preventDefault();
+    e.stopPropagation();
+    if (!requireAuth() || !id) return;
+    toggleBookmark.mutate(id);
+  };
 
   const handleLike = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!requireAuth() || !id) return
-    toggleLike.mutate({ articleId: id, isPositive: true })
-  }
+    e.preventDefault();
+    e.stopPropagation();
+    if (!requireAuth() || !id) return;
+    toggleLike.mutate({ articleId: id, isPositive: true });
+  };
 
   const handleDislike = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!requireAuth() || !id) return
-    toggleLike.mutate({ articleId: id, isPositive: false })
-  }
+    e.preventDefault();
+    e.stopPropagation();
+    if (!requireAuth() || !id) return;
+    toggleLike.mutate({ articleId: id, isPositive: false });
+  };
 
   return (
     <article className="border-b border-gray-200 py-4 sm:py-6 hover:bg-gray-50 transition-colors">
@@ -126,8 +133,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                 disabled={toggleLike.isPending}
                 className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
                   likeStatus === true
-                    ? 'bg-green-600 text-white'
-                    : 'border border-gray-300 bg-white hover:bg-gray-50'
+                    ? "bg-green-600 text-white"
+                    : "border border-gray-300 bg-white hover:bg-gray-50"
                 }`}
                 aria-label="Like article"
               >
@@ -139,8 +146,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                 disabled={toggleLike.isPending}
                 className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
                   likeStatus === false
-                    ? 'bg-red-600 text-white'
-                    : 'border border-gray-300 bg-white hover:bg-gray-50'
+                    ? "bg-red-600 text-white"
+                    : "border border-gray-300 bg-white hover:bg-gray-50"
                 }`}
                 aria-label="Dislike article"
               >
@@ -152,8 +159,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                 disabled={toggleBookmark.isPending}
                 className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
                   bookmarked
-                    ? 'bg-blue-600 text-white'
-                    : 'border border-gray-300 bg-white hover:bg-gray-50'
+                    ? "bg-blue-600 text-white"
+                    : "border border-gray-300 bg-white hover:bg-gray-50"
                 }`}
                 aria-label={bookmarked ? "Remove bookmark" : "Bookmark article"}
               >
@@ -174,5 +181,5 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         </div>
       </div>
     </article>
-  )
-}
+  );
+};

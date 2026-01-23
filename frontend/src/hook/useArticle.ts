@@ -2,25 +2,30 @@
  * Domain hook for article operations.
  * Orchestrates between article query, likes, and bookmarks.
  */
-import { useArticleQuery, useToggleLikeMutation, useRemoveLikeMutation, useToggleBookmarkMutation } from '@/query'
+import {
+  useArticleQuery,
+  useToggleLikeMutation,
+  useRemoveLikeMutation,
+  useToggleBookmarkMutation,
+} from "@/query";
 
 export function useArticle(id: number) {
-  const query = useArticleQuery(id)
-  const likeMutation = useToggleLikeMutation()
-  const unlikeMutation = useRemoveLikeMutation()
-  const bookmarkMutation = useToggleBookmarkMutation()
+  const query = useArticleQuery(id);
+  const likeMutation = useToggleLikeMutation();
+  const unlikeMutation = useRemoveLikeMutation();
+  const bookmarkMutation = useToggleBookmarkMutation();
 
   const like = (isPositive: boolean) => {
-    likeMutation.mutate({ articleId: id, isPositive })
-  }
+    likeMutation.mutate({ articleId: id, isPositive });
+  };
 
   const unlike = () => {
-    unlikeMutation.mutate(id)
-  }
+    unlikeMutation.mutate(id);
+  };
 
   const toggleBookmark = () => {
-    bookmarkMutation.mutate(id)
-  }
+    bookmarkMutation.mutate(id);
+  };
 
   return {
     // Query state
@@ -37,5 +42,5 @@ export function useArticle(id: number) {
     isLiking: likeMutation.isPending,
     isUnliking: unlikeMutation.isPending,
     isBookmarking: bookmarkMutation.isPending,
-  }
+  };
 }

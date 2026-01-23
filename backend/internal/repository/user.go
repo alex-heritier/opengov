@@ -10,6 +10,7 @@ import (
 
 	"github.com/alex/opengov-go/internal/db"
 	"github.com/alex/opengov-go/internal/models"
+	"github.com/alex/opengov-go/internal/timeformat"
 )
 
 type UserRepository struct {
@@ -40,7 +41,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id int) (*models.User, err
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 	if lastLoginAt.Valid {
-		t, _ := time.Parse("2006-01-02 15:04:05Z07:00", lastLoginAt.String)
+		t, _ := time.Parse(timeformat.DBTime, lastLoginAt.String)
 		u.LastLoginAt = &t
 	}
 	return &u, nil
@@ -66,7 +67,7 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.
 		return nil, fmt.Errorf("failed to get user by email: %w", err)
 	}
 	if lastLoginAt.Valid {
-		t, _ := time.Parse("2006-01-02T15:04:05Z07:00", lastLoginAt.String)
+		t, _ := time.Parse(timeformat.DBTime, lastLoginAt.String)
 		u.LastLoginAt = &t
 	}
 	return &u, nil
@@ -92,7 +93,7 @@ func (r *UserRepository) GetByGoogleID(ctx context.Context, googleID string) (*m
 		return nil, fmt.Errorf("failed to get user by google id: %w", err)
 	}
 	if lastLoginAt.Valid {
-		t, _ := time.Parse("2006-01-02 15:04:05Z07:00", lastLoginAt.String)
+		t, _ := time.Parse(timeformat.DBTime, lastLoginAt.String)
 		u.LastLoginAt = &t
 	}
 	return &u, nil
@@ -105,7 +106,7 @@ func (r *UserRepository) Create(ctx context.Context, user *models.User, password
 	}
 
 	now := time.Now().UTC()
-	nowStr := now.Format("2006-01-02T15:04:05Z07:00")
+	nowStr := now.Format(timeformat.DBTime)
 	user.CreatedAt = nowStr
 	user.UpdatedAt = nowStr
 	user.IsActive = 1
@@ -131,7 +132,7 @@ func (r *UserRepository) Create(ctx context.Context, user *models.User, password
 
 func (r *UserRepository) CreateFromGoogle(ctx context.Context, user *models.User) error {
 	now := time.Now().UTC()
-	nowStr := now.Format("2006-01-02T15:04:05Z07:00")
+	nowStr := now.Format(timeformat.DBTime)
 	user.CreatedAt = nowStr
 	user.UpdatedAt = nowStr
 	user.IsActive = 1
@@ -157,7 +158,7 @@ func (r *UserRepository) CreateFromGoogle(ctx context.Context, user *models.User
 
 func (r *UserRepository) UpdateLoginTime(ctx context.Context, id int) error {
 	query := "UPDATE users SET last_login_at = ? WHERE id = ?"
-	_, err := r.db.ExecContext(ctx, query, time.Now().UTC().Format("2006-01-02T15:04:05Z07:00"), id)
+	_, err := r.db.ExecContext(ctx, query, time.Now().UTC().Format(timeformat.DBTime), id)
 	return err
 }
 

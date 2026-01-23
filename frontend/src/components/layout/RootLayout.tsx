@@ -1,6 +1,6 @@
-import { Outlet } from '@tanstack/react-router'
-import Header from './Header'
-import Footer from './Footer'
+import { Outlet } from "@tanstack/react-router";
+import Header from "./Header";
+import Footer from "./Footer";
 
 export default function RootLayout() {
   return (
@@ -11,5 +11,5 @@ export default function RootLayout() {
       </main>
       <Footer />
     </div>
-  )
+  );
 }

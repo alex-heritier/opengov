@@ -9,6 +9,7 @@ import (
 
 	"github.com/alex/opengov-go/internal/db"
 	"github.com/alex/opengov-go/internal/models"
+	"github.com/alex/opengov-go/internal/timeformat"
 )
 
 type ArticleRepository struct {
@@ -55,10 +56,10 @@ func (r *ArticleRepository) GetFeed(ctx context.Context, page, limit int, sort s
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to scan article: %w", err)
 		}
-		a.FetchedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", fetchedAt)
-		a.PublishedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", publishedAt)
-		a.CreatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", createdAt)
-		a.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", updatedAt)
+		a.FetchedAt, _ = time.Parse(timeformat.DBTime, fetchedAt)
+		a.PublishedAt, _ = time.Parse(timeformat.DBTime, publishedAt)
+		a.CreatedAt, _ = time.Parse(timeformat.DBTime, createdAt)
+		a.UpdatedAt, _ = time.Parse(timeformat.DBTime, updatedAt)
 		if documentType.Valid {
 			a.DocumentType = &documentType.String
 		}
@@ -98,10 +99,10 @@ func (r *ArticleRepository) GetByID(ctx context.Context, id int) (*models.FRArti
 	if err != nil {
 		return nil, fmt.Errorf("failed to get article: %w", err)
 	}
-	a.FetchedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", fetchedAt)
-	a.PublishedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", publishedAt)
-	a.CreatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", createdAt)
-	a.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", updatedAt)
+	a.FetchedAt, _ = time.Parse(timeformat.DBTime, fetchedAt)
+	a.PublishedAt, _ = time.Parse(timeformat.DBTime, publishedAt)
+	a.CreatedAt, _ = time.Parse(timeformat.DBTime, createdAt)
+	a.UpdatedAt, _ = time.Parse(timeformat.DBTime, updatedAt)
 	if documentType.Valid {
 		a.DocumentType = &documentType.String
 	}
@@ -132,10 +133,10 @@ func (r *ArticleRepository) GetByDocumentNumber(ctx context.Context, docNumber s
 	if err != nil {
 		return nil, fmt.Errorf("failed to get article: %w", err)
 	}
-	a.FetchedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", fetchedAt)
-	a.PublishedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", publishedAt)
-	a.CreatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", createdAt)
-	a.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", updatedAt)
+	a.FetchedAt, _ = time.Parse(timeformat.DBTime, fetchedAt)
+	a.PublishedAt, _ = time.Parse(timeformat.DBTime, publishedAt)
+	a.CreatedAt, _ = time.Parse(timeformat.DBTime, createdAt)
+	a.UpdatedAt, _ = time.Parse(timeformat.DBTime, updatedAt)
 	if documentType.Valid {
 		a.DocumentType = &documentType.String
 	}
@@ -173,10 +174,10 @@ func (r *ArticleRepository) GetByUniqueKey(ctx context.Context, uniqueKey string
 	if err != nil {
 		return nil, fmt.Errorf("failed to get article by unique_key: %w", err)
 	}
-	a.FetchedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", fetchedAt)
-	a.PublishedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", publishedAt)
-	a.CreatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", createdAt)
-	a.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", updatedAt)
+	a.FetchedAt, _ = time.Parse(timeformat.DBTime, fetchedAt)
+	a.PublishedAt, _ = time.Parse(timeformat.DBTime, publishedAt)
+	a.CreatedAt, _ = time.Parse(timeformat.DBTime, createdAt)
+	a.UpdatedAt, _ = time.Parse(timeformat.DBTime, updatedAt)
 	if documentType.Valid {
 		a.DocumentType = &documentType.String
 	}
@@ -203,10 +204,10 @@ func (r *ArticleRepository) Create(ctx context.Context, article *models.FRArticl
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.ExecContext(ctx, query,
-		article.Source, article.SourceID, article.UniqueKey, article.DocumentNumber, rawData, article.FetchedAt.Format("2006-01-02T15:04:05Z07:00"),
-		article.Title, article.Summary, article.SourceURL, article.PublishedAt.Format("2006-01-02T15:04:05Z07:00"),
+		article.Source, article.SourceID, article.UniqueKey, article.DocumentNumber, rawData, article.FetchedAt.Format(timeformat.DBTime),
+		article.Title, article.Summary, article.SourceURL, article.PublishedAt.Format(timeformat.DBTime),
 		article.DocumentType, article.PDFURL,
-		article.CreatedAt.Format("2006-01-02T15:04:05Z07:00"), article.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		article.CreatedAt.Format(timeformat.DBTime), article.UpdatedAt.Format(timeformat.DBTime),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to insert article: %w", err)
@@ -245,10 +246,10 @@ func (r *ArticleRepository) GetLatest(ctx context.Context) (*models.FRArticle, e
 	if err != nil {
 		return nil, fmt.Errorf("failed to get latest article: %w", err)
 	}
-	a.FetchedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", fetchedAt)
-	a.PublishedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", publishedAt)
-	a.CreatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", createdAt)
-	a.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", updatedAt)
+	a.FetchedAt, _ = time.Parse(timeformat.DBTime, fetchedAt)
+	a.PublishedAt, _ = time.Parse(timeformat.DBTime, publishedAt)
+	a.CreatedAt, _ = time.Parse(timeformat.DBTime, createdAt)
+	a.UpdatedAt, _ = time.Parse(timeformat.DBTime, updatedAt)
 	if documentType.Valid {
 		a.DocumentType = &documentType.String
 	}

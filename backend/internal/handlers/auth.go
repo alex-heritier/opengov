@@ -9,6 +9,7 @@ import (
 	"github.com/alex/opengov-go/internal/models"
 	"github.com/alex/opengov-go/internal/repository"
 	"github.com/alex/opengov-go/internal/services"
+	"github.com/alex/opengov-go/internal/timeformat"
 )
 
 type AuthHandler struct {
@@ -157,7 +158,7 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 func userToResponse(u *models.User) *UserResponse {
 	var lastLoginAt *string
 	if u.LastLoginAt != nil {
-		s := u.LastLoginAt.Format("2006-01-02T15:04:05Z07:00")
+		s := u.LastLoginAt.Format(timeformat.DBTime)
 		lastLoginAt = &s
 	}
 	return &UserResponse{

@@ -16,6 +16,7 @@ import (
 	"github.com/alex/opengov-go/internal/models"
 	"github.com/alex/opengov-go/internal/repository"
 	"github.com/alex/opengov-go/internal/services"
+	"github.com/alex/opengov-go/internal/timeformat"
 )
 
 type OAuthHandler struct {
@@ -136,8 +137,8 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 				IsActive:    1,
 				IsSuperuser: 0,
 				IsVerified:  map[bool]int{true: 1, false: 0}[verified],
-				CreatedAt:   time.Now().UTC().Format("2006-01-02T15:04:05Z07:00"),
-				UpdatedAt:   time.Now().UTC().Format("2006-01-02T15:04:05Z07:00"),
+				CreatedAt:   time.Now().UTC().Format(timeformat.DBTime),
+				UpdatedAt:   time.Now().UTC().Format(timeformat.DBTime),
 			}
 			if err := h.userRepo.CreateFromGoogle(ctx, user); err != nil {
 				log.Printf("Failed to create user from Google OAuth: %v", err)
@@ -287,8 +288,8 @@ func (h *OAuthHandler) TestLogin(c *gin.Context) {
 				IsActive:    1,
 				IsSuperuser: 0,
 				IsVerified:  1,
-				CreatedAt:   time.Now().UTC().Format("2006-01-02T15:04:05Z07:00"),
-				UpdatedAt:   time.Now().UTC().Format("2006-01-02T15:04:05Z07:00"),
+				CreatedAt:   time.Now().UTC().Format(timeformat.DBTime),
+				UpdatedAt:   time.Now().UTC().Format(timeformat.DBTime),
 			}
 			if err := h.userRepo.CreateFromGoogle(ctx, user); err != nil {
 				log.Printf("Failed to create test user: %v", err)
@@ -318,7 +319,7 @@ func (h *OAuthHandler) TestLogin(c *gin.Context) {
 func userToAuthResponse(u *models.User) *AuthUserResponse {
 	var lastLoginAt *string
 	if u.LastLoginAt != nil {
-		s := u.LastLoginAt.Format("2006-01-02T15:04:05Z07:00")
+		s := u.LastLoginAt.Format(timeformat.DBTime)
 		lastLoginAt = &s
 	}
 	return &AuthUserResponse{

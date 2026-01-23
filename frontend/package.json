@@ -9,7 +9,7 @@
     "watch": "vite build --watch",
     "test": "vitest run",
     "lint": "tsc --noEmit",
-    "fix": "prettier --write .",
+    "fix": "prettier --write '**/*.{js,jsx,ts,tsx}'",
     "preview": "vite preview"
   },
   "dependencies": {

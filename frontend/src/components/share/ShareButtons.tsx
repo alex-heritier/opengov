@@ -1,40 +1,46 @@
-import { useState } from 'react'
-import { Twitter, Facebook, Linkedin, Mail, Link2, Check } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useState } from "react";
+import { Twitter, Facebook, Linkedin, Mail, Link2, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ShareButtonsProps {
-  title: string
-  url: string
-  summary?: string
+  title: string;
+  url: string;
+  summary?: string;
 }
 
-export default function ShareButtons({ title, url, summary }: ShareButtonsProps) {
-  const [copied, setCopied] = useState(false)
+export default function ShareButtons({
+  title,
+  url,
+  summary,
+}: ShareButtonsProps) {
+  const [copied, setCopied] = useState(false);
 
-  const encodedTitle = encodeURIComponent(title)
-  const encodedUrl = encodeURIComponent(url)
-  const encodedSummary = summary ? encodeURIComponent(summary) : ''
+  const encodedTitle = encodeURIComponent(title);
+  const encodedUrl = encodeURIComponent(url);
+  const encodedSummary = summary ? encodeURIComponent(summary) : "";
 
   const shareLinks = {
     twitter: `https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedUrl}`,
     facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
     linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
     email: `mailto:?subject=${encodedTitle}&body=${encodedSummary}%0A%0A${encodedUrl}`,
-  }
+  };
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(url)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy link:', err)
+      console.error("Failed to copy link:", err);
     }
-  }
+  };
 
   return (
     <div className="flex flex-col gap-3">
-      <h3 className="text-sm font-semibold text-gray-700">Share this article:</h3>
+      <h3 className="text-sm font-semibold text-gray-700">
+        Share this article:
+      </h3>
       <div className="flex flex-wrap gap-2">
         {/* Twitter */}
         <Button
@@ -97,10 +103,7 @@ export default function ShareButtons({ title, url, summary }: ShareButtonsProps)
           size="sm"
           className="flex items-center gap-2 hover:bg-gray-50 hover:border-gray-400 hover:text-gray-700"
         >
-          <a
-            href={shareLinks.email}
-            aria-label="Share via Email"
-          >
+          <a href={shareLinks.email} aria-label="Share via Email">
             <Mail className="w-4 h-4" />
             <span className="hidden sm:inline">Email</span>
           </a>
@@ -128,5 +131,5 @@ export default function ShareButtons({ title, url, summary }: ShareButtonsProps)
         </Button>
       </div>
     </div>
-  )
+  );
 }

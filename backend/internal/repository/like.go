@@ -8,6 +8,7 @@ import (
 
 	"github.com/alex/opengov-go/internal/db"
 	"github.com/alex/opengov-go/internal/models"
+	"github.com/alex/opengov-go/internal/timeformat"
 )
 
 type LikeRepository struct {
@@ -34,13 +35,13 @@ func (r *LikeRepository) GetByUserAndArticle(ctx context.Context, userID, articl
 	if err != nil {
 		return nil, err
 	}
-	l.CreatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", createdAt)
-	l.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05Z07:00", updatedAt)
+	l.CreatedAt, _ = time.Parse(timeformat.DBTime, createdAt)
+	l.UpdatedAt, _ = time.Parse(timeformat.DBTime, updatedAt)
 	return &l, nil
 }
 
 func (r *LikeRepository) Toggle(ctx context.Context, userID, articleID int) (*models.Like, error) {
-	now := time.Now().UTC().Format("2006-01-02T15:04:05Z07:00")
+	now := time.Now().UTC().Format(timeformat.DBTime)
 
 	existing, err := r.GetByUserAndArticle(ctx, userID, articleID)
 	if err != nil {
@@ -76,7 +77,7 @@ func (r *LikeRepository) Toggle(ctx context.Context, userID, articleID int) (*mo
 }
 
 func (r *LikeRepository) SetLike(ctx context.Context, userID, articleID int, isPositive bool) (*models.Like, error) {
-	now := time.Now().UTC().Format("2006-01-02T15:04:05Z07:00")
+	now := time.Now().UTC().Format(timeformat.DBTime)
 	isLikedValue := 0
 	if isPositive {
 		isLikedValue = 1

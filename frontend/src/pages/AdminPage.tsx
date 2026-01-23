@@ -1,61 +1,61 @@
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Loader2 } from 'lucide-react'
-import apiClient from '@/api/client'
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
+import apiClient from "@/api/client";
 
 interface ScraperRun {
-  id: number
-  started_at: string
-  completed_at: string | null
-  processed_count: number
-  skipped_count: number
-  error_count: number
-  success: boolean
-  error_message: string | null
-  duration_seconds: number | null
+  id: number;
+  started_at: string;
+  completed_at: string | null;
+  processed_count: number;
+  skipped_count: number;
+  error_count: number;
+  success: boolean;
+  error_message: string | null;
+  duration_seconds: number | null;
 }
 
 interface ScraperRunListResponse {
-  runs: ScraperRun[]
-  total: number
+  runs: ScraperRun[];
+  total: number;
 }
 
 export default function AdminPage() {
-  const queryClient = useQueryClient()
-  const [limit, setLimit] = useState(10)
+  const queryClient = useQueryClient();
+  const [limit, setLimit] = useState(10);
 
   // Fetch scraper runs
   const { data, isLoading, error } = useQuery<ScraperRunListResponse>({
-    queryKey: ['admin', 'scraper-runs', limit],
+    queryKey: ["admin", "scraper-runs", limit],
     queryFn: async () => {
-      const response = await apiClient.get('/api/admin/scraper-runs', {
+      const response = await apiClient.get("/api/admin/scraper-runs", {
         params: { limit },
-      })
-      return response.data
+      });
+      return response.data;
     },
-  })
+  });
 
   // Trigger manual scrape
   const { mutate: triggerScrape, isPending: isScrapePending } = useMutation({
     mutationFn: async () => {
-      const response = await apiClient.post('/api/admin/scrape')
-      return response.data
+      const response = await apiClient.post("/api/admin/scrape");
+      return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'scraper-runs'] })
+      queryClient.invalidateQueries({ queryKey: ["admin", "scraper-runs"] });
     },
-  })
+  });
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleString()
-  }
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  };
 
   const formatDuration = (seconds: number | null) => {
-    if (seconds === null) return 'In progress'
-    if (seconds < 60) return `${Math.round(seconds)}s`
-    return `${(seconds / 60).toFixed(1)}m`
-  }
+    if (seconds === null) return "In progress";
+    if (seconds < 60) return `${Math.round(seconds)}s`;
+    return `${(seconds / 60).toFixed(1)}m`;
+  };
 
   const getStatusBadge = (run: ScraperRun) => {
     if (!run.completed_at) {
@@ -63,7 +63,7 @@ export default function AdminPage() {
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
           Running
         </span>
-      )
+      );
     }
     return run.success ? (
       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -73,20 +73,24 @@ export default function AdminPage() {
       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
         Failed
       </span>
-    )
-  }
+    );
+  };
 
   return (
     <div className="space-y-6 p-6">
       <div>
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <p className="text-gray-500 mt-2">Manage scraper jobs and monitor system health</p>
+        <p className="text-gray-500 mt-2">
+          Manage scraper jobs and monitor system health
+        </p>
       </div>
 
       {/* Scrape Trigger Card */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-2">Trigger Scrape</h2>
-        <p className="text-gray-600 text-sm mb-4">Manually queue a Federal Register scrape job</p>
+        <p className="text-gray-600 text-sm mb-4">
+          Manually queue a Federal Register scrape job
+        </p>
         <button
           onClick={() => triggerScrape()}
           disabled={isScrapePending}
@@ -98,7 +102,7 @@ export default function AdminPage() {
               Queuing...
             </>
           ) : (
-            'Start Scrape Job'
+            "Start Scrape Job"
           )}
         </button>
       </div>
@@ -115,30 +119,57 @@ export default function AdminPage() {
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           </div>
         ) : error ? (
-          <div className="text-red-500 text-center py-8">Failed to load scraper runs</div>
+          <div className="text-red-500 text-center py-8">
+            Failed to load scraper runs
+          </div>
         ) : !data?.runs.length ? (
-          <div className="text-gray-500 text-center py-8">No scraper runs found</div>
+          <div className="text-gray-500 text-center py-8">
+            No scraper runs found
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full border-collapse">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">ID</th>
-                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Started</th>
-                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Duration</th>
-                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Processed</th>
-                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Skipped</th>
-                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Errors</th>
-                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Status</th>
-                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Error Message</th>
+                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">
+                    ID
+                  </th>
+                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">
+                    Started
+                  </th>
+                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">
+                    Duration
+                  </th>
+                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">
+                    Processed
+                  </th>
+                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">
+                    Skipped
+                  </th>
+                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">
+                    Errors
+                  </th>
+                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">
+                    Status
+                  </th>
+                  <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">
+                    Error Message
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {data.runs.map((run) => (
-                  <tr key={run.id} className="border-b border-gray-200 hover:bg-gray-50">
+                  <tr
+                    key={run.id}
+                    className="border-b border-gray-200 hover:bg-gray-50"
+                  >
                     <td className="px-4 py-3 text-sm font-medium">{run.id}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{formatDate(run.started_at)}</td>
-                    <td className="px-4 py-3 text-sm">{formatDuration(run.duration_seconds)}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {formatDate(run.started_at)}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      {formatDuration(run.duration_seconds)}
+                    </td>
                     <td className="px-4 py-3 text-sm">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                         {run.processed_count}
@@ -160,7 +191,7 @@ export default function AdminPage() {
                     </td>
                     <td className="px-4 py-3 text-sm">{getStatusBadge(run)}</td>
                     <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">
-                      {run.error_message || '-'}
+                      {run.error_message || "-"}
                     </td>
                   </tr>
                 ))}
@@ -182,5 +213,5 @@ export default function AdminPage() {
         )}
       </div>
     </div>
-  )
+  );
 }

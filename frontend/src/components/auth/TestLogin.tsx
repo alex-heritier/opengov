@@ -1,17 +1,17 @@
-import { Button } from '@/components/ui/button'
-import { FlaskConical } from 'lucide-react'
+import { Button } from "@/components/ui/button";
+import { FlaskConical } from "lucide-react";
 
 export function TestLogin() {
   const handleTestLogin = () => {
     // Redirect to backend test login flow
     // Backend handles everything: user creation, cookie setting, redirect
     // This mimics the Google OAuth flow to avoid special cases
-    window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/test/login`
-  }
+    window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/test/login`;
+  };
 
   // Only show in development mode
   if (import.meta.env.PROD) {
-    return null
+    return null;
   }
 
   return (
@@ -23,5 +23,5 @@ export function TestLogin() {
       <FlaskConical className="w-5 h-5" />
       Test Login (Dev Only)
     </Button>
-  )
+  );
 }

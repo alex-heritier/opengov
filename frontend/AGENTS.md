@@ -57,13 +57,17 @@ frontend/
 ## Commands
 
 ### Installation
+
 - `make install-frontend` - Install Node dependencies
 
 ### Development
+
 - `make dev-frontend` - Start frontend dev server
 
 ### Testing
+
 - `make test-frontend` - Run frontend tests
 
 ### Build
+
 - `make build` - Build frontend for production

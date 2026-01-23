@@ -2,12 +2,16 @@
  * Domain hook for bookmark operations.
  * Orchestrates between bookmarks query and mutations.
  */
-import { useBookmarksQuery, useToggleBookmarkMutation, useRemoveBookmarkMutation } from '@/query'
+import {
+  useBookmarksQuery,
+  useToggleBookmarkMutation,
+  useRemoveBookmarkMutation,
+} from "@/query";
 
 export function useBookmarks() {
-  const query = useBookmarksQuery()
-  const toggleMutation = useToggleBookmarkMutation()
-  const removeMutation = useRemoveBookmarkMutation()
+  const query = useBookmarksQuery();
+  const toggleMutation = useToggleBookmarkMutation();
+  const removeMutation = useRemoveBookmarkMutation();
 
   return {
     // Query state
@@ -25,5 +29,5 @@ export function useBookmarks() {
     removeBookmark: removeMutation.mutate,
     removeBookmarkAsync: removeMutation.mutateAsync,
     isRemoving: removeMutation.isPending,
-  }
+  };
 }

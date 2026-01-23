@@ -1,23 +1,27 @@
-import axios from 'axios'
-import { useAuthStore } from '../store/authStore'
+import axios from "axios";
+import { useAuthStore } from "../store/authStore";
 
-const API_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:8000'
+const API_URL =
+  (import.meta.env.VITE_API_URL as string) || "http://localhost:8000";
 
 const client = axios.create({
   baseURL: API_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
-})
+});
 
 // Flag to prevent multiple simultaneous token renewals
-let isRenewing = false
-let renewalPromise: Promise<string> | null = null
+let isRenewing = false;
+let renewalPromise: Promise<string> | null = null;
 
 // Helper function to redirect to login
 function redirectToLogin(): void {
-  if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/auth')) {
-    window.location.href = '/auth/login'
+  if (
+    typeof window !== "undefined" &&
+    !window.location.pathname.startsWith("/auth")
+  ) {
+    window.location.href = "/auth/login";
   }
 }
 
@@ -30,9 +34,9 @@ async function renewToken(currentToken: string): Promise<string> {
       headers: {
         Authorization: `Bearer ${currentToken}`,
       },
-    }
-  )
-  return response.data.access_token
+    },
+  );
+  return response.data.access_token;
 }
 
 // Function to fetch current user
@@ -41,76 +45,77 @@ async function fetchCurrentUser(token: string) {
     headers: {
       Authorization: `Bearer ${token}`,
     },
-  })
-  return response.data
+  });
+  return response.data;
 }
 
 // Request interceptor - add auth token and handle auto-renewal
 client.interceptors.request.use(
   async (config) => {
-    const { accessToken, isTokenExpiringSoon, setAuth, clearAuth } = useAuthStore.getState()
+    const { accessToken, isTokenExpiringSoon, setAuth, clearAuth } =
+      useAuthStore.getState();
 
     // Skip token renewal for auth endpoints
-    const isAuthEndpoint = config.url?.includes('/api/auth')
+    const isAuthEndpoint = config.url?.includes("/api/auth");
 
     if (accessToken && isTokenExpiringSoon() && !isAuthEndpoint) {
       try {
         // If already renewing, wait for that promise
         if (isRenewing && renewalPromise) {
-          const newToken = await renewalPromise
-          config.headers.Authorization = `Bearer ${newToken}`
-          return config
+          const newToken = await renewalPromise;
+          config.headers.Authorization = `Bearer ${newToken}`;
+          return config;
         }
 
         // Start renewal
-        isRenewing = true
-        renewalPromise = renewToken(accessToken)
-        const newToken = await renewalPromise
+        isRenewing = true;
+        renewalPromise = renewToken(accessToken);
+        const newToken = await renewalPromise;
 
         // Fetch updated user info
-        const user = await fetchCurrentUser(newToken)
+        const user = await fetchCurrentUser(newToken);
 
         // Update store
-        setAuth(newToken, user)
+        setAuth(newToken, user);
 
         // Update request config
-        config.headers.Authorization = `Bearer ${newToken}`
+        config.headers.Authorization = `Bearer ${newToken}`;
       } catch (error) {
-        console.error('Token renewal failed:', error)
-        clearAuth()
-        redirectToLogin()
+        console.error("Token renewal failed:", error);
+        clearAuth();
+        redirectToLogin();
       } finally {
-        isRenewing = false
-        renewalPromise = null
+        isRenewing = false;
+        renewalPromise = null;
       }
     } else if (accessToken) {
       // Just add the token if not expiring soon
-      config.headers.Authorization = `Bearer ${accessToken}`
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
 
-    return config
+    return config;
   },
   (error) => {
-    return Promise.reject(error)
-  }
-)
+    return Promise.reject(error);
+  },
+);
 
 // Response interceptor - handle auth errors
 client.interceptors.response.use(
   (response) => {
-    return response
+    return response;
   },
   (error) => {
     // Handle 401 Unauthorized errors
     if (error.response?.status === 401) {
-      const { clearAuth } = useAuthStore.getState()
-      clearAuth()
-      redirectToLogin()
+      const { clearAuth } = useAuthStore.getState();
+      clearAuth();
+      redirectToLogin();
     }
 
-    console.error('API Error:', error)
-    return Promise.reject(error)
-  }
-)
+    console.error("API Error:", error);
+    return Promise.reject(error);
+  },
+);
 
-export default client
+export default client;
