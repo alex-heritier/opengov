@@ -2,25 +2,13 @@
  * Auth context provider using React Query for server state
  * Separates server state (user data) from client state (token, UI)
  */
-import { createContext, useContext, ReactNode, useCallback, useEffect } from 'react'
+import { createContext, ReactNode, useCallback, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../stores/authStore'
 import client from '../api/client'
+import type { User } from './types'
 
-interface User {
-  id: number
-  email: string
-  name: string | null
-  picture_url: string | null
-  google_id: string | null
-  is_active: boolean
-  is_verified: boolean
-  created_at: string
-  updated_at: string
-  last_login_at: string | null
-}
-
-interface AuthContextValue {
+export interface AuthContextValue {
   user: User | null
   isLoading: boolean
   isError: boolean
@@ -31,7 +19,7 @@ interface AuthContextValue {
   renewToken: () => Promise<void>
 }
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined)
+export const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 // API functions
 async function fetchCurrentUser(): Promise<User> {
@@ -137,12 +125,4 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
 }

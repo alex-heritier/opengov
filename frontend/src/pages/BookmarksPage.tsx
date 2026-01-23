@@ -1,4 +1,4 @@
-import { useBookmarksQuery } from '@/api/queries'
+import { useBookmarksQuery } from '@/hooks'
 import { ArticleCard } from '@/components/feed/ArticleCard'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'

@@ -1,20 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { jwtDecode } from 'jwt-decode'
-
-interface User {
-  id: number
-  email: string
-  name: string | null
-  picture_url: string | null
-  google_id: string | null
-  political_leaning: string | null
-  is_active: boolean
-  is_verified: boolean
-  created_at: string
-  updated_at: string
-  last_login_at: string | null
-}
+import type { User } from '../hooks/types'
 
 interface JWTPayload {
   exp: number

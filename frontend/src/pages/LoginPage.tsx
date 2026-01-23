@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { GoogleLogin } from '../components/auth/GoogleLogin'
 import { TestLogin } from '../components/auth/TestLogin'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks'
 import { FileText, Bookmark, ThumbsUp } from 'lucide-react'
 
 export default function LoginPage() {

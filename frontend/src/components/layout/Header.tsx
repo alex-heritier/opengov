@@ -1,11 +1,11 @@
 import { Link } from '@tanstack/react-router'
 import { useAuthStore } from '@/stores/authStore'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/hooks'
 import { Bookmark, UserCircle2, LogOut } from 'lucide-react'
 
 export default function Header() {
   const { isAuthenticated } = useAuthStore()
-  const { logout, user } = useAuth()
+  const { logout } = useAuth()
 
   return (
     <header className="border-b border-gray-200 bg-white sticky top-0 z-50 shadow-sm">
@@ -14,12 +14,6 @@ export default function Header() {
           <span className="text-xl sm:text-2xl font-bold text-gray-900">OpenGov</span>
         </Link>
         <nav className="flex gap-2 sm:gap-4">
-          <Link
-            to="/"
-            className="text-sm sm:text-base font-medium text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors min-h-[44px] flex items-center"
-          >
-            Home
-          </Link>
           <Link
             to="/feed"
             className="text-sm sm:text-base font-medium text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors min-h-[44px] flex items-center"
@@ -40,7 +34,7 @@ export default function Header() {
                 className="text-sm sm:text-base font-medium text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors min-h-[44px] flex items-center gap-1"
               >
                 <UserCircle2 className="w-4 h-4" />
-                {user?.name?.split(' ')[0] || 'Profile'}
+                Account
               </Link>
               <button
                 onClick={logout}
