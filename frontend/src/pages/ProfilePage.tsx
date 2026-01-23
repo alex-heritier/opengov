@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { useAuthStore } from '@/stores/authStore'
-import { useAuth, useUpdateProfileMutation } from '@/hooks'
+import { useAuthStore } from '@/store/authStore'
+import { useAuth, useProfile } from '@/hook'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -20,7 +20,7 @@ const POLITICAL_LEANINGS = [
 export default function ProfilePage() {
   const { user, updateUser } = useAuthStore()
   const { logout } = useAuth()
-  const updateProfile = useUpdateProfileMutation()
+  const { updateProfileAsync, isUpdating } = useProfile()
   const [politicalLeaning, setPoliticalLeaning] = useState<string | undefined>(user?.political_leaning || undefined)
   const [showSuccess, setShowSuccess] = useState(false)
 
@@ -28,7 +28,7 @@ export default function ProfilePage() {
     e.preventDefault()
 
     try {
-       const updatedUser = await updateProfile.mutateAsync({
+       const updatedUser = await updateProfileAsync({
          political_leaning: politicalLeaning === 'prefer-not-to-say' ? null : politicalLeaning || null,
        })
       // Update the user in the auth store
@@ -138,10 +138,10 @@ export default function ProfilePage() {
 
             <Button
               type="submit"
-              disabled={updateProfile.isPending}
+              disabled={isUpdating}
               className="w-full sm:w-auto"
             >
-              {updateProfile.isPending ? 'Saving...' : 'Save Changes'}
+              {isUpdating ? 'Saving...' : 'Save Changes'}
             </Button>
           </form>
         </CardContent>

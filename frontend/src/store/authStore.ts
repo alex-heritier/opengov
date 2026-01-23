@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { jwtDecode } from 'jwt-decode'
-import type { User } from '../hooks/types'
+import type { User } from '@/hook/types'
 
 interface JWTPayload {
   exp: number

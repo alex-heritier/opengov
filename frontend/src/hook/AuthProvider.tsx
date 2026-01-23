@@ -4,7 +4,7 @@
  */
 import { createContext, ReactNode, useCallback, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useAuthStore } from '../stores/authStore'
+import { useAuthStore } from '../store/authStore'
 import client from '../api/client'
 import type { User } from './types'
 

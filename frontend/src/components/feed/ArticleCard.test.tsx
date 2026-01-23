@@ -3,9 +3,13 @@ import { render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ArticleCard } from './ArticleCard'
 
-// Mock Link from @tanstack/react-router
 vi.mock('@tanstack/react-router', () => ({
-  Link: (props: any) => <a href={props.to} {...props}>{props.children}</a>,
+  Link: ({ to, children, ...props }: { to: string; children: React.ReactNode }) => (
+    <a href={to} {...props}>
+      {children}
+    </a>
+  ),
+  useNavigate: () => vi.fn(),
 }))
 
 // Create a test QueryClient

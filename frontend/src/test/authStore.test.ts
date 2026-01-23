@@ -2,7 +2,7 @@
  * Tests for authentication Zustand store
  */
 import { describe, it, expect, beforeEach } from 'vitest'
-import { useAuthStore } from '../stores/authStore'
+import { useAuthStore } from '../store/authStore'
 
 describe('useAuthStore', () => {
   beforeEach(() => {

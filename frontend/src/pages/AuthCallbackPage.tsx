@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { useAuthStore } from '../stores/authStore'
+import { useAuthStore } from '../store/authStore'
 import client from '../api/client'
 
 export default function AuthCallbackPage() {

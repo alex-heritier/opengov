@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
-import { useAuthStore } from '@/stores/authStore'
-import { useAuth } from '@/hooks'
+import { useAuthStore } from '@/store/authStore'
+import { useAuth } from '@/hook'
 import { Bookmark, UserCircle2, LogOut } from 'lucide-react'
 
 export default function Header() {

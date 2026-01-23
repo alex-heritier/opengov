@@ -1,52 +1,14 @@
-import { useEffect, useState } from 'react'
 import { useParams, Link } from '@tanstack/react-router'
 import { ArrowLeft, ExternalLink, Calendar, Clock, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import ShareButtons from '@/components/share/ShareButtons'
-
-interface ArticleDetail {
-  id: number
-  title: string
-  summary: string
-  source_url: string
-  published_at: string
-  created_at: string
-  updated_at: string
-  document_number: string | null
-  unique_key: string
-}
+import { useArticleBySlugQuery } from '@/hook'
 
 export default function ArticleDetailPage() {
   const { slug } = useParams({ from: '/articles/$slug' })
-  const [article, setArticle] = useState<ArticleDetail | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    const fetchArticle = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-
-        const response = await fetch(`http://localhost:8000/api/feed/slug/${slug}`)
-
-        if (!response.ok) {
-          throw new Error(`Article not found (${response.status})`)
-        }
-
-        const data = await response.json()
-        setArticle(data)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load article')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchArticle()
-  }, [slug])
+  const { data: article, isLoading: loading, error } = useArticleBySlugQuery(slug)
 
   if (loading) {
     return (
@@ -64,7 +26,7 @@ export default function ArticleDetailPage() {
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            {error || 'Article not found'}
+            {error?.message ?? 'Article not found'}
           </AlertDescription>
         </Alert>
         <Button asChild variant="outline" className="mt-4">

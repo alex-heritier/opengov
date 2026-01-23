@@ -1,43 +1,34 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { useFeedQuery, useFeedStore } from '@/hooks'
+import { useEffect, useCallback, useMemo } from 'react'
+import { useFeedQuery, useFeedStore, Article } from '@/hook'
+import type { FeedResponse } from '@/query'
 import { ArticleCard } from './ArticleCard'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 
 export const FeedList: React.FC = () => {
-  const [page, setPage] = useState(1)
-  const [articles, setArticles] = useState<any[]>([])
-  const [hasMore, setHasMore] = useState(true)
   const { sort, pageSize } = useFeedStore()
-  const { data, isLoading, error } = useFeedQuery(page, pageSize, sort)
-  const loadingRef = useRef(false)
+  const { data, isLoading, isFetchingNextPage, error, hasNextPage, fetchNextPage } = useFeedQuery(
+    pageSize,
+    sort
+  )
 
-  useEffect(() => {
-    if (data?.articles) {
-      setArticles((prev) => {
-        const newArticles = data.articles.filter(
-          (article) => !prev.some((a) => a.id === article.id)
-        )
-        return [...prev, ...newArticles]
-      })
-      setHasMore(data.has_next ?? false)
-      loadingRef.current = false
-    }
-  }, [data])
+  const articles = useMemo<Article[]>(
+    () => data?.pages.flatMap((page: FeedResponse) => page.articles) ?? [],
+    [data]
+  )
 
   const handleScroll = useCallback(() => {
-    if (loadingRef.current || !hasMore || isLoading) return
-    
+    if (isFetchingNextPage || !hasNextPage) return
+
     const scrollHeight = document.documentElement.scrollHeight
     const scrollTop = document.documentElement.scrollTop
     const clientHeight = window.innerHeight
-    
+
     if (scrollTop + clientHeight >= scrollHeight - 300) {
-      loadingRef.current = true
-      setPage((p) => p + 1)
+      fetchNextPage()
     }
-  }, [hasMore, isLoading])
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll)
@@ -56,6 +47,7 @@ export const FeedList: React.FC = () => {
   }
 
   const showEmptyState = articles.length === 0 && !isLoading
+  const showLoadingMore = isFetchingNextPage
 
   return (
     <div className="space-y-0">
@@ -83,7 +75,7 @@ export const FeedList: React.FC = () => {
         </div>
       )}
 
-      {isLoading && (
+      {(isLoading || showLoadingMore) && (
         <div className="divide-y divide-gray-200 border-t border-gray-200">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="py-4 sm:py-6 space-y-3">
@@ -99,7 +91,7 @@ export const FeedList: React.FC = () => {
         </div>
       )}
 
-      {!hasMore && articles.length > 0 && (
+      {!hasNextPage && articles.length > 0 && !isLoading && (
         <div className="text-center py-8 border-t border-gray-200">
           <p className="text-sm text-gray-500">No more articles to load.</p>
         </div>

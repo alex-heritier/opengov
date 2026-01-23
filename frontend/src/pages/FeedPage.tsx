@@ -4,7 +4,7 @@ import { FeedList } from '../components/feed/FeedList'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
 import { Search, Bookmark, ThumbsUp } from 'lucide-react'
-import { useAuthStore } from '../stores/authStore'
+import { useAuthStore } from '../store/authStore'
 
 export default function FeedPage() {
   const [searchQuery, setSearchQuery] = useState('')

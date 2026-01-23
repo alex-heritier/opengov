@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import client from '../api/client'
+import client from '@/api/client'
 
 export interface UserUpdate {
   name?: string | null

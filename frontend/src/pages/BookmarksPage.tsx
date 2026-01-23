@@ -1,16 +1,17 @@
-import { useBookmarksQuery } from '@/hooks'
+import { useBookmarks } from '@/hook'
+import type { BookmarkedArticle } from '@/hook/types'
 import { ArticleCard } from '@/components/feed/ArticleCard'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle, Bookmark } from 'lucide-react'
-import { useAuthStore } from '@/stores/authStore'
+import { useAuthStore } from '@/store/authStore'
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
 export default function BookmarksPage() {
   const navigate = useNavigate()
   const { isAuthenticated } = useAuthStore()
-  const { data: bookmarks, isLoading, error } = useBookmarksQuery()
+  const { bookmarks, isLoading, error } = useBookmarks()
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -79,7 +80,7 @@ export default function BookmarksPage() {
         {/* Bookmarks List */}
         {bookmarks && bookmarks.length > 0 ? (
           <div className="divide-y divide-gray-200 border-t border-gray-200">
-            {bookmarks.map((article) => (
+            {bookmarks.map((article: BookmarkedArticle) => (
               <ArticleCard
                 key={article.id}
                 id={article.id}

@@ -2,8 +2,9 @@ import React from 'react'
 import { ExternalLink, FileText, Bookmark, BookmarkCheck, ThumbsUp, ThumbsDown } from 'lucide-react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import DOMPurify from 'dompurify'
-import { useToggleBookmarkMutation, useToggleLikeMutation } from '@/hooks'
-import { useAuthStore } from '@/stores/authStore'
+import { useToggleBookmarkMutation, useToggleLikeMutation } from '@/hook'
+import { useAuthStore } from '@/store/authStore'
+import { useArticleUIStore, type LikeStatus } from '@/store/article-ui-store'
 
 interface ArticleCardProps {
   id?: number
@@ -35,23 +36,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const toggleBookmark = useToggleBookmarkMutation()
   const toggleLike = useToggleLikeMutation()
 
-  // Single optimistic state object
-  const [optimistic, setOptimistic] = React.useState({
-    bookmarked: is_bookmarked,
-    likeStatus: user_like_status,
-    likesCount: likes_count,
-    dislikesCount: dislikes_count,
-  })
+  const ui = useArticleUIStore((s) => (id ? s.byId[id] : undefined))
 
-  // Sync with props when query refetches
-  React.useEffect(() => {
-    setOptimistic({
-      bookmarked: is_bookmarked,
-      likeStatus: user_like_status,
-      likesCount: likes_count,
-      dislikesCount: dislikes_count,
-    })
-  }, [is_bookmarked, user_like_status, likes_count, dislikes_count])
+  const bookmarked = ui?.is_bookmarked ?? is_bookmarked
+  const likeStatus: LikeStatus = ui?.user_like_status ?? user_like_status
+  const likesCount = ui?.likes_count ?? likes_count
+  const dislikesCount = ui?.dislikes_count ?? dislikes_count
 
   const requireAuth = () => {
     if (!isAuthenticated) {
@@ -66,100 +56,25 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     ALLOWED_ATTR: []
   })
 
-  const handleToggleBookmark = async (e: React.MouseEvent) => {
+  const handleToggleBookmark = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     if (!requireAuth() || !id) return
-
-    const prevState = optimistic.bookmarked
-    setOptimistic((s) => ({ ...s, bookmarked: !s.bookmarked }))
-
-    try {
-      await toggleBookmark.mutateAsync(id)
-    } catch (error) {
-      console.error('Failed to toggle bookmark:', error)
-      setOptimistic((s) => ({ ...s, bookmarked: prevState }))
-    }
+    toggleBookmark.mutate(id)
   }
 
-  const handleLike = async (e: React.MouseEvent) => {
+  const handleLike = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     if (!requireAuth() || !id) return
-
-    const prevState = { ...optimistic }
-    const isCurrentlyLiked = optimistic.likeStatus === true
-    const isCurrentlyDisliked = optimistic.likeStatus === false
-
-    // Toggle like (if already liked, clear; otherwise set to true)
-    const newStatus = isCurrentlyLiked ? null : true
-    setOptimistic((s) => {
-      let likesCount = s.likesCount
-      let dislikesCount = s.dislikesCount
-
-      if (isCurrentlyLiked) {
-        likesCount = Math.max(0, likesCount - 1)
-      } else if (isCurrentlyDisliked) {
-        likesCount += 1
-        dislikesCount = Math.max(0, dislikesCount - 1)
-      } else {
-        likesCount += 1
-      }
-
-      return {
-        ...s,
-        likeStatus: newStatus,
-        likesCount,
-        dislikesCount,
-      }
-    })
-
-    try {
-      await toggleLike.mutateAsync({ articleId: id, isPositive: true })
-    } catch (error) {
-      console.error('Failed to like article:', error)
-      setOptimistic(prevState)
-    }
+    toggleLike.mutate({ articleId: id, isPositive: true })
   }
 
-  const handleDislike = async (e: React.MouseEvent) => {
+  const handleDislike = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     if (!requireAuth() || !id) return
-
-    const prevState = { ...optimistic }
-    const isCurrentlyLiked = optimistic.likeStatus === true
-    const isCurrentlyDisliked = optimistic.likeStatus === false
-
-    // Toggle dislike (if already disliked, clear; otherwise set to false)
-    const newStatus = isCurrentlyDisliked ? null : false
-    setOptimistic((s) => {
-      let likesCount = s.likesCount
-      let dislikesCount = s.dislikesCount
-
-      if (isCurrentlyDisliked) {
-        dislikesCount = Math.max(0, dislikesCount - 1)
-      } else if (isCurrentlyLiked) {
-        dislikesCount += 1
-        likesCount = Math.max(0, likesCount - 1)
-      } else {
-        dislikesCount += 1
-      }
-
-      return {
-        ...s,
-        likeStatus: newStatus,
-        likesCount,
-        dislikesCount,
-      }
-    })
-
-    try {
-      await toggleLike.mutateAsync({ articleId: id, isPositive: false })
-    } catch (error) {
-      console.error('Failed to dislike article:', error)
-      setOptimistic(prevState)
-    }
+    toggleLike.mutate({ articleId: id, isPositive: false })
   }
 
   return (
@@ -210,39 +125,39 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                 onClick={handleLike}
                 disabled={toggleLike.isPending}
                 className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
-                  optimistic.likeStatus === true
+                  likeStatus === true
                     ? 'bg-green-600 text-white'
                     : 'border border-gray-300 bg-white hover:bg-gray-50'
                 }`}
                 aria-label="Like article"
               >
                 <ThumbsUp className="w-4 h-4" />
-                {optimistic.likesCount > 0 && <span>{optimistic.likesCount}</span>}
+                {likesCount > 0 && <span>{likesCount}</span>}
               </button>
               <button
                 onClick={handleDislike}
                 disabled={toggleLike.isPending}
                 className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
-                  optimistic.likeStatus === false
+                  likeStatus === false
                     ? 'bg-red-600 text-white'
                     : 'border border-gray-300 bg-white hover:bg-gray-50'
                 }`}
                 aria-label="Dislike article"
               >
                 <ThumbsDown className="w-4 h-4" />
-                {optimistic.dislikesCount > 0 && <span>{optimistic.dislikesCount}</span>}
+                {dislikesCount > 0 && <span>{dislikesCount}</span>}
               </button>
               <button
                 onClick={handleToggleBookmark}
                 disabled={toggleBookmark.isPending}
                 className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
-                  optimistic.bookmarked
+                  bookmarked
                     ? 'bg-blue-600 text-white'
                     : 'border border-gray-300 bg-white hover:bg-gray-50'
                 }`}
-                aria-label={optimistic.bookmarked ? "Remove bookmark" : "Bookmark article"}
+                aria-label={bookmarked ? "Remove bookmark" : "Bookmark article"}
               >
-                {optimistic.bookmarked ? (
+                {bookmarked ? (
                   <>
                     <BookmarkCheck className="w-4 h-4" />
                     Bookmarked
