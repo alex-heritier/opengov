@@ -24,14 +24,14 @@ func NewUserRepository(db *db.DB) *UserRepository {
 func (r *UserRepository) GetByID(ctx context.Context, id int) (*models.User, error) {
 	query := `
 		SELECT id, email, hashed_password, is_active, is_superuser, is_verified,
-		       google_id, name, picture_url, political_leaning, created_at, updated_at, last_login_at
+		       google_id, name, picture_url, political_leaning, state, created_at, updated_at, last_login_at
 		FROM users WHERE id = ?
 	`
 	var u models.User
 	var lastLoginAt sql.NullString
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&u.ID, &u.Email, &u.HashedPassword, &u.IsActive, &u.IsSuperuser, &u.IsVerified,
-		&u.GoogleID, &u.Name, &u.PictureURL, &u.PoliticalLeaning,
+		&u.GoogleID, &u.Name, &u.PictureURL, &u.PoliticalLeaning, &u.State,
 		&u.CreatedAt, &u.UpdatedAt, &lastLoginAt,
 	)
 	if err == sql.ErrNoRows {
@@ -50,14 +50,14 @@ func (r *UserRepository) GetByID(ctx context.Context, id int) (*models.User, err
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	query := `
 		SELECT id, email, hashed_password, is_active, is_superuser, is_verified,
-		       google_id, name, picture_url, political_leaning, created_at, updated_at, last_login_at
+		       google_id, name, picture_url, political_leaning, state, created_at, updated_at, last_login_at
 		FROM users WHERE email = ?
 	`
 	var u models.User
 	var lastLoginAt sql.NullString
 	err := r.db.QueryRowContext(ctx, query, email).Scan(
 		&u.ID, &u.Email, &u.HashedPassword, &u.IsActive, &u.IsSuperuser, &u.IsVerified,
-		&u.GoogleID, &u.Name, &u.PictureURL, &u.PoliticalLeaning,
+		&u.GoogleID, &u.Name, &u.PictureURL, &u.PoliticalLeaning, &u.State,
 		&u.CreatedAt, &u.UpdatedAt, &lastLoginAt,
 	)
 	if err == sql.ErrNoRows {
@@ -76,14 +76,14 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.
 func (r *UserRepository) GetByGoogleID(ctx context.Context, googleID string) (*models.User, error) {
 	query := `
 		SELECT id, email, hashed_password, is_active, is_superuser, is_verified,
-		       google_id, name, picture_url, political_leaning, created_at, updated_at, last_login_at
+		       google_id, name, picture_url, political_leaning, state, created_at, updated_at, last_login_at
 		FROM users WHERE google_id = ?
 	`
 	var u models.User
 	var lastLoginAt sql.NullString
 	err := r.db.QueryRowContext(ctx, query, googleID).Scan(
 		&u.ID, &u.Email, &u.HashedPassword, &u.IsActive, &u.IsSuperuser, &u.IsVerified,
-		&u.GoogleID, &u.Name, &u.PictureURL, &u.PoliticalLeaning,
+		&u.GoogleID, &u.Name, &u.PictureURL, &u.PoliticalLeaning, &u.State,
 		&u.CreatedAt, &u.UpdatedAt, &lastLoginAt,
 	)
 	if err == sql.ErrNoRows {
@@ -165,4 +165,20 @@ func (r *UserRepository) UpdateLoginTime(ctx context.Context, id int) error {
 func (r *UserRepository) VerifyPassword(user *models.User, password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(user.HashedPassword), []byte(password))
 	return err == nil
+}
+
+func (r *UserRepository) Update(ctx context.Context, user *models.User) error {
+	query := `
+		UPDATE users SET
+			name = ?, picture_url = ?, political_leaning = ?, state = ?, updated_at = ?
+		WHERE id = ?
+	`
+	_, err := r.db.ExecContext(ctx, query,
+		user.Name, user.PictureURL, user.PoliticalLeaning, user.State,
+		time.Now().UTC().Format(timeformat.DBTime), user.ID,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update user: %w", err)
+	}
+	return nil
 }

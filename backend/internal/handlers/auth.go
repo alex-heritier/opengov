@@ -47,6 +47,7 @@ type UserResponse struct {
 	PictureURL       *string `json:"picture_url,omitempty"`
 	GoogleID         *string `json:"google_id,omitempty"`
 	PoliticalLeaning *string `json:"political_leaning,omitempty"`
+	State            *string `json:"state,omitempty"`
 	IsActive         bool    `json:"is_active"`
 	IsVerified       bool    `json:"is_verified"`
 	CreatedAt        string  `json:"created_at"`
@@ -155,6 +156,53 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"access_token": token})
 }
 
+type UpdateUserRequest struct {
+	Name             *string `json:"name,omitempty"`
+	PictureURL       *string `json:"picture_url,omitempty"`
+	PoliticalLeaning *string `json:"political_leaning,omitempty"`
+	State            *string `json:"state,omitempty"`
+}
+
+func (h *AuthHandler) UpdateUser(c *gin.Context) {
+	userID, hasAuth := middleware.GetUserID(c)
+	if !hasAuth {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Not authenticated"})
+		return
+	}
+
+	user, err := h.userRepo.GetByID(c.Request.Context(), userID)
+	if err != nil || user == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	var req UpdateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	if req.Name != nil {
+		user.Name = req.Name
+	}
+	if req.PictureURL != nil {
+		user.PictureURL = req.PictureURL
+	}
+	if req.PoliticalLeaning != nil {
+		user.PoliticalLeaning = req.PoliticalLeaning
+	}
+	if req.State != nil {
+		user.State = req.State
+	}
+
+	if err := h.userRepo.Update(c.Request.Context(), user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, userToResponse(user))
+}
+
 func userToResponse(u *models.User) *UserResponse {
 	var lastLoginAt *string
 	if u.LastLoginAt != nil {
@@ -168,6 +216,7 @@ func userToResponse(u *models.User) *UserResponse {
 		PictureURL:       u.PictureURL,
 		GoogleID:         u.GoogleID,
 		PoliticalLeaning: u.PoliticalLeaning,
+		State:            u.State,
 		IsActive:         u.GetIsActive(),
 		IsVerified:       u.GetIsVerified(),
 		CreatedAt:        u.CreatedAt,

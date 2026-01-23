@@ -2,6 +2,8 @@
 
 A viral news app that helps Americans stay informed about what their government is doing by publishing live updates on everything the Federal government is doing.
 
+Future mission: A fully-featured policy intelligence platform to help companies and organizations make better decisions based on government activity. There will also be a customer facing viral news app that will be used to increase brand awareness and engagement.
+
 ## Mission
 
 OpenGov publishes real-time updates from the Federal Register with AI-powered summaries to make government activities accessible and shareable.

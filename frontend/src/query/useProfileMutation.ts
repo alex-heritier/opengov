@@ -5,6 +5,7 @@ export interface UserUpdate {
   name?: string | null;
   picture_url?: string | null;
   political_leaning?: string | null;
+  state?: string | null;
 }
 
 export function useUpdateProfileMutation() {

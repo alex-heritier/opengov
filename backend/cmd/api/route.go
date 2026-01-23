@@ -58,6 +58,12 @@ func setupRoutes(router *gin.Engine, _ *config.Config, deps RouteDeps) {
 			auth.POST("/refresh", middleware.AuthMiddleware(deps.AuthService), deps.AuthHandler.Refresh)
 		}
 
+		users := api.Group("/users")
+		users.Use(middleware.AuthMiddleware(deps.AuthService))
+		{
+			users.PATCH("/me", deps.AuthHandler.UpdateUser)
+		}
+
 		googleAuth := api.Group("/auth/google")
 		{
 			googleAuth.GET("/login", deps.OAuthHandler.GoogleLogin)

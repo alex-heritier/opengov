@@ -36,6 +36,7 @@ Users of the application. Can authenticate via email/password or Google OAuth.
   "name": "John Doe",
   "picture_url": "https://example.com/avatar.png",
   "political_leaning": null,
+  "state": "CA",
   "created_at": "2025-01-01T10:30:00.000000Z",
   "updated_at": "2025-01-01T10:30:00.000000Z",
   "last_login_at": "2025-01-10T14:30:00.000000Z"
@@ -53,6 +54,7 @@ Users of the application. Can authenticate via email/password or Google OAuth.
 - `name`: User's display name (nullable)
 - `picture_url`: Profile picture URL from Google OAuth (nullable)
 - `political_leaning`: User's political leaning for personalized feed (nullable)
+- `state`: User's US state (2-letter code, e.g., "CA", "NY", nullable)
 
 **Timestamps:**
 - `created_at`: When the user account was created

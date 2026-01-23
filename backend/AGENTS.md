@@ -1,9 +1,5 @@
 # Backend Rules
 
-## Architecture layer overview
-
-Handler -> Service -> Repository -> DB
-
 ## Project Structure
 
 ```
@@ -32,6 +28,12 @@ backend/
 - Background goroutines for periodic jobs
 
 **Authentication:** JWT tokens in HTTP-only cookies, email/password login
+
+## Architecture layer overview
+
+Follow this general layer pattern: Handler -> Service -> Repository -> DB
+
+Prefer embedding or composing structs as to avoid schema duplication. Ex. LoginResponse should embed a User struct NOT duplicate the same fields as User.
 
 ## Testing
 

@@ -5,6 +5,7 @@ export interface User {
   picture_url: string | null;
   google_id: string | null;
   political_leaning: string | null;
+  state: string | null;
   is_active: boolean;
   is_verified: boolean;
   created_at: string;

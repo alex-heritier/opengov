@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
     name TEXT,
     picture_url TEXT,
     political_leaning TEXT,
+    state TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     last_login_at TEXT
@@ -148,6 +149,18 @@ func (db *DB) addMissingColumns() error {
 	}
 	if count == 0 {
 		_, err = db.Exec("ALTER TABLE frarticles ADD COLUMN pdf_url TEXT")
+		if err != nil && !strings.Contains(err.Error(), "duplicate column name") {
+			return err
+		}
+	}
+
+	// Add state column if it doesn't exist
+	err = db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('users') WHERE name='state'").Scan(&count)
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		_, err = db.Exec("ALTER TABLE users ADD COLUMN state TEXT")
 		if err != nil && !strings.Contains(err.Error(), "duplicate column name") {
 			return err
 		}

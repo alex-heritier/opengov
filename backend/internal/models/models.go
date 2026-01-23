@@ -56,6 +56,7 @@ type User struct {
 	Name             *string    `json:"name,omitempty"`
 	PictureURL       *string    `json:"picture_url,omitempty"`
 	PoliticalLeaning *string    `json:"political_leaning,omitempty"`
+	State            *string    `json:"state,omitempty"`
 	CreatedAt        string     `json:"created_at"`
 	UpdatedAt        string     `json:"updated_at"`
 	LastLoginAt      *time.Time `json:"last_login_at,omitempty"`
