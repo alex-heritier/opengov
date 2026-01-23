@@ -33,6 +33,10 @@ opengov/
 - Tests required for all features
 - Keep docs/model.md in sync with codebase
 
+## Model / domain documentation
+
+**CRITICAL**: Ensure all domain models' schemas are fully documented in docs/model.md. Whenever changing a domain model, sync the changes to the documentation.
+
 ## Commands
 
 Run all commands from the project root. Use `make help` to display all available commands.
