@@ -15,6 +15,7 @@ export function useToggleLikeMutation() {
       // Invalidate feed queries to update like status
       queryClient.invalidateQueries({ queryKey: ['feed'] })
       queryClient.invalidateQueries({ queryKey: ['article'] })
+      queryClient.invalidateQueries({ queryKey: ['bookmarks'] })
     },
   })
 }
@@ -31,6 +32,7 @@ export function useRemoveLikeMutation() {
       // Invalidate queries to update UI
       queryClient.invalidateQueries({ queryKey: ['feed'] })
       queryClient.invalidateQueries({ queryKey: ['article'] })
+      queryClient.invalidateQueries({ queryKey: ['bookmarks'] })
     },
   })
 }

@@ -27,14 +27,11 @@ export interface Article {
   dislikes_count?: number
 }
 
-export interface BookmarkedArticle {
-  id: number
+export type BookmarkedArticle = Article & {
+  is_bookmarked: true
   document_number: string
   unique_key: string
-  title: string
-  summary: string
-  source_url: string
-  published_at: string
-  created_at: string
-  bookmarked_at: string
+  updated_at: string
+  likes_count: number
+  dislikes_count: number
 }

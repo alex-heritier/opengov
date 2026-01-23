@@ -6,8 +6,8 @@ export function useBookmarksQuery() {
   return useQuery({
     queryKey: ['bookmarks'],
     queryFn: async () => {
-      const { data } = await client.get<BookmarkedArticle[]>('/api/bookmarks')
-      return data
+      const { data } = await client.get<{ articles: BookmarkedArticle[] }>('/api/bookmarks')
+      return data.articles
     },
     staleTime: 1000 * 60 * 2, // 2 minutes
   })
