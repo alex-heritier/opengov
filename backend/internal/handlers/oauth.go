@@ -161,9 +161,9 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	// Set auth cookie and redirect to frontend (matching Python behavior)
-	c.SetCookie("opengov_auth", jwtToken, h.cfg.JWTAccessTokenExpireMin*60, "/", "", h.cfg.CookieSecure, true)
-	c.Redirect(307, h.cfg.FrontendURL+"/feed")
+	// Redirect to frontend callback with token in URL fragment
+	// The callback page will extract the token and store it in the auth store
+	c.Redirect(http.StatusTemporaryRedirect, h.cfg.FrontendURL+"/auth/callback#access_token="+jwtToken)
 }
 
 func generateState() string {
@@ -310,10 +310,9 @@ func (h *OAuthHandler) TestLogin(c *gin.Context) {
 	// Update last login time
 	h.userRepo.UpdateLoginTime(ctx, user.ID)
 
-	// Set auth cookie and redirect to frontend (matching Google OAuth behavior)
-	c.SetCookie("opengov_auth", jwtToken, h.cfg.JWTAccessTokenExpireMin*60, "/", "", h.cfg.CookieSecure, true)
+	// Redirect to frontend callback with token in URL fragment (same as Google OAuth)
 	log.Printf("Test user logged in: %s", testEmail)
-	c.Redirect(http.StatusTemporaryRedirect, h.cfg.FrontendURL+"/feed")
+	c.Redirect(http.StatusTemporaryRedirect, h.cfg.FrontendURL+"/auth/callback#access_token="+jwtToken)
 }
 
 func userToAuthResponse(u *models.User) *AuthUserResponse {
