@@ -75,6 +75,46 @@ func (r *LikeRepository) Toggle(ctx context.Context, userID, articleID int) (*mo
 	return &l, nil
 }
 
+func (r *LikeRepository) SetLike(ctx context.Context, userID, articleID int, isPositive bool) (*models.Like, error) {
+	now := time.Now().UTC().Format("2006-01-02T15:04:05Z07:00")
+	isLikedValue := 0
+	if isPositive {
+		isLikedValue = 1
+	}
+
+	existing, err := r.GetByUserAndArticle(ctx, userID, articleID)
+	if err != nil {
+		return nil, err
+	}
+
+	if existing != nil {
+		query := "UPDATE likes SET is_liked = ?, updated_at = ? WHERE id = ?"
+		_, err := r.db.ExecContext(ctx, query, isLikedValue, now, existing.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to update like: %w", err)
+		}
+		existing.IsLiked = isLikedValue
+		return existing, nil
+	}
+
+	query := `
+		INSERT INTO likes (user_id, frarticle_id, is_liked, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?)
+	`
+	var l models.Like
+	l.UserID = userID
+	l.FRArticleID = articleID
+	l.IsLiked = isLikedValue
+
+	result, err := r.db.ExecContext(ctx, query, userID, articleID, isLikedValue, now, now)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create like: %w", err)
+	}
+	id, _ := result.LastInsertId()
+	l.ID = int(id)
+	return &l, nil
+}
+
 func (r *LikeRepository) GetArticleCounts(ctx context.Context, articleID int) (likes, dislikes int, err error) {
 	query := "SELECT COUNT(*) FROM likes WHERE frarticle_id = ? AND is_liked = 1"
 	err = r.db.QueryRowContext(ctx, query, articleID).Scan(&likes)

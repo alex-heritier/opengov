@@ -23,7 +23,7 @@ type RouteDeps struct {
 	OAuthHandler    *handlers.OAuthHandler
 }
 
-func setupRoutes(router *gin.Engine, cfg *config.Config, deps RouteDeps) {
+func setupRoutes(router *gin.Engine, _ *config.Config, deps RouteDeps) {
 	router.GET("/health", func(c *gin.Context) {
 		if err := deps.DB.HealthCheck(); err != nil {
 			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "error", "database": "disconnected"})
@@ -70,6 +70,7 @@ func setupRoutes(router *gin.Engine, cfg *config.Config, deps RouteDeps) {
 		}
 
 		feed := api.Group("/feed")
+		feed.Use(middleware.OptionalAuthMiddleware(deps.AuthService))
 		{
 			feed.GET("", deps.FeedHandler.GetFeed)
 			feed.GET("/:id", deps.FeedHandler.GetArticle)

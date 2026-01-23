@@ -22,6 +22,10 @@ func NewLikeHandler(likeRepo *repository.LikeRepository, articleRepo *repository
 	}
 }
 
+type ToggleLikeRequest struct {
+	IsPositive bool `json:"is_positive"`
+}
+
 func (h *LikeHandler) Toggle(c *gin.Context) {
 	userID, hasAuth := middleware.GetUserID(c)
 	if !hasAuth {
@@ -35,15 +39,21 @@ func (h *LikeHandler) Toggle(c *gin.Context) {
 		return
 	}
 
+	var req ToggleLikeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
 	_, err = h.articleRepo.GetByID(c.Request.Context(), articleID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check article"})
 		return
 	}
 
-	like, err := h.likeRepo.Toggle(c.Request.Context(), userID, articleID)
+	like, err := h.likeRepo.SetLike(c.Request.Context(), userID, articleID, req.IsPositive)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to toggle like"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to set like"})
 		return
 	}
 
