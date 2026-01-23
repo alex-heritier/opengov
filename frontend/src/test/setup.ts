@@ -2,7 +2,6 @@ import { afterEach, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 import '@testing-library/jest-dom'
 
-// Mock localStorage for Zustand persist middleware
 const localStorageMock = {
   getItem: vi.fn(),
   setItem: vi.fn(),
@@ -14,6 +13,20 @@ const localStorageMock = {
 
 Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
+})
+
+const locationMock = {
+  href: '',
+  pathname: '',
+  search: '',
+  hash: '',
+  assign: vi.fn(),
+  replace: vi.fn(),
+  reload: vi.fn(),
+}
+
+Object.defineProperty(window, 'location', {
+  value: locationMock,
 })
 
 afterEach(() => {
