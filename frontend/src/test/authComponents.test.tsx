@@ -2,7 +2,7 @@
  * Tests for authentication components
  */
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
-import { render, screen, waitFor, renderHook } from '@testing-library/react'
+import { render, screen, waitFor, renderHook, act } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { GoogleLogin } from '../components/auth/GoogleLogin'
 import { AuthProvider, useAuth } from '../hook'
@@ -106,11 +106,13 @@ describe('AuthProvider', () => {
   it('should fetch user when token is set', async () => {
     vi.spyOn(client, 'get').mockResolvedValue({ data: mockUser } as any)
 
-    useAuthStore.setState({
-      isAuthenticated: true,
-      accessToken: 'mock-token',
-      tokenExpiresAt: Date.now() + 3600000,
-      user: null,
+    await act(async () => {
+      useAuthStore.setState({
+        isAuthenticated: true,
+        accessToken: 'mock-token',
+        tokenExpiresAt: Date.now() + 3600000,
+        user: null,
+      })
     })
 
     const { result } = renderHook(() => useAuth(), { wrapper: createWrapper() })
@@ -124,11 +126,13 @@ describe('AuthProvider', () => {
   it('should handle API error gracefully', async () => {
     vi.spyOn(client, 'get').mockRejectedValue(new Error('Network error'))
 
-    useAuthStore.setState({
-      isAuthenticated: true,
-      accessToken: 'invalid-token',
-      tokenExpiresAt: Date.now() + 3600000,
-      user: null,
+    await act(async () => {
+      useAuthStore.setState({
+        isAuthenticated: true,
+        accessToken: 'invalid-token',
+        tokenExpiresAt: Date.now() + 3600000,
+        user: null,
+      })
     })
 
     const { result } = renderHook(() => useAuth(), { wrapper: createWrapper() })
@@ -141,11 +145,13 @@ describe('AuthProvider', () => {
   it('should clear auth on logout', async () => {
     vi.spyOn(client, 'get').mockResolvedValue({ data: mockUser } as any)
 
-    useAuthStore.setState({
-      user: mockUser,
-      isAuthenticated: true,
-      accessToken: 'mock-token',
-      tokenExpiresAt: Date.now() + 3600000,
+    await act(async () => {
+      useAuthStore.setState({
+        user: mockUser,
+        isAuthenticated: true,
+        accessToken: 'mock-token',
+        tokenExpiresAt: Date.now() + 3600000,
+      })
     })
 
     const { result } = renderHook(() => useAuth(), { wrapper: createWrapper() })
@@ -154,7 +160,9 @@ describe('AuthProvider', () => {
       expect(result.current.user).toEqual(mockUser)
     })
 
-    result.current.logout()
+    act(() => {
+      result.current.logout()
+    })
 
     await waitFor(() => {
       expect(useAuthStore.getState().isAuthenticated).toBe(false)
