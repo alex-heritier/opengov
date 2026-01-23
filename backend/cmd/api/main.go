@@ -61,7 +61,7 @@ func main() {
 	authService := services.NewAuthService(cfg, userRepo)
 
 	feedHandler := handlers.NewFeedHandler(articleRepo, articleAssembler)
-	bookmarkHandler := handlers.NewBookmarkHandler(bookmarkRepo, articleRepo, likeRepo)
+	bookmarkHandler := handlers.NewBookmarkHandler(bookmarkRepo, articleRepo, articleAssembler)
 	likeHandler := handlers.NewLikeHandler(likeRepo, articleRepo)
 	authHandler := handlers.NewAuthHandler(authService, userRepo)
 	adminHandler := handlers.NewAdminAPIHandler(articleRepo, agencyRepo)

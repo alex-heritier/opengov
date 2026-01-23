@@ -7,50 +7,22 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/alex/opengov-go/internal/middleware"
-	"github.com/alex/opengov-go/internal/models"
 	"github.com/alex/opengov-go/internal/repository"
+	"github.com/alex/opengov-go/internal/services/assembler"
 )
 
 type BookmarkHandler struct {
 	bookmarkRepo *repository.BookmarkRepository
 	articleRepo  *repository.ArticleRepository
-	likeRepo     *repository.LikeRepository
+	assembler    *assembler.ArticleAssembler
 }
 
-func NewBookmarkHandler(bookmarkRepo *repository.BookmarkRepository, articleRepo *repository.ArticleRepository, likeRepo *repository.LikeRepository) *BookmarkHandler {
+func NewBookmarkHandler(bookmarkRepo *repository.BookmarkRepository, articleRepo *repository.ArticleRepository, assembler *assembler.ArticleAssembler) *BookmarkHandler {
 	return &BookmarkHandler{
 		bookmarkRepo: bookmarkRepo,
 		articleRepo:  articleRepo,
-		likeRepo:     likeRepo,
+		assembler:    assembler,
 	}
-}
-
-// enrichBookmarkedArticle creates a fully enriched ArticleResponse for bookmarked articles.
-// Since these are by definition bookmarked, we skip the IsBookmarked check and always set it to true.
-// UserLikeStatus and counts are still enriched based on auth context.
-func (h *BookmarkHandler) enrichBookmarkedArticle(c *gin.Context, article models.FRArticle) ArticleResponse {
-	resp := ArticleResponse{
-		ID:           article.ID,
-		Title:        article.Title,
-		Summary:      article.Summary,
-		PublishedAt:  article.PublishedAt.Format("2006-01-02T15:04:05Z07:00"),
-		IsBookmarked: true, // Always true for bookmarked articles
-	}
-
-	userID, hasAuth := middleware.GetUserID(c)
-	if hasAuth {
-		status, _ := h.likeRepo.GetUserStatus(c.Request.Context(), userID, article.ID)
-		if status != nil {
-			liked := *status == 1
-			resp.UserLikeStatus = &liked
-		}
-	}
-
-	likes, dislikes, _ := h.likeRepo.GetArticleCounts(c.Request.Context(), article.ID)
-	resp.LikesCount = likes
-	resp.DislikesCount = dislikes
-
-	return resp
 }
 
 func (h *BookmarkHandler) Toggle(c *gin.Context) {
@@ -96,12 +68,7 @@ func (h *BookmarkHandler) GetBookmarks(c *gin.Context) {
 		return
 	}
 
-	// Use the same ArticleResponse enrichment logic for consistency
-	articleResponses := make([]ArticleResponse, len(articles))
-	for i, article := range articles {
-		articleResponses[i] = h.enrichBookmarkedArticle(c, article)
-	}
-
+	articleResponses := h.assembler.EnrichArticles(c, articles)
 	c.JSON(http.StatusOK, gin.H{"articles": articleResponses})
 }
 
