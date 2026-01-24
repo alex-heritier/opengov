@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"database/sql"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -39,6 +41,10 @@ func (h *BookmarkHandler) Toggle(c *gin.Context) {
 	}
 
 	_, err = h.articleRepo.GetByID(c.Request.Context(), articleID)
+	if errors.Is(err, sql.ErrNoRows) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Article not found"})
+		return
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check article"})
 		return

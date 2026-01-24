@@ -2,7 +2,9 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -27,6 +29,9 @@ func (r *BookmarkRepository) GetByUserAndArticle(ctx context.Context, userID, ar
 	err := r.db.QueryRowContext(ctx, query, userID, articleID).Scan(
 		&b.ID, &b.UserID, &b.FRArticleID, &b.IsBookmarked, &b.CreatedAt, &b.UpdatedAt,
 	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}

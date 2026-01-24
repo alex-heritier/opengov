@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -52,6 +54,9 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.
 		&u.GoogleID, &u.Name, &u.PictureURL, &u.PoliticalLeaning, &u.State,
 		&u.CreatedAt, &u.UpdatedAt, &lastLoginAt,
 	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -72,6 +77,9 @@ func (r *UserRepository) GetByGoogleID(ctx context.Context, googleID string) (*m
 		&u.GoogleID, &u.Name, &u.PictureURL, &u.PoliticalLeaning, &u.State,
 		&u.CreatedAt, &u.UpdatedAt, &lastLoginAt,
 	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
