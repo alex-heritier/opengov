@@ -9,7 +9,11 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import DOMPurify from "dompurify";
-import { useToggleBookmarkMutation, useToggleLikeMutation } from "@/hook";
+import {
+  useToggleBookmarkMutation,
+  useToggleLikeMutation,
+  useRemoveLikeMutation,
+} from "@/hook";
 import { useAuthStore } from "@/store/authStore";
 import { useArticleUIStore, type LikeStatus } from "@/store/article-ui-store";
 
@@ -42,6 +46,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const { isAuthenticated } = useAuthStore();
   const toggleBookmark = useToggleBookmarkMutation();
   const toggleLike = useToggleLikeMutation();
+  const removeLike = useRemoveLikeMutation();
 
   const ui = useArticleUIStore((s) => (id ? s.byId[id] : undefined));
 
@@ -74,14 +79,22 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     e.preventDefault();
     e.stopPropagation();
     if (!requireAuth() || !id) return;
-    toggleLike.mutate({ articleId: id, isPositive: true });
+    if (likeStatus === true) {
+      removeLike.mutate(id);
+    } else {
+      toggleLike.mutate({ articleId: id, isPositive: true });
+    }
   };
 
   const handleDislike = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (!requireAuth() || !id) return;
-    toggleLike.mutate({ articleId: id, isPositive: false });
+    if (likeStatus === false) {
+      removeLike.mutate(id);
+    } else {
+      toggleLike.mutate({ articleId: id, isPositive: false });
+    }
   };
 
   return (
@@ -130,7 +143,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
             <>
               <button
                 onClick={handleLike}
-                disabled={toggleLike.isPending}
+                disabled={toggleLike.isPending || removeLike.isPending}
                 className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
                   likeStatus === true
                     ? "bg-green-600 text-white"
@@ -143,7 +156,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
               </button>
               <button
                 onClick={handleDislike}
-                disabled={toggleLike.isPending}
+                disabled={toggleLike.isPending || removeLike.isPending}
                 className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
                   likeStatus === false
                     ? "bg-red-600 text-white"

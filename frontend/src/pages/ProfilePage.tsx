@@ -112,8 +112,7 @@ export default function ProfilePage() {
           politicalLeaning === "" || politicalLeaning === "prefer-not-to-say"
             ? null
             : politicalLeaning,
-        state:
-          state === "" || state === "prefer-not-to-say" ? null : state,
+        state: state === "" || state === "prefer-not-to-say" ? null : state,
       });
       // Update the user in the auth store
       updateUser(updatedUser);
