@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -64,7 +65,10 @@ func main() {
 	bookmarkHandler := handlers.NewBookmarkHandler(bookmarkRepo, articleRepo, articleAssembler)
 	likeHandler := handlers.NewLikeHandler(likeRepo, articleRepo)
 	authHandler := handlers.NewAuthHandler(authService, userRepo)
-	adminHandler := handlers.NewAdminAPIHandler(articleRepo, agencyRepo)
+	frService := services.NewFederalRegisterService(cfg)
+	summarizer := services.NewSummarizer(cfg)
+	scraperService := services.NewScraperService(cfg, frService, summarizer, articleRepo, agencyRepo)
+	adminHandler := handlers.NewAdminHandler(articleRepo, agencyRepo, scraperService)
 	oauthHandler := handlers.NewOAuthHandler(authService, userRepo, cfg)
 
 	deps := RouteDeps{
@@ -112,7 +116,7 @@ func main() {
 	router.Use(cors.New(corsConfig))
 
 	router.Use(func(c *gin.Context) {
-		c.Header("Cache-Control", "public, max-age=300")
+		c.Header("Cache-Control", "no-store, no-cache, must-revalidate, private")
 		c.Next()
 	})
 
@@ -126,12 +130,28 @@ func main() {
 		<-sigChan
 		log.Println("Shutting down API server...")
 		cancel()
-		os.Exit(0)
 	}()
 
 	addr := ":8000"
 	log.Printf("Starting API server on %s", addr)
-	if err := router.Run(addr); err != nil {
+
+	srv := &http.Server{
+		Addr:    addr,
+		Handler: router,
+	}
+
+	go func() {
+		<-ctx.Done()
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer shutdownCancel()
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			log.Printf("Server shutdown error: %v", err)
+		}
+	}()
+
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server failed: %v", err)
 	}
+
+	log.Println("API server stopped")
 }

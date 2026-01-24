@@ -19,12 +19,13 @@ type RouteDeps struct {
 	BookmarkHandler *handlers.BookmarkHandler
 	LikeHandler     *handlers.LikeHandler
 	AuthHandler     *handlers.AuthHandler
-	AdminHandler    *handlers.AdminAPIHandler
+	AdminHandler    *handlers.AdminHandler
 	OAuthHandler    *handlers.OAuthHandler
 }
 
 func setupRoutes(router *gin.Engine, _ *config.Config, deps RouteDeps) {
 	router.GET("/health", func(c *gin.Context) {
+		c.Header("Cache-Control", "public, max-age=60")
 		if err := deps.DB.HealthCheck(); err != nil {
 			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "error", "database": "disconnected"})
 			return
@@ -33,6 +34,7 @@ func setupRoutes(router *gin.Engine, _ *config.Config, deps RouteDeps) {
 	})
 
 	router.GET("/health/db", func(c *gin.Context) {
+		c.Header("Cache-Control", "public, max-age=60")
 		if err := deps.DB.HealthCheck(); err != nil {
 			c.JSON(http.StatusServiceUnavailable, gin.H{
 				"status":   "error",
