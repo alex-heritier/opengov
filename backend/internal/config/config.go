@@ -99,7 +99,7 @@ func Load() (*Config, error) {
 	if v := os.Getenv("DATABASE_URL"); v != "" {
 		c.DatabaseURL = v
 	} else {
-		c.DatabaseURL = "opengov.db"
+		c.DatabaseURL = "postgres://localhost/opengov?sslmode=disable"
 	}
 
 	if v := os.Getenv("SCRAPER_INTERVAL_MINUTES"); v != "" {
