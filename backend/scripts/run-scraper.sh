@@ -10,4 +10,4 @@ if [ -f .env ]; then
   set +a
 fi
 
-./bin/scraper
+./bin/scraper --once
