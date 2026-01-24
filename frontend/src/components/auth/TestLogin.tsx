@@ -10,6 +10,7 @@ export function TestLogin() {
   };
 
   // Only show in development mode
+  console.log("PROD:", import.meta.env.PROD);
   if (import.meta.env.PROD) {
     return null;
   }

@@ -11,15 +11,7 @@ GEMINI.md
 # Backend
 backend/.env
 backend/.env.local
-backend/opengov.db
-backend/.pytest_cache/
-backend/.venv/
-backend/venv/
-backend/*.pyc
-backend/htmlcov/
-backend/.coverage
-__pycache__
-*.db
+backend/bin/
 
 # Frontend
 frontend/.env
@@ -35,7 +27,6 @@ frontend/.vite/
 *.swp
 *.swo
 *~
-.DS_Store
 
 # Logs
 *.log
@@ -46,5 +37,3 @@ npm-debug.log*
 .env.local
 .env.*.local
 repomix-output.xml
-
-backend/bin/
