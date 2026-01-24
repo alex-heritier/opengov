@@ -22,6 +22,19 @@ import (
 	"github.com/alex/opengov-go/internal/services/assembler"
 )
 
+func corsMiddleware(cfg *config.Config) gin.HandlerFunc {
+	corsConfig := cors.DefaultConfig()
+	if cfg.CORSEnabled {
+		corsConfig.AllowOrigins = cfg.AllowedOrigins
+	} else {
+		corsConfig.AllowAllOrigins = true
+	}
+	corsConfig.AllowCredentials = true
+	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
+	return cors.New(corsConfig)
+}
+
 func requestSizeLimitMiddleware(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		contentLength := c.GetHeader("Content-Length")
@@ -108,14 +121,7 @@ func main() {
 	router.Use(gin.Recovery())
 	router.Use(gin.Logger())
 
-	if cfg.CORSEnabled {
-		corsConfig := cors.DefaultConfig()
-		corsConfig.AllowOrigins = cfg.AllowedOrigins
-		corsConfig.AllowCredentials = true
-		corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
-		corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
-		router.Use(cors.New(corsConfig))
-	}
+	router.Use(corsMiddleware(cfg))
 
 	router.Use(func(c *gin.Context) {
 		c.Header("Cache-Control", "no-store, no-cache, must-revalidate, private")
