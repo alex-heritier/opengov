@@ -21,7 +21,6 @@ interface ScraperRunListResponse {
 }
 
 export default function AdminPage() {
-  const queryClient = useQueryClient();
   const [limit, setLimit] = useState(10);
 
   // Fetch scraper runs
