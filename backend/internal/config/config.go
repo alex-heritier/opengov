@@ -67,6 +67,11 @@ type Config struct {
 	FrontendURL string
 }
 
+func parseBool(v string) bool {
+	l := strings.ToLower(strings.TrimSpace(v))
+	return l == "true" || l == "1" || l == "t" || l == "yes"
+}
+
 func Load() (*Config, error) {
 	c := &Config{
 		// Defaults
@@ -96,12 +101,12 @@ func Load() (*Config, error) {
 		c.GrokAPIKey = v
 	}
 
-	if v := os.Getenv("FEDERAL_REGISTER_API_URL"); v != "" {
-		c.FederalRegisterAPIURL = v
-	}
-
 	if v := os.Getenv("GROK_API_URL"); v != "" {
 		c.GrokAPIURL = v
+	}
+
+	if v := os.Getenv("FEDERAL_REGISTER_API_URL"); v != "" {
+		c.FederalRegisterAPIURL = v
 	}
 
 	// Database URL (takes precedence if set)
@@ -190,24 +195,24 @@ func Load() (*Config, error) {
 		}
 	}
 
-	if v := os.Getenv("DEBUG"); v == "true" || v == "1" {
-		c.Debug = true
+	if v := os.Getenv("DEBUG"); v != "" {
+		c.Debug = parseBool(v)
 	}
 
 	if v := os.Getenv("ENVIRONMENT"); v != "" {
 		c.Environment = v
 	}
 
-	if v := os.Getenv("BEHIND_PROXY"); v == "true" || v == "1" {
-		c.BehindProxy = true
+	if v := os.Getenv("BEHIND_PROXY"); v != "" {
+		c.BehindProxy = parseBool(v)
 	}
 
-	if v := os.Getenv("USE_MOCK_GROK"); v == "true" || v == "1" {
-		c.UseMockGrok = true
+	if v := os.Getenv("USE_MOCK_GROK"); v != "" {
+		c.UseMockGrok = parseBool(v)
 	}
 
-	if v := os.Getenv("COOKIE_SECURE"); v == "true" || v == "1" {
-		c.CookieSecure = true
+	if v := os.Getenv("COOKIE_SECURE"); v != "" {
+		c.CookieSecure = parseBool(v)
 	}
 
 	if v := os.Getenv("GOOGLE_CLIENT_ID"); v != "" {
