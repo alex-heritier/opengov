@@ -55,7 +55,7 @@ func main() {
 
 	log.Println("Checking database schema...")
 	var tableCount int
-	database.QueryRowContext(context.Background(), "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='users'").Scan(&tableCount)
+	database.QueryRowContext(context.Background(), "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users'").Scan(&tableCount)
 	if tableCount == 0 {
 		log.Fatal("Database schema is not up to date! Missing 'users' table. Please run migrations.")
 	}
