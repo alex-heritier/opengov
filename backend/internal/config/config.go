@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -18,7 +20,13 @@ type Config struct {
 	GrokModel             string
 
 	// Database
-	DatabaseURL string
+	DatabaseURLEnv string // Direct URL from DB_URL env var
+	DatabaseHost   string
+	DatabasePort   string
+	DatabaseUser   string
+	DatabasePass   string
+	DatabaseName   string
+	DatabaseSSL    string
 
 	// Scraper settings
 	ScraperIntervalMinutes int
@@ -96,10 +104,44 @@ func Load() (*Config, error) {
 		c.GrokAPIURL = v
 	}
 
-	if v := os.Getenv("DATABASE_URL"); v != "" {
-		c.DatabaseURL = v
+	// Database URL (takes precedence if set)
+	if v := os.Getenv("DB_URL"); v != "" {
+		c.DatabaseURLEnv = v
+	}
+
+	// Database individual variables (used as fallback)
+	if v := os.Getenv("DB_HOST"); v != "" {
+		c.DatabaseHost = v
 	} else {
-		c.DatabaseURL = "postgres://localhost/opengov?sslmode=disable"
+		c.DatabaseHost = "localhost"
+	}
+
+	if v := os.Getenv("DB_PORT"); v != "" {
+		c.DatabasePort = v
+	} else {
+		c.DatabasePort = "5432"
+	}
+
+	if v := os.Getenv("DB_USER"); v != "" {
+		c.DatabaseUser = v
+	} else {
+		c.DatabaseUser = "postgres"
+	}
+
+	if v := os.Getenv("DB_PASSWORD"); v != "" {
+		c.DatabasePass = v
+	}
+
+	if v := os.Getenv("DB_NAME"); v != "" {
+		c.DatabaseName = v
+	} else {
+		c.DatabaseName = "opengov"
+	}
+
+	if v := os.Getenv("DB_SSLMODE"); v != "" {
+		c.DatabaseSSL = v
+	} else {
+		c.DatabaseSSL = "disable"
 	}
 
 	if v := os.Getenv("SCRAPER_INTERVAL_MINUTES"); v != "" {
@@ -207,6 +249,39 @@ func Load() (*Config, error) {
 	}
 
 	return c, nil
+}
+
+func (c *Config) DatabaseURL() string {
+	// Use direct URL if provided
+	if c.DatabaseURLEnv != "" {
+		return c.DatabaseURLEnv
+	}
+
+	// Otherwise build from components
+	host := c.DatabaseHost
+	if c.DatabasePort != "" {
+		host = net.JoinHostPort(c.DatabaseHost, c.DatabasePort)
+	}
+
+	u := &url.URL{
+		Scheme: "postgres",
+		Host:   host,
+		Path:   "/" + c.DatabaseName,
+	}
+
+	if c.DatabasePass != "" {
+		u.User = url.UserPassword(c.DatabaseUser, c.DatabasePass)
+	} else {
+		u.User = url.User(c.DatabaseUser)
+	}
+
+	q := u.Query()
+	if c.DatabaseSSL != "" {
+		q.Set("sslmode", c.DatabaseSSL)
+	}
+	u.RawQuery = q.Encode()
+
+	return u.String()
 }
 
 func (c *Config) ScraperInterval() time.Duration {
