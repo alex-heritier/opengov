@@ -37,7 +37,7 @@ test-coverage:
 	$(GOCMD) tool cover -html=coverage.out -o coverage.html
 
 clean:
-	rm -rf $(GOBIN) coverage.out coverage.html
+	rm -rf $(GOBIN)
 
 install-air:
 	$(GOCMD) install github.com/air-verse/air@latest

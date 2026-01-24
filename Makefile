@@ -77,7 +77,7 @@ build:
 clean:
 	@echo "Cleaning up..."
 	cd backend && make clean
-	rm -rf frontend/dist frontend/node_modules/.vite
+	cd frontend && bun run clean
 	@echo "✓ Clean complete"
 
 lint: lint-backend lint-frontend

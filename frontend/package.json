@@ -10,7 +10,8 @@
     "test": "vitest run",
     "lint": "tsc --noEmit",
     "fix": "prettier --write '**/*.{js,jsx,ts,tsx}'",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "clean": "rm -rf dist node_modules/.cache node_modules/.vite"
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.8",
