@@ -33,6 +33,7 @@ type Config struct {
 	ScraperDaysLookback    int
 
 	// CORS
+	CORSEnabled    bool
 	AllowedOrigins []string
 
 	// Timeouts (seconds)
@@ -79,6 +80,7 @@ func Load() (*Config, error) {
 		GrokAPIURL:              "https://api.x.ai/v1",
 		ScraperIntervalMinutes:  15,
 		ScraperDaysLookback:     1,
+		CORSEnabled:             true,
 		AllowedOrigins:          []string{"http://localhost:5173", "http://localhost:3000"},
 		FederalRegisterTimeout:  30,
 		GrokTimeout:             60,
@@ -159,6 +161,10 @@ func Load() (*Config, error) {
 		if iv, err := strconv.Atoi(v); err == nil {
 			c.ScraperDaysLookback = iv
 		}
+	}
+
+	if v := os.Getenv("CORS_ENABLED"); v != "" {
+		c.CORSEnabled = parseBool(v)
 	}
 
 	if v := os.Getenv("ALLOWED_ORIGINS"); v != "" {

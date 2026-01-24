@@ -108,12 +108,14 @@ func main() {
 	router.Use(gin.Recovery())
 	router.Use(gin.Logger())
 
-	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowOrigins = cfg.AllowedOrigins
-	corsConfig.AllowCredentials = true
-	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
-	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
-	router.Use(cors.New(corsConfig))
+	if cfg.CORSEnabled {
+		corsConfig := cors.DefaultConfig()
+		corsConfig.AllowOrigins = cfg.AllowedOrigins
+		corsConfig.AllowCredentials = true
+		corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
+		corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
+		router.Use(cors.New(corsConfig))
+	}
 
 	router.Use(func(c *gin.Context) {
 		c.Header("Cache-Control", "no-store, no-cache, must-revalidate, private")
