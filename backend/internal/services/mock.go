@@ -6,12 +6,24 @@ import (
 
 type MockSummarizer struct{}
 
-func (s *MockSummarizer) Summarize(ctx context.Context, text string) (string, error) {
-	if text == "" {
-		return "No summary available.", nil
+func (s *MockSummarizer) Analyze(ctx context.Context, title, abstract, agency string) (*AIAnalysis, error) {
+	summary := "This document relates to government activity."
+	if abstract != "" {
+		if len(abstract) <= 100 {
+			summary = "This document relates to government activity. " + abstract + "..."
+		} else {
+			summary = "This document relates to government activity. " + abstract[:100] + "..."
+		}
 	}
-	if len(text) <= 100 {
-		return "This document relates to government activity. " + text + "...", nil
-	}
-	return "This document relates to government activity. " + text[:100] + "...", nil
+
+	return &AIAnalysis{
+		Summary: summary,
+		Keypoints: []string{
+			"Key regulatory update from " + agency,
+			"May affect compliance requirements",
+			"Public comment period may apply",
+		},
+		ImpactScore:    "medium",
+		PoliticalScore: 0,
+	}, nil
 }

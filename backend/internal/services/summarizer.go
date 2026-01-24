@@ -7,8 +7,16 @@ import (
 	"github.com/alex/opengov-go/internal/config"
 )
 
+// AIAnalysis contains all AI-generated fields for an article
+type AIAnalysis struct {
+	Summary        string   // 1-2 sentence viral summary
+	Keypoints      []string // Key takeaways from the document
+	ImpactScore    string   // low, medium, high
+	PoliticalScore int      // -100 (left) to 100 (right)
+}
+
 type Summarizer interface {
-	Summarize(ctx context.Context, text string) (string, error)
+	Analyze(ctx context.Context, title, abstract, agency string) (*AIAnalysis, error)
 }
 
 func NewSummarizer(cfg *config.Config) Summarizer {

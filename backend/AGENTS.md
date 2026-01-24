@@ -5,7 +5,8 @@
 ```
 backend/
 ├── cmd/
-│   └── server/                   # Application entry point
+│   └── api/                      # API server entry point
+│   └── scraper/                  # Scraper entry point
 ├── internal/
 │   ├── config/                   # Configuration
 │   ├── db/                       # Database connection
@@ -26,7 +27,7 @@ backend/
 - PostgreSQL + database/sql for data persistence
 - Separate service modules for external API integrations
 - Environment variables for API keys and configuration
-- Background goroutines for periodic jobs
+- Background goroutines for long running jobs
 
 **Authentication:** JWT Bearer tokens in Authorization header, email/password login + Google OAuth
 
@@ -41,6 +42,10 @@ Follow this general layer pattern: Handler -> Service -> Repository -> DB
 
 Prefer embedding or composing structs as to avoid schema duplication. Ex. LoginResponse should embed a User struct NOT duplicate the same fields as User.
 
+## Models
+
+Always use time.Time for timestamps.
+
 ## Testing
 
 - Tests required for all features
@@ -51,6 +56,10 @@ Prefer embedding or composing structs as to avoid schema duplication. Ex. LoginR
 ## Documentation
 
 - `docs/model.md` - Keep data models in sync
+
+## Migrations
+
+Schema in `internal/db/migrations.go`. Auto-runs on server startup via `RunMigrations()`.
 
 ## Commands
 

@@ -16,10 +16,11 @@
 - [x] Create clickable articles on /feed page
 - [x] Build dedicated /article page with query params (?q=xyz)
 - [x] Display external source link on article page
-- [ ] Display full article contents on article page
 - [x] Add AI summary to article page
-- [ ] Add AI keypoints to article page
-- [ ] Add partisan score meter (Democrat/Republican indicator)
+- [x] Add AI keypoints to article page
+- [x] Add partisan score meter (Democrat/Republican indicator)
+- [x] Add AI impact score (low/medium/high)
+- [x] Display agency on article page
 - [ ] Fix OAuth state store concurrency issue (map not thread-safe)
 - [ ] Fix N+1 query performance issue in assembler (bookmark/like bulk fetching)
   - Add BookmarkRepository.GetBookmarksForArticles(userID, articleIDs[])

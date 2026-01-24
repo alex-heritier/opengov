@@ -77,13 +77,31 @@ func (s *ScraperService) Run(ctx context.Context) {
 			abstract = abstract[:1000]
 		}
 
-		summary, err := s.summarizer.Summarize(ctx, abstract)
+		// Extract agency from agencies
+		var agency string
+		if len(doc.Agencies) > 0 {
+			agency = doc.Agencies[0].Name
+		}
+
+		// Get AI analysis
+		analysis, err := s.summarizer.Analyze(ctx, doc.Title, abstract, agency)
 		if err != nil {
-			log.Printf("Failed to summarize %s: %v", doc.DocumentNumber, err)
-			summary = abstract
+			log.Printf("Failed to analyze %s: %v", doc.DocumentNumber, err)
+			// Fallback to basic values
+			analysis = &AIAnalysis{
+				Summary:        abstract,
+				Keypoints:      []string{},
+				ImpactScore:    "medium",
+				PoliticalScore: 0,
+			}
 		}
 
 		pubDate, _ := time.Parse("2006-01-02", doc.PublicationDate)
+
+		var agencyPtr *string
+		if agency != "" {
+			agencyPtr = &agency
+		}
 
 		article := &models.FRArticle{
 			Source:         FederalRegisterSource,
@@ -91,7 +109,11 @@ func (s *ScraperService) Run(ctx context.Context) {
 			UniqueKey:      FederalRegisterSource + "_" + doc.DocumentNumber,
 			DocumentNumber: doc.DocumentNumber,
 			Title:          doc.Title,
-			Summary:        summary,
+			Agency:         agencyPtr,
+			Summary:        analysis.Summary,
+			Keypoints:      analysis.Keypoints,
+			ImpactScore:    &analysis.ImpactScore,
+			PoliticalScore: &analysis.PoliticalScore,
 			SourceURL:      doc.HTMLURL,
 			PublishedAt:    pubDate,
 			DocumentType:   &doc.Type,

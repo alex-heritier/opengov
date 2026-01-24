@@ -16,7 +16,11 @@ export interface User {
 export interface Article {
   id: number;
   title: string;
+  agency?: string | null;
   summary: string;
+  keypoints?: string[];
+  impact_score?: "low" | "medium" | "high" | null;
+  political_score?: number | null; // -100 (left) to 100 (right)
   source_url: string;
   published_at: string;
   created_at: string;

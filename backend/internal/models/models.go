@@ -99,7 +99,11 @@ type FRArticle struct {
 	RawData        JSONMap   `json:"raw_data"`
 	FetchedAt      time.Time `json:"fetched_at"`
 	Title          string    `json:"title"`
+	Agency         *string   `json:"agency,omitempty"`
 	Summary        string    `json:"summary"`
+	Keypoints      []string  `json:"keypoints,omitempty"`
+	ImpactScore    *string   `json:"impact_score,omitempty"`
+	PoliticalScore *int      `json:"political_score,omitempty"`
 	SourceURL      string    `json:"source_url"`
 	PublishedAt    time.Time `json:"published_at"`
 	DocumentType   *string   `json:"document_type,omitempty"`

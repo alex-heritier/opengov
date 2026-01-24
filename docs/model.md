@@ -111,7 +111,15 @@ Unified model combining Federal Register raw data and processed article content.
   "raw_data": { /* complete API response */ },
   "fetched_at": "2025-01-10T10:30:00.000000Z",
   "title": "Notice of Proposed Rulemaking: Food Safety Standards",
+  "agency": "Food and Drug Administration",
   "summary": "The FDA is proposing new food safety standards for processing facilities...",
+  "keypoints": [
+    "New safety requirements for food processors",
+    "Public comment period opens",
+    "Implementation deadline in 2026"
+  ],
+  "impact_score": "medium",
+  "political_score": -15,
   "source_url": "https://www.federalregister.gov/documents/2025/01/10/2025-01234",
   "published_at": "2025-01-10T10:00:00.000000Z",
   "document_type": "Notice",
@@ -128,7 +136,11 @@ Unified model combining Federal Register raw data and processed article content.
 - `raw_data`: Complete API response for audit/debugging
 - `fetched_at`: When raw data was fetched from API
 - `title`: Article headline
-- `summary`: AI-generated viral summary
+- `agency`: Government agency name from Federal Register (nullable)
+- `summary`: AI-generated viral summary (1-2 sentences)
+- `keypoints`: JSON array of key takeaways (nullable)
+- `impact_score`: AI-generated impact level: "low" (routine), "medium" (notable), "high" (major news) (nullable)
+- `political_score`: AI-generated political leaning from -100 (left) to 100 (right), 0 = neutral (nullable)
 - `source_url`: Link to original document
 - `published_at`: Publication date
 - `document_type`: Type of Federal Register document (e.g., "Notice", "Rule", "Proposed Rule")

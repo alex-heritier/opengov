@@ -42,26 +42,34 @@ func NewArticleAssembler(bookmarkRepo *repository.BookmarkRepository, likeRepo *
 }
 
 type ArticleResponse struct {
-	ID             int    `json:"id"`
-	Title          string `json:"title"`
-	Summary        string `json:"summary"`
-	SourceURL      string `json:"source_url"`
-	DocumentNumber string `json:"document_number"`
-	UniqueKey      string `json:"unique_key"`
-	PublishedAt    string `json:"published_at"`
-	CreatedAt      string `json:"created_at"`
-	UpdatedAt      string `json:"updated_at"`
-	IsBookmarked   bool   `json:"is_bookmarked,omitempty"`
-	UserLikeStatus *bool  `json:"user_like_status,omitempty"`
-	LikesCount     int    `json:"likes_count"`
-	DislikesCount  int    `json:"dislikes_count"`
+	ID             int      `json:"id"`
+	Title          string   `json:"title"`
+	Agency         *string  `json:"agency,omitempty"`
+	Summary        string   `json:"summary"`
+	Keypoints      []string `json:"keypoints,omitempty"`
+	ImpactScore    *string  `json:"impact_score,omitempty"`
+	PoliticalScore *int     `json:"political_score,omitempty"`
+	SourceURL      string   `json:"source_url"`
+	DocumentNumber string   `json:"document_number"`
+	UniqueKey      string   `json:"unique_key"`
+	PublishedAt    string   `json:"published_at"`
+	CreatedAt      string   `json:"created_at"`
+	UpdatedAt      string   `json:"updated_at"`
+	IsBookmarked   bool     `json:"is_bookmarked,omitempty"`
+	UserLikeStatus *bool    `json:"user_like_status,omitempty"`
+	LikesCount     int      `json:"likes_count"`
+	DislikesCount  int      `json:"dislikes_count"`
 }
 
 func (a *ArticleAssembler) EnrichArticle(c *gin.Context, article models.FRArticle) ArticleResponse {
 	resp := ArticleResponse{
 		ID:             article.ID,
 		Title:          article.Title,
+		Agency:         article.Agency,
 		Summary:        article.Summary,
+		Keypoints:      article.Keypoints,
+		ImpactScore:    article.ImpactScore,
+		PoliticalScore: article.PoliticalScore,
 		SourceURL:      article.SourceURL,
 		DocumentNumber: article.DocumentNumber,
 		UniqueKey:      article.UniqueKey,

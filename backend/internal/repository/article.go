@@ -28,7 +28,7 @@ func (r *ArticleRepository) GetFeed(ctx context.Context, page, limit int, sort s
 	}
 
 	query := fmt.Sprintf(`
-		SELECT id, source, source_id, unique_key, document_number, raw_data, fetched_at, title, summary, source_url, published_at, document_type, pdf_url, created_at, updated_at
+		SELECT id, source, source_id, unique_key, document_number, raw_data, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, created_at, updated_at
 		FROM frarticles
 		ORDER BY published_at %s
 		LIMIT $1 OFFSET $2
@@ -44,21 +44,25 @@ func (r *ArticleRepository) GetFeed(ctx context.Context, page, limit int, sort s
 	for rows.Next() {
 		var a models.FRArticle
 		var rawData []byte
-		var documentType, pdfURL *string
+		var agency, impactScore, documentType, pdfURL *string
+		var keypointsRaw []byte
+		var politicalScore *int
 		err := rows.Scan(
 			&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &rawData, &a.FetchedAt,
-			&a.Title, &a.Summary, &a.SourceURL, &a.PublishedAt,
+			&a.Title, &agency, &a.Summary, &keypointsRaw, &impactScore, &politicalScore, &a.SourceURL, &a.PublishedAt,
 			&documentType, &pdfURL, &a.CreatedAt, &a.UpdatedAt,
 		)
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to scan article: %w", err)
 		}
-		if documentType != nil {
-			a.DocumentType = documentType
+		a.Agency = agency
+		if len(keypointsRaw) > 0 {
+			json.Unmarshal(keypointsRaw, &a.Keypoints)
 		}
-		if pdfURL != nil {
-			a.PDFURL = pdfURL
-		}
+		a.ImpactScore = impactScore
+		a.PoliticalScore = politicalScore
+		a.DocumentType = documentType
+		a.PDFURL = pdfURL
 		json.Unmarshal(rawData, &a.RawData)
 		articles = append(articles, a)
 	}
@@ -74,52 +78,60 @@ func (r *ArticleRepository) GetFeed(ctx context.Context, page, limit int, sort s
 
 func (r *ArticleRepository) GetByID(ctx context.Context, id int) (*models.FRArticle, error) {
 	query := `
-		SELECT id, source, source_id, unique_key, document_number, raw_data, fetched_at, title, summary, source_url, published_at, document_type, pdf_url, created_at, updated_at
+		SELECT id, source, source_id, unique_key, document_number, raw_data, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, created_at, updated_at
 		FROM frarticles WHERE id = $1
 	`
 	var a models.FRArticle
 	var rawData []byte
-	var documentType, pdfURL *string
+	var agency, impactScore, documentType, pdfURL *string
+	var keypointsRaw []byte
+	var politicalScore *int
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &rawData, &a.FetchedAt,
-		&a.Title, &a.Summary, &a.SourceURL, &a.PublishedAt,
+		&a.Title, &agency, &a.Summary, &keypointsRaw, &impactScore, &politicalScore, &a.SourceURL, &a.PublishedAt,
 		&documentType, &pdfURL, &a.CreatedAt, &a.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
 	}
-	if documentType != nil {
-		a.DocumentType = documentType
+	a.Agency = agency
+	if len(keypointsRaw) > 0 {
+		json.Unmarshal(keypointsRaw, &a.Keypoints)
 	}
-	if pdfURL != nil {
-		a.PDFURL = pdfURL
-	}
+	a.ImpactScore = impactScore
+	a.PoliticalScore = politicalScore
+	a.DocumentType = documentType
+	a.PDFURL = pdfURL
 	json.Unmarshal(rawData, &a.RawData)
 	return &a, nil
 }
 
 func (r *ArticleRepository) GetByDocumentNumber(ctx context.Context, docNumber string) (*models.FRArticle, error) {
 	query := `
-		SELECT id, source, source_id, unique_key, document_number, raw_data, fetched_at, title, summary, source_url, published_at, document_type, pdf_url, created_at, updated_at
+		SELECT id, source, source_id, unique_key, document_number, raw_data, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, created_at, updated_at
 		FROM frarticles WHERE document_number = $1
 	`
 	var a models.FRArticle
 	var rawData []byte
-	var documentType, pdfURL *string
+	var agency, impactScore, documentType, pdfURL *string
+	var keypointsRaw []byte
+	var politicalScore *int
 	err := r.db.QueryRowContext(ctx, query, docNumber).Scan(
 		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &rawData, &a.FetchedAt,
-		&a.Title, &a.Summary, &a.SourceURL, &a.PublishedAt,
+		&a.Title, &agency, &a.Summary, &keypointsRaw, &impactScore, &politicalScore, &a.SourceURL, &a.PublishedAt,
 		&documentType, &pdfURL, &a.CreatedAt, &a.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
 	}
-	if documentType != nil {
-		a.DocumentType = documentType
+	a.Agency = agency
+	if len(keypointsRaw) > 0 {
+		json.Unmarshal(keypointsRaw, &a.Keypoints)
 	}
-	if pdfURL != nil {
-		a.PDFURL = pdfURL
-	}
+	a.ImpactScore = impactScore
+	a.PoliticalScore = politicalScore
+	a.DocumentType = documentType
+	a.PDFURL = pdfURL
 	json.Unmarshal(rawData, &a.RawData)
 	return &a, nil
 }
@@ -133,26 +145,30 @@ func (r *ArticleRepository) ExistsByUniqueKey(ctx context.Context, uniqueKey str
 
 func (r *ArticleRepository) GetByUniqueKey(ctx context.Context, uniqueKey string) (*models.FRArticle, error) {
 	query := `
-		SELECT id, source, source_id, unique_key, document_number, raw_data, fetched_at, title, summary, source_url, published_at, document_type, pdf_url, created_at, updated_at
+		SELECT id, source, source_id, unique_key, document_number, raw_data, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, created_at, updated_at
 		FROM frarticles WHERE unique_key = $1
 	`
 	var a models.FRArticle
 	var rawData []byte
-	var documentType, pdfURL *string
+	var agency, impactScore, documentType, pdfURL *string
+	var keypointsRaw []byte
+	var politicalScore *int
 	err := r.db.QueryRowContext(ctx, query, uniqueKey).Scan(
 		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &rawData, &a.FetchedAt,
-		&a.Title, &a.Summary, &a.SourceURL, &a.PublishedAt,
+		&a.Title, &agency, &a.Summary, &keypointsRaw, &impactScore, &politicalScore, &a.SourceURL, &a.PublishedAt,
 		&documentType, &pdfURL, &a.CreatedAt, &a.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
 	}
-	if documentType != nil {
-		a.DocumentType = documentType
+	a.Agency = agency
+	if len(keypointsRaw) > 0 {
+		json.Unmarshal(keypointsRaw, &a.Keypoints)
 	}
-	if pdfURL != nil {
-		a.PDFURL = pdfURL
-	}
+	a.ImpactScore = impactScore
+	a.PoliticalScore = politicalScore
+	a.DocumentType = documentType
+	a.PDFURL = pdfURL
 	json.Unmarshal(rawData, &a.RawData)
 	return &a, nil
 }
@@ -168,14 +184,23 @@ func (r *ArticleRepository) Create(ctx context.Context, article *models.FRArticl
 	article.UpdatedAt = now
 	article.FetchedAt = now
 
+	var keypointsJSON []byte
+	if len(article.Keypoints) > 0 {
+		keypointsJSON, err = json.Marshal(article.Keypoints)
+		if err != nil {
+			return fmt.Errorf("failed to marshal keypoints: %w", err)
+		}
+	}
+
 	query := `
-		INSERT INTO frarticles (source, source_id, unique_key, document_number, raw_data, fetched_at, title, summary, source_url, published_at, document_type, pdf_url, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+		INSERT INTO frarticles (source, source_id, unique_key, document_number, raw_data, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
 		RETURNING id
 	`
 	err = r.db.QueryRowContext(ctx, query,
 		article.Source, article.SourceID, article.UniqueKey, article.DocumentNumber, rawData, article.FetchedAt,
-		article.Title, article.Summary, article.SourceURL, article.PublishedAt,
+		article.Title, article.Agency, article.Summary, keypointsJSON, article.ImpactScore, article.PoliticalScore,
+		article.SourceURL, article.PublishedAt,
 		article.DocumentType, article.PDFURL,
 		article.CreatedAt, article.UpdatedAt,
 	).Scan(&article.ID)
@@ -194,28 +219,32 @@ func (r *ArticleRepository) Count(ctx context.Context) (int, error) {
 
 func (r *ArticleRepository) GetLatest(ctx context.Context) (*models.FRArticle, error) {
 	query := `
-		SELECT id, source, source_id, unique_key, document_number, raw_data, fetched_at, title, summary, source_url, published_at, document_type, pdf_url, created_at, updated_at
+		SELECT id, source, source_id, unique_key, document_number, raw_data, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, created_at, updated_at
 		FROM frarticles
 		ORDER BY fetched_at DESC
 		LIMIT 1
 	`
 	var a models.FRArticle
 	var rawData []byte
-	var documentType, pdfURL *string
+	var agency, impactScore, documentType, pdfURL *string
+	var keypointsRaw []byte
+	var politicalScore *int
 	err := r.db.QueryRowContext(ctx, query).Scan(
 		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &rawData, &a.FetchedAt,
-		&a.Title, &a.Summary, &a.SourceURL, &a.PublishedAt,
+		&a.Title, &agency, &a.Summary, &keypointsRaw, &impactScore, &politicalScore, &a.SourceURL, &a.PublishedAt,
 		&documentType, &pdfURL, &a.CreatedAt, &a.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
 	}
-	if documentType != nil {
-		a.DocumentType = documentType
+	a.Agency = agency
+	if len(keypointsRaw) > 0 {
+		json.Unmarshal(keypointsRaw, &a.Keypoints)
 	}
-	if pdfURL != nil {
-		a.PDFURL = pdfURL
-	}
+	a.ImpactScore = impactScore
+	a.PoliticalScore = politicalScore
+	a.DocumentType = documentType
+	a.PDFURL = pdfURL
 	json.Unmarshal(rawData, &a.RawData)
 	return &a, nil
 }

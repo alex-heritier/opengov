@@ -49,7 +49,11 @@ CREATE TABLE IF NOT EXISTS frarticles (
     raw_data TEXT NOT NULL,
     fetched_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     title TEXT NOT NULL,
+    agency TEXT,
     summary TEXT NOT NULL,
+    keypoints JSONB,
+    impact_score TEXT,
+    political_score INTEGER,
     source_url TEXT NOT NULL,
     published_at TIMESTAMPTZ NOT NULL,
     document_type TEXT,
@@ -241,6 +245,61 @@ func (db *DB) addMissingColumns(tx *sql.Tx) error {
 	}
 	if count == 0 {
 		_, err = tx.Exec("ALTER TABLE agencies ADD COLUMN raw_name TEXT NOT NULL DEFAULT ''")
+		if err != nil && !strings.Contains(err.Error(), "already exists") {
+			return err
+		}
+	}
+
+	// Add new AI-generated fields
+	err = tx.QueryRow("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'frarticles' AND column_name = 'agency'").Scan(&count)
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		_, err = tx.Exec("ALTER TABLE frarticles ADD COLUMN agency TEXT")
+		if err != nil && !strings.Contains(err.Error(), "already exists") {
+			return err
+		}
+	}
+	_, err = tx.Exec("ALTER TABLE frarticles DROP COLUMN IF EXISTS department")
+	if err != nil && !strings.Contains(err.Error(), "does not exist") {
+		return err
+	}
+
+	var keypointsType string
+	err = tx.QueryRow("SELECT data_type FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'frarticles' AND column_name = 'keypoints'").Scan(&keypointsType)
+	if err != nil && err != sql.ErrNoRows {
+		return err
+	}
+	if keypointsType == "" {
+		_, err = tx.Exec("ALTER TABLE frarticles ADD COLUMN keypoints JSONB")
+		if err != nil && !strings.Contains(err.Error(), "already exists") {
+			return err
+		}
+	} else if keypointsType != "jsonb" {
+		_, err = tx.Exec("ALTER TABLE frarticles ALTER COLUMN keypoints TYPE JSONB USING keypoints::jsonb")
+		if err != nil && !strings.Contains(err.Error(), "already exists") {
+			return err
+		}
+	}
+
+	err = tx.QueryRow("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'frarticles' AND column_name = 'impact_score'").Scan(&count)
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		_, err = tx.Exec("ALTER TABLE frarticles ADD COLUMN impact_score TEXT")
+		if err != nil && !strings.Contains(err.Error(), "already exists") {
+			return err
+		}
+	}
+
+	err = tx.QueryRow("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'frarticles' AND column_name = 'political_score'").Scan(&count)
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		_, err = tx.Exec("ALTER TABLE frarticles ADD COLUMN political_score INTEGER")
 		if err != nil && !strings.Contains(err.Error(), "already exists") {
 			return err
 		}
