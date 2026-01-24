@@ -2,12 +2,9 @@
 
 # Go variables
 GOCMD=go
-GOBIN=$(PWD)/bin
+GOBIN=$(PWD)/dist
 API_BINARY=api
 SCRAPER_BINARY=scraper
-
-# Build flags
-LDFLAGS=-s -w
 
 all: deps build
 
@@ -18,19 +15,19 @@ deps:
 build: build-api build-scraper
 
 build-api:
-	$(GOCMD) build -ldflags "$(LDFLAGS)" -o $(GOBIN)/$(API_BINARY) ./cmd/api
+	./bin/build-api.sh
 
 build-scraper:
-	$(GOCMD) build -ldflags "$(LDFLAGS)" -o $(GOBIN)/$(SCRAPER_BINARY) ./cmd/scraper
+	./bin/build-scraper.sh
 
 run: build
-	$(GOBIN)/$(API_BINARY)
+	./bin/run-api.sh
 
 run-api: build-api
-	$(GOBIN)/$(API_BINARY)
+	./bin/run-api.sh
 
 run-scraper: build-scraper
-	$(GOBIN)/$(SCRAPER_BINARY)
+	./bin/run-scraper.sh
 
 test:
 	$(GOCMD) test -v ./...

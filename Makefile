@@ -72,7 +72,7 @@ build:
 	cd backend && make build
 	@echo "Building frontend..."
 	cd frontend && bun run build
-	@echo "✓ Build complete: backend/bin/, frontend/dist/"
+	@echo "✓ Build complete: backend/dist/, frontend/dist/"
 
 clean:
 	@echo "Cleaning up..."

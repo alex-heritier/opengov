@@ -47,4 +47,4 @@ npm-debug.log*
 .env.*.local
 repomix-output.xml
 
-bin/
+dist/
