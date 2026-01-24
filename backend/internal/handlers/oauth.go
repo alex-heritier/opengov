@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -24,6 +25,12 @@ type OAuthHandler struct {
 	userRepo    *repository.UserRepository
 	cfg         *config.Config
 	// In-memory state store (use Redis in production)
+	// TODO: This map is NOT concurrency-safe. Gin handlers run concurrently.
+	// Multiple goroutines can read/write map simultaneously causing data races.
+	// Fix options:
+	//   1. Add sync.Mutex to protect map access
+	//   2. Use sync.Map (but needs separate expiration handling)
+	//   3. Move to signed cookie (stateless) or Redis (persistent, distributed)
 	oauthStates map[string]time.Time
 }
 
@@ -137,8 +144,8 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 				IsActive:    1,
 				IsSuperuser: 0,
 				IsVerified:  map[bool]int{true: 1, false: 0}[verified],
-				CreatedAt:   time.Now().UTC().Format(timeformat.DBTime),
-				UpdatedAt:   time.Now().UTC().Format(timeformat.DBTime),
+				CreatedAt:   time.Now().UTC(),
+				UpdatedAt:   time.Now().UTC(),
 			}
 			if err := h.userRepo.CreateFromGoogle(ctx, user); err != nil {
 				log.Printf("Failed to create user from Google OAuth: %v", err)
@@ -184,13 +191,18 @@ func exchangeGoogleToken(code string, cfg *config.Config) (string, error) {
 
 	resp, err := http.PostForm("https://oauth2.googleapis.com/token", data)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("token request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("token request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
 	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", err
+	if err := json.Unmarshal(bodyBytes, &result); err != nil {
+		return "", fmt.Errorf("failed to decode token response: %w", err)
 	}
 
 	if errStr, ok := result["error"].(string); ok {
@@ -212,13 +224,18 @@ func getGoogleUserInfo(accessToken string, cfg *config.Config) (map[string]inter
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("userinfo request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("userinfo request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
 	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
+	if err := json.Unmarshal(bodyBytes, &result); err != nil {
+		return nil, fmt.Errorf("failed to decode userinfo response: %w", err)
 	}
 
 	return result, nil
@@ -288,8 +305,8 @@ func (h *OAuthHandler) TestLogin(c *gin.Context) {
 				IsActive:    1,
 				IsSuperuser: 0,
 				IsVerified:  1,
-				CreatedAt:   time.Now().UTC().Format(timeformat.DBTime),
-				UpdatedAt:   time.Now().UTC().Format(timeformat.DBTime),
+				CreatedAt:   time.Now().UTC(),
+				UpdatedAt:   time.Now().UTC(),
 			}
 			if err := h.userRepo.CreateFromGoogle(ctx, user); err != nil {
 				log.Printf("Failed to create test user: %v", err)
@@ -319,7 +336,7 @@ func (h *OAuthHandler) TestLogin(c *gin.Context) {
 func userToAuthResponse(u *models.User) *AuthUserResponse {
 	var lastLoginAt *string
 	if u.LastLoginAt != nil {
-		s := u.LastLoginAt.Format(timeformat.DBTime)
+		s := u.LastLoginAt.Format(timeformat.RFC3339)
 		lastLoginAt = &s
 	}
 	return &AuthUserResponse{
@@ -331,8 +348,8 @@ func userToAuthResponse(u *models.User) *AuthUserResponse {
 		PoliticalLeaning: u.PoliticalLeaning,
 		IsActive:         u.GetIsActive(),
 		IsVerified:       u.GetIsVerified(),
-		CreatedAt:        u.CreatedAt,
-		UpdatedAt:        u.UpdatedAt,
+		CreatedAt:        u.CreatedAt.Format(timeformat.RFC3339),
+		UpdatedAt:        u.UpdatedAt.Format(timeformat.RFC3339),
 		LastLoginAt:      lastLoginAt,
 	}
 }

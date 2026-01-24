@@ -206,7 +206,7 @@ func (h *AuthHandler) UpdateUser(c *gin.Context) {
 func userToResponse(u *models.User) *UserResponse {
 	var lastLoginAt *string
 	if u.LastLoginAt != nil {
-		s := u.LastLoginAt.Format(timeformat.DBTime)
+		s := u.LastLoginAt.Format(timeformat.RFC3339)
 		lastLoginAt = &s
 	}
 	return &UserResponse{
@@ -219,8 +219,8 @@ func userToResponse(u *models.User) *UserResponse {
 		State:            u.State,
 		IsActive:         u.GetIsActive(),
 		IsVerified:       u.GetIsVerified(),
-		CreatedAt:        u.CreatedAt,
-		UpdatedAt:        u.UpdatedAt,
+		CreatedAt:        u.CreatedAt.Format(timeformat.RFC3339),
+		UpdatedAt:        u.UpdatedAt.Format(timeformat.RFC3339),
 		LastLoginAt:      lastLoginAt,
 	}
 }

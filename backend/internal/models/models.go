@@ -57,8 +57,8 @@ type User struct {
 	PictureURL       *string    `json:"picture_url,omitempty"`
 	PoliticalLeaning *string    `json:"political_leaning,omitempty"`
 	State            *string    `json:"state,omitempty"`
-	CreatedAt        string     `json:"created_at"`
-	UpdatedAt        string     `json:"updated_at"`
+	CreatedAt        time.Time  `json:"created_at"`
+	UpdatedAt        time.Time  `json:"updated_at"`
 	LastLoginAt      *time.Time `json:"last_login_at,omitempty"`
 }
 
@@ -75,19 +75,19 @@ func (u *User) GetIsVerified() bool {
 }
 
 type Agency struct {
-	ID          int     `json:"id"`
-	FRAgencyID  int     `json:"fr_agency_id"`
-	RawName     string  `json:"raw_name"`
-	Name        string  `json:"name"`
-	ShortName   *string `json:"short_name,omitempty"`
-	Slug        string  `json:"slug"`
-	Description *string `json:"description,omitempty"`
-	URL         *string `json:"url,omitempty"`
-	JSONURL     *string `json:"json_url,omitempty"`
-	ParentID    *int    `json:"parent_id,omitempty"`
-	RawData     JSONMap `json:"raw_data"`
-	CreatedAt   string  `json:"created_at"`
-	UpdatedAt   string  `json:"updated_at"`
+	ID          int       `json:"id"`
+	FRAgencyID  int       `json:"fr_agency_id"`
+	RawName     string    `json:"raw_name"`
+	Name        string    `json:"name"`
+	ShortName   *string   `json:"short_name,omitempty"`
+	Slug        string    `json:"slug"`
+	Description *string   `json:"description,omitempty"`
+	URL         *string   `json:"url,omitempty"`
+	JSONURL     *string   `json:"json_url,omitempty"`
+	ParentID    *int      `json:"parent_id,omitempty"`
+	RawData     JSONMap   `json:"raw_data"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type FRArticle struct {
