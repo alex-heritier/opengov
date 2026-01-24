@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { useAuth, useProfile } from "@/hook";
 import { Button } from "@/components/ui/button";
@@ -92,13 +92,16 @@ export default function ProfilePage() {
   const { user, updateUser } = useAuthStore();
   const { logout } = useAuth();
   const { updateProfileAsync, isUpdating } = useProfile();
-  const [politicalLeaning, setPoliticalLeaning] = useState<string | undefined>(
-    user?.political_leaning || undefined,
-  );
-  const [state, setState] = useState<string | undefined>(
-    user?.state || undefined,
-  );
+  const [politicalLeaning, setPoliticalLeaning] = useState("");
+  const [state, setState] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setPoliticalLeaning(user.political_leaning || "");
+      setState(user.state || "");
+    }
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,10 +109,11 @@ export default function ProfilePage() {
     try {
       const updatedUser = await updateProfileAsync({
         political_leaning:
-          politicalLeaning === "prefer-not-to-say"
+          politicalLeaning === "" || politicalLeaning === "prefer-not-to-say"
             ? null
-            : politicalLeaning || null,
-        state: state === "prefer-not-to-say" ? null : state || null,
+            : politicalLeaning,
+        state:
+          state === "" || state === "prefer-not-to-say" ? null : state,
       });
       // Update the user in the auth store
       updateUser(updatedUser);
