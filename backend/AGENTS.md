@@ -23,7 +23,7 @@ backend/
 ## Implementation Guidelines
 
 - Use standard library + Gin for HTTP routing
-- SQLite + sqlx/database/sql for data persistence
+- PostgreSQL + database/sql for data persistence
 - Separate service modules for external API integrations
 - Environment variables for API keys and configuration
 - Background goroutines for periodic jobs

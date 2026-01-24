@@ -10,7 +10,7 @@ Refer to TODO.md for tasks.
 
 ## Tech Stack
 
-- **Backend**: Go + Gin + SQLite
+- **Backend**: Go + Gin + PostgreSQL
 - **Frontend**: React + Vite + TypeScript
 - **External APIs**: Federal Register API, Grok API
 - **Dependency Management**: `go mod` (Go) and `bun` (Node)

@@ -20,7 +20,7 @@ This document documents all database models. When adding or updating models:
 - Wrap complex objects with comment: `{ /* ... */ }`
 - Use ISO 8601 timestamps: `2025-01-01T10:30:00.000000Z`
 
-Database backed models should have standard SQLite timestamps even if not explicitly stated in this file.
+Database backed models should have standard PostgreSQL timestamps even if not explicitly stated in this file.
 
 ## User
 
