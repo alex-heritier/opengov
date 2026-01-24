@@ -2,7 +2,7 @@
 
 # Go variables
 GOCMD=go
-GOBIN=$(PWD)/dist
+GOBIN=$(PWD)/bin
 API_BINARY=api
 SCRAPER_BINARY=scraper
 
@@ -15,19 +15,19 @@ deps:
 build: build-api build-scraper
 
 build-api:
-	./bin/build-api.sh
+	./scripts/build-api.sh
 
 build-scraper:
-	./bin/build-scraper.sh
+	./scripts/build-scraper.sh
 
 run: build
-	./bin/run-api.sh
+	./scripts/run-api.sh
 
 run-api: build-api
-	./bin/run-api.sh
+	./scripts/run-api.sh
 
 run-scraper: build-scraper
-	./bin/run-scraper.sh
+	./scripts/run-scraper.sh
 
 test:
 	$(GOCMD) test -v ./...

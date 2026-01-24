@@ -4,7 +4,7 @@ tmp_dir = "tmp"
 
 [build]
   args = ""
-  bin = "./dist/api"
+  bin = "./bin/api"
   cmd = "make build-api"
   delay = 1000
   exclude_dir = ["assets", "tmp", "vendor", "testdata"]
