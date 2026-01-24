@@ -51,7 +51,10 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const ui = useArticleUIStore((s) => (id ? s.byId[id] : undefined));
 
   const bookmarked = ui?.is_bookmarked ?? is_bookmarked;
-  const likeStatus: LikeStatus = ui?.user_like_status ?? user_like_status;
+  // user_like_status is tri-state (true/false/null). Only fall back to props
+  // when the store has no value (undefined), not when it's explicitly null.
+  const likeStatus: LikeStatus =
+    ui?.user_like_status === undefined ? user_like_status : ui.user_like_status;
   const likesCount = ui?.likes_count ?? likes_count;
   const dislikesCount = ui?.dislikes_count ?? dislikes_count;
 

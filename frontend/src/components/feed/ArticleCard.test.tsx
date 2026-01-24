@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ArticleCard } from "./ArticleCard";
+import { useArticleUIStore } from "@/store/article-ui-store";
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({
@@ -18,6 +19,19 @@ vi.mock("@tanstack/react-router", () => ({
   ),
   useNavigate: () => vi.fn(),
 }));
+
+vi.mock("@/store/authStore", () => ({
+  useAuthStore: () => ({ isAuthenticated: true }),
+}));
+
+vi.mock("@/hook", () => {
+  const base = { mutate: vi.fn(), isPending: false };
+  return {
+    useToggleBookmarkMutation: () => base,
+    useToggleLikeMutation: () => base,
+    useRemoveLikeMutation: () => base,
+  };
+});
 
 // Create a test QueryClient
 const createTestQueryClient = () =>
@@ -97,5 +111,40 @@ describe("ArticleCard", () => {
     expect(link).toHaveAttribute("href", "https://example.com");
     expect(link).toHaveAttribute("target", "_blank");
     expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  });
+
+  it("does not fall back to props when store likeStatus is null", () => {
+    const id = 123;
+
+    act(() => {
+      useArticleUIStore.setState({
+        byId: {
+          [id]: {
+            is_bookmarked: false,
+            user_like_status: null,
+            likes_count: 0,
+            dislikes_count: 0,
+          },
+        },
+      });
+    });
+
+    renderWithProviders(
+      <ArticleCard
+        id={id}
+        title="Test Article"
+        summary="Test summary"
+        source_url="https://example.com"
+        published_at="2024-01-01T00:00:00Z"
+        user_like_status={false}
+      />,
+    );
+
+    const dislikeBtn = screen.getByRole("button", { name: /Dislike article/i });
+    expect(dislikeBtn).not.toHaveClass("bg-red-600");
+
+    act(() => {
+      useArticleUIStore.setState({ byId: {} });
+    });
   });
 });
