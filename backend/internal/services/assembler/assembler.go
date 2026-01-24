@@ -1,5 +1,25 @@
 package assembler
 
+/*
+	ASSEMBLER PERFORMANCE NOTES:
+
+	This assembler currently suffers from N+1 query problems on the feed page.
+
+	For each article, the following queries are executed:
+	- bookmarkRepo.IsBookmarked(userID, articleID)
+	- likeRepo.GetUserStatus(userID, articleID)
+	- likeRepo.GetArticleCounts(articleID) // two count queries
+
+	A 20-article page results in 40-60+ queries.
+
+	TODO: Refactor to use bulk repository methods:
+	- GetBookmarksForArticles(userID, articleIDs[]) -> map[articleID]bool
+	- GetUserStatusesForArticles(userID, articleIDs[]) -> map[articleID]int
+	- GetCountsForArticles(articleIDs[]) -> map[articleID]struct{likes, dislikes int}
+
+	This will reduce a 20-article page from 60+ queries to 3-4 queries.
+*/
+
 import (
 	"github.com/gin-gonic/gin"
 
