@@ -140,7 +140,7 @@ func main() {
 		cancel()
 	}()
 
-	addr := ":8000"
+	addr := ":" + cfg.Port
 	log.Printf("Starting API server on %s", addr)
 
 	srv := &http.Server{

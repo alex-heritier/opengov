@@ -50,6 +50,7 @@ type Config struct {
 	Environment string
 	BehindProxy bool
 	UseMockGrok bool
+	Port        string
 
 	// Authentication Security
 	CookieSecure bool
@@ -96,6 +97,7 @@ func Load() (*Config, error) {
 		JWTAccessTokenExpireMin: 60,
 		FrontendURL:             "http://localhost:5173",
 		GrokModel:               "grok-4-1-fast-non-reasoning",
+		Port:                    "8000",
 	}
 
 	// Override with environment variables
@@ -257,6 +259,10 @@ func Load() (*Config, error) {
 
 	if v := os.Getenv("GROK_MODEL"); v != "" {
 		c.GrokModel = v
+	}
+
+	if v := os.Getenv("PORT"); v != "" {
+		c.Port = v
 	}
 
 	return c, nil
