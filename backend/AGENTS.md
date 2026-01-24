@@ -15,6 +15,7 @@ backend/
 │   ├── repository/               # Data access layer
 │   └── services/                 # Business logic & external APIs
 ├── bin/                          # Compiled binaries
+├── scripts/                      # Utility scripts
 ├── go.mod
 └── go.sum
 ```
@@ -27,7 +28,12 @@ backend/
 - Environment variables for API keys and configuration
 - Background goroutines for periodic jobs
 
-**Authentication:** JWT tokens in HTTP-only cookies, email/password login
+**Authentication:** JWT Bearer tokens in Authorization header, email/password login + Google OAuth
+
+**Auth Flow:**
+- Login/Register: Returns `{access_token, user}` in JSON response
+- OAuth: Redirects to `/auth/callback#access_token=<token>`
+- API requests: `Authorization: Bearer <token>` header required
 
 ## Architecture layer overview
 

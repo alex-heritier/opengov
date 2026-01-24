@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import apiClient from "@/api/client";
 
@@ -32,17 +32,6 @@ export default function AdminPage() {
         params: { limit },
       });
       return response.data;
-    },
-  });
-
-  // Trigger manual scrape
-  const { mutate: triggerScrape, isPending: isScrapePending } = useMutation({
-    mutationFn: async () => {
-      const response = await apiClient.post("/api/admin/scrape");
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "scraper-runs"] });
     },
   });
 
@@ -83,28 +72,6 @@ export default function AdminPage() {
         <p className="text-gray-500 mt-2">
           Manage scraper jobs and monitor system health
         </p>
-      </div>
-
-      {/* Scrape Trigger Card */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-2">Trigger Scrape</h2>
-        <p className="text-gray-600 text-sm mb-4">
-          Manually queue a Federal Register scrape job
-        </p>
-        <button
-          onClick={() => triggerScrape()}
-          disabled={isScrapePending}
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isScrapePending ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Queuing...
-            </>
-          ) : (
-            "Start Scrape Job"
-          )}
-        </button>
       </div>
 
       {/* Scraper Runs Table */}

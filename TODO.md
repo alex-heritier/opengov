@@ -20,3 +20,9 @@
 - [x] Add AI summary to article page
 - [ ] Add AI keypoints to article page
 - [ ] Add partisan score meter (Democrat/Republican indicator)
+- [ ] Fix OAuth state store concurrency issue (map not thread-safe)
+- [ ] Fix N+1 query performance issue in assembler (bookmark/like bulk fetching)
+  - Add BookmarkRepository.GetBookmarksForArticles(userID, articleIDs[])
+  - Add LikeRepository.GetUserStatusesForArticles(userID, articleIDs[])
+  - Add LikeRepository.GetCountsForArticles(articleIDs[])
+  - Refactor assembler.go to use bulk methods instead of per-article queries
