@@ -37,6 +37,12 @@ frontend/
 - shadcn/ui + Tailwind CSS for styling
 - Responsive design with loading states and error boundaries
 
+## Environment Checks
+
+- Use `import.meta.env.MODE` for environment-specific logic (e.g., `=== 'development'`)
+- Do NOT use `import.meta.env.PROD` or `import.meta.env.DEV` — these are always `true`/`false` based on whether code runs via dev server (`vite`) or build (`vite build`), not the `--mode` flag
+- Custom environment variables must use `VITE_` prefix (e.g., `VITE_API_URL`)
+
 ## Patterns
 
 - src/query/: TanStack Query code

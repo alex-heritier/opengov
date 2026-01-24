@@ -5,6 +5,10 @@ export { useArticle } from "./useArticle";
 export { useProfile } from "./useProfile";
 export type { UserUpdate } from "./useProfile";
 
+// Environment hook
+export { useEnvironment } from "./useEnvironment";
+export type { Environment } from "./useEnvironment";
+
 // Auth hooks
 export { useAuth } from "./useAuth";
 export { AuthProvider } from "./AuthProvider";

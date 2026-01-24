@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { FlaskConical } from "lucide-react";
+import { useEnvironment } from "@/hook";
 
 export function TestLogin() {
+  const { isDevelopment } = useEnvironment();
+
   const handleTestLogin = () => {
     // Redirect to backend test login flow
     // Backend handles everything: user creation, cookie setting, redirect
@@ -10,8 +13,7 @@ export function TestLogin() {
   };
 
   // Only show in development mode
-  console.log("PROD:", import.meta.env.PROD);
-  if (import.meta.env.PROD) {
+  if (!isDevelopment) {
     return null;
   }
 
