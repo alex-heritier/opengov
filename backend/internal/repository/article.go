@@ -2,14 +2,12 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/alex/opengov-go/internal/db"
 	"github.com/alex/opengov-go/internal/models"
-	"github.com/alex/opengov-go/internal/timeformat"
 )
 
 type ArticleRepository struct {
@@ -33,7 +31,7 @@ func (r *ArticleRepository) GetFeed(ctx context.Context, page, limit int, sort s
 		SELECT id, source, source_id, unique_key, document_number, raw_data, fetched_at, title, summary, source_url, published_at, document_type, pdf_url, created_at, updated_at
 		FROM frarticles
 		ORDER BY published_at %s
-		LIMIT ? OFFSET ?
+		LIMIT $1 OFFSET $2
 	`, orderDir)
 
 	rows, err := r.db.QueryContext(ctx, query, limit, offset)
@@ -46,25 +44,20 @@ func (r *ArticleRepository) GetFeed(ctx context.Context, page, limit int, sort s
 	for rows.Next() {
 		var a models.FRArticle
 		var rawData []byte
-		var fetchedAt, publishedAt, createdAt, updatedAt string
-		var documentType, pdfURL sql.NullString
+		var documentType, pdfURL *string
 		err := rows.Scan(
-			&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &rawData, &fetchedAt,
-			&a.Title, &a.Summary, &a.SourceURL, &publishedAt,
-			&documentType, &pdfURL, &createdAt, &updatedAt,
+			&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &rawData, &a.FetchedAt,
+			&a.Title, &a.Summary, &a.SourceURL, &a.PublishedAt,
+			&documentType, &pdfURL, &a.CreatedAt, &a.UpdatedAt,
 		)
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to scan article: %w", err)
 		}
-		a.FetchedAt, _ = time.Parse(timeformat.DBTime, fetchedAt)
-		a.PublishedAt, _ = time.Parse(timeformat.DBTime, publishedAt)
-		a.CreatedAt, _ = time.Parse(timeformat.DBTime, createdAt)
-		a.UpdatedAt, _ = time.Parse(timeformat.DBTime, updatedAt)
-		if documentType.Valid {
-			a.DocumentType = &documentType.String
+		if documentType != nil {
+			a.DocumentType = documentType
 		}
-		if pdfURL.Valid {
-			a.PDFURL = &pdfURL.String
+		if pdfURL != nil {
+			a.PDFURL = pdfURL
 		}
 		json.Unmarshal(rawData, &a.RawData)
 		articles = append(articles, a)
@@ -82,32 +75,24 @@ func (r *ArticleRepository) GetFeed(ctx context.Context, page, limit int, sort s
 func (r *ArticleRepository) GetByID(ctx context.Context, id int) (*models.FRArticle, error) {
 	query := `
 		SELECT id, source, source_id, unique_key, document_number, raw_data, fetched_at, title, summary, source_url, published_at, document_type, pdf_url, created_at, updated_at
-		FROM frarticles WHERE id = ?
+		FROM frarticles WHERE id = $1
 	`
 	var a models.FRArticle
 	var rawData []byte
-	var fetchedAt, publishedAt, createdAt, updatedAt string
-	var documentType, pdfURL sql.NullString
+	var documentType, pdfURL *string
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &rawData, &fetchedAt,
-		&a.Title, &a.Summary, &a.SourceURL, &publishedAt,
-		&documentType, &pdfURL, &createdAt, &updatedAt,
+		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &rawData, &a.FetchedAt,
+		&a.Title, &a.Summary, &a.SourceURL, &a.PublishedAt,
+		&documentType, &pdfURL, &a.CreatedAt, &a.UpdatedAt,
 	)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to get article: %w", err)
+		return nil, err
 	}
-	a.FetchedAt, _ = time.Parse(timeformat.DBTime, fetchedAt)
-	a.PublishedAt, _ = time.Parse(timeformat.DBTime, publishedAt)
-	a.CreatedAt, _ = time.Parse(timeformat.DBTime, createdAt)
-	a.UpdatedAt, _ = time.Parse(timeformat.DBTime, updatedAt)
-	if documentType.Valid {
-		a.DocumentType = &documentType.String
+	if documentType != nil {
+		a.DocumentType = documentType
 	}
-	if pdfURL.Valid {
-		a.PDFURL = &pdfURL.String
+	if pdfURL != nil {
+		a.PDFURL = pdfURL
 	}
 	json.Unmarshal(rawData, &a.RawData)
 	return &a, nil
@@ -116,39 +101,31 @@ func (r *ArticleRepository) GetByID(ctx context.Context, id int) (*models.FRArti
 func (r *ArticleRepository) GetByDocumentNumber(ctx context.Context, docNumber string) (*models.FRArticle, error) {
 	query := `
 		SELECT id, source, source_id, unique_key, document_number, raw_data, fetched_at, title, summary, source_url, published_at, document_type, pdf_url, created_at, updated_at
-		FROM frarticles WHERE document_number = ?
+		FROM frarticles WHERE document_number = $1
 	`
 	var a models.FRArticle
 	var rawData []byte
-	var fetchedAt, publishedAt, createdAt, updatedAt string
-	var documentType, pdfURL sql.NullString
+	var documentType, pdfURL *string
 	err := r.db.QueryRowContext(ctx, query, docNumber).Scan(
-		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &rawData, &fetchedAt,
-		&a.Title, &a.Summary, &a.SourceURL, &publishedAt,
-		&documentType, &pdfURL, &createdAt, &updatedAt,
+		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &rawData, &a.FetchedAt,
+		&a.Title, &a.Summary, &a.SourceURL, &a.PublishedAt,
+		&documentType, &pdfURL, &a.CreatedAt, &a.UpdatedAt,
 	)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to get article: %w", err)
+		return nil, err
 	}
-	a.FetchedAt, _ = time.Parse(timeformat.DBTime, fetchedAt)
-	a.PublishedAt, _ = time.Parse(timeformat.DBTime, publishedAt)
-	a.CreatedAt, _ = time.Parse(timeformat.DBTime, createdAt)
-	a.UpdatedAt, _ = time.Parse(timeformat.DBTime, updatedAt)
-	if documentType.Valid {
-		a.DocumentType = &documentType.String
+	if documentType != nil {
+		a.DocumentType = documentType
 	}
-	if pdfURL.Valid {
-		a.PDFURL = &pdfURL.String
+	if pdfURL != nil {
+		a.PDFURL = pdfURL
 	}
 	json.Unmarshal(rawData, &a.RawData)
 	return &a, nil
 }
 
 func (r *ArticleRepository) ExistsByUniqueKey(ctx context.Context, uniqueKey string) (bool, error) {
-	query := "SELECT COUNT(*) FROM frarticles WHERE unique_key = ?"
+	query := "SELECT COUNT(*) FROM frarticles WHERE unique_key = $1"
 	var count int
 	err := r.db.QueryRowContext(ctx, query, uniqueKey).Scan(&count)
 	return count > 0, err
@@ -157,32 +134,24 @@ func (r *ArticleRepository) ExistsByUniqueKey(ctx context.Context, uniqueKey str
 func (r *ArticleRepository) GetByUniqueKey(ctx context.Context, uniqueKey string) (*models.FRArticle, error) {
 	query := `
 		SELECT id, source, source_id, unique_key, document_number, raw_data, fetched_at, title, summary, source_url, published_at, document_type, pdf_url, created_at, updated_at
-		FROM frarticles WHERE unique_key = ?
+		FROM frarticles WHERE unique_key = $1
 	`
 	var a models.FRArticle
 	var rawData []byte
-	var fetchedAt, publishedAt, createdAt, updatedAt string
-	var documentType, pdfURL sql.NullString
+	var documentType, pdfURL *string
 	err := r.db.QueryRowContext(ctx, query, uniqueKey).Scan(
-		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &rawData, &fetchedAt,
-		&a.Title, &a.Summary, &a.SourceURL, &publishedAt,
-		&documentType, &pdfURL, &createdAt, &updatedAt,
+		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &rawData, &a.FetchedAt,
+		&a.Title, &a.Summary, &a.SourceURL, &a.PublishedAt,
+		&documentType, &pdfURL, &a.CreatedAt, &a.UpdatedAt,
 	)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to get article by unique_key: %w", err)
+		return nil, err
 	}
-	a.FetchedAt, _ = time.Parse(timeformat.DBTime, fetchedAt)
-	a.PublishedAt, _ = time.Parse(timeformat.DBTime, publishedAt)
-	a.CreatedAt, _ = time.Parse(timeformat.DBTime, createdAt)
-	a.UpdatedAt, _ = time.Parse(timeformat.DBTime, updatedAt)
-	if documentType.Valid {
-		a.DocumentType = &documentType.String
+	if documentType != nil {
+		a.DocumentType = documentType
 	}
-	if pdfURL.Valid {
-		a.PDFURL = &pdfURL.String
+	if pdfURL != nil {
+		a.PDFURL = pdfURL
 	}
 	json.Unmarshal(rawData, &a.RawData)
 	return &a, nil
@@ -201,20 +170,19 @@ func (r *ArticleRepository) Create(ctx context.Context, article *models.FRArticl
 
 	query := `
 		INSERT INTO frarticles (source, source_id, unique_key, document_number, raw_data, fetched_at, title, summary, source_url, published_at, document_type, pdf_url, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+		RETURNING id
 	`
-	result, err := r.db.ExecContext(ctx, query,
-		article.Source, article.SourceID, article.UniqueKey, article.DocumentNumber, rawData, article.FetchedAt.Format(timeformat.DBTime),
-		article.Title, article.Summary, article.SourceURL, article.PublishedAt.Format(timeformat.DBTime),
+	err = r.db.QueryRowContext(ctx, query,
+		article.Source, article.SourceID, article.UniqueKey, article.DocumentNumber, rawData, article.FetchedAt,
+		article.Title, article.Summary, article.SourceURL, article.PublishedAt,
 		article.DocumentType, article.PDFURL,
-		article.CreatedAt.Format(timeformat.DBTime), article.UpdatedAt.Format(timeformat.DBTime),
-	)
+		article.CreatedAt, article.UpdatedAt,
+	).Scan(&article.ID)
 	if err != nil {
 		return fmt.Errorf("failed to insert article: %w", err)
 	}
 
-	id, _ := result.LastInsertId()
-	article.ID = int(id)
 	return nil
 }
 
@@ -226,35 +194,27 @@ func (r *ArticleRepository) Count(ctx context.Context) (int, error) {
 
 func (r *ArticleRepository) GetLatest(ctx context.Context) (*models.FRArticle, error) {
 	query := `
-		SELECT id, document_number, raw_data, fetched_at, title, summary, source_url, published_at, document_type, pdf_url, created_at, updated_at
+		SELECT id, source, source_id, unique_key, document_number, raw_data, fetched_at, title, summary, source_url, published_at, document_type, pdf_url, created_at, updated_at
 		FROM frarticles
 		ORDER BY fetched_at DESC
 		LIMIT 1
 	`
 	var a models.FRArticle
 	var rawData []byte
-	var fetchedAt, publishedAt, createdAt, updatedAt string
-	var documentType, pdfURL sql.NullString
+	var documentType, pdfURL *string
 	err := r.db.QueryRowContext(ctx, query).Scan(
-		&a.ID, &a.DocumentNumber, &rawData, &fetchedAt,
-		&a.Title, &a.Summary, &a.SourceURL, &publishedAt,
-		&documentType, &pdfURL, &createdAt, &updatedAt,
+		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &rawData, &a.FetchedAt,
+		&a.Title, &a.Summary, &a.SourceURL, &a.PublishedAt,
+		&documentType, &pdfURL, &a.CreatedAt, &a.UpdatedAt,
 	)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to get latest article: %w", err)
+		return nil, err
 	}
-	a.FetchedAt, _ = time.Parse(timeformat.DBTime, fetchedAt)
-	a.PublishedAt, _ = time.Parse(timeformat.DBTime, publishedAt)
-	a.CreatedAt, _ = time.Parse(timeformat.DBTime, createdAt)
-	a.UpdatedAt, _ = time.Parse(timeformat.DBTime, updatedAt)
-	if documentType.Valid {
-		a.DocumentType = &documentType.String
+	if documentType != nil {
+		a.DocumentType = documentType
 	}
-	if pdfURL.Valid {
-		a.PDFURL = &pdfURL.String
+	if pdfURL != nil {
+		a.PDFURL = pdfURL
 	}
 	json.Unmarshal(rawData, &a.RawData)
 	return &a, nil

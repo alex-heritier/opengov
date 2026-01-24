@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 
 	"github.com/alex/opengov-go/internal/config"
 )
@@ -15,7 +15,7 @@ type DB struct {
 }
 
 func New(cfg *config.Config) (*DB, error) {
-	db, err := sql.Open("sqlite3", cfg.DatabaseURL)
+	db, err := sql.Open("postgres", cfg.DatabaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}

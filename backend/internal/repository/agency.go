@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	"github.com/alex/opengov-go/internal/db"
@@ -28,7 +27,7 @@ func (r *AgencyRepository) GetAll(ctx context.Context, limit, offset int) ([]mod
 		SELECT id, fr_agency_id, raw_name, name, short_name, slug, description, url, json_url, parent_id, raw_data, created_at, updated_at
 		FROM agencies
 		ORDER BY name
-		LIMIT ? OFFSET ?
+		LIMIT $1 OFFSET $2
 	`
 	rows, err := r.db.QueryContext(ctx, query, limit, offset)
 	if err != nil {
@@ -39,33 +38,19 @@ func (r *AgencyRepository) GetAll(ctx context.Context, limit, offset int) ([]mod
 	var agencies []models.Agency
 	for rows.Next() {
 		var a models.Agency
-		var shortName, description, url, jsonURL sql.NullString
-		var parentID sql.NullInt64
-		var createdAt, updatedAt string
+		var shortName, description, url, jsonURL *string
+		var parentID *int
 		if err := rows.Scan(
 			&a.ID, &a.FRAgencyID, &a.RawName, &a.Name, &shortName, &a.Slug, &description,
-			&url, &jsonURL, &parentID, &a.RawData, &createdAt, &updatedAt,
+			&url, &jsonURL, &parentID, &a.RawData, &a.CreatedAt, &a.UpdatedAt,
 		); err != nil {
 			return nil, 0, fmt.Errorf("failed to scan agency: %w", err)
 		}
-		if shortName.Valid {
-			a.ShortName = &shortName.String
-		}
-		if description.Valid {
-			a.Description = &description.String
-		}
-		if url.Valid {
-			a.URL = &url.String
-		}
-		if jsonURL.Valid {
-			a.JSONURL = &jsonURL.String
-		}
-		if parentID.Valid {
-			pid := int(parentID.Int64)
-			a.ParentID = &pid
-		}
-		a.CreatedAt = createdAt
-		a.UpdatedAt = updatedAt
+		a.ShortName = shortName
+		a.Description = description
+		a.URL = url
+		a.JSONURL = jsonURL
+		a.ParentID = parentID
 		agencies = append(agencies, a)
 	}
 
@@ -75,23 +60,22 @@ func (r *AgencyRepository) GetAll(ctx context.Context, limit, offset int) ([]mod
 func (r *AgencyRepository) Create(ctx context.Context, agency *models.Agency) error {
 	query := `
 		INSERT INTO agencies (fr_agency_id, raw_name, name, short_name, slug, description, url, json_url, parent_id, raw_data, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		RETURNING id
 	`
-	result, err := r.db.ExecContext(ctx, query,
+	err := r.db.QueryRowContext(ctx, query,
 		agency.FRAgencyID, agency.RawName, agency.Name, agency.ShortName, agency.Slug,
 		agency.Description, agency.URL, agency.JSONURL, agency.ParentID,
 		agency.RawData, agency.CreatedAt, agency.UpdatedAt,
-	)
+	).Scan(&agency.ID)
 	if err != nil {
 		return fmt.Errorf("failed to insert agency: %w", err)
 	}
-	id, _ := result.LastInsertId()
-	agency.ID = int(id)
 	return nil
 }
 
 func (r *AgencyRepository) ExistsByFRAgencyID(ctx context.Context, frAgencyID int) (bool, error) {
-	query := "SELECT COUNT(*) FROM agencies WHERE fr_agency_id = ?"
+	query := "SELECT COUNT(*) FROM agencies WHERE fr_agency_id = $1"
 	var count int
 	err := r.db.QueryRowContext(ctx, query, frAgencyID).Scan(&count)
 	return count > 0, err
@@ -105,8 +89,8 @@ func (r *AgencyRepository) Upsert(ctx context.Context, agency *models.Agency) er
 
 	if exists {
 		query := `
-			UPDATE agencies SET raw_name=?, name=?, short_name=?, slug=?, description=?, url=?, json_url=?, parent_id=?, raw_data=?, updated_at=?
-			WHERE fr_agency_id=?
+			UPDATE agencies SET raw_name=$1, name=$2, short_name=$3, slug=$4, description=$5, url=$6, json_url=$7, parent_id=$8, raw_data=$9, updated_at=$10
+			WHERE fr_agency_id=$11
 		`
 		_, err = r.db.ExecContext(ctx, query,
 			agency.RawName, agency.Name, agency.ShortName, agency.Slug, agency.Description,

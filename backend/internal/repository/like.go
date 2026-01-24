@@ -8,7 +8,6 @@ import (
 
 	"github.com/alex/opengov-go/internal/db"
 	"github.com/alex/opengov-go/internal/models"
-	"github.com/alex/opengov-go/internal/timeformat"
 )
 
 type LikeRepository struct {
@@ -22,12 +21,11 @@ func NewLikeRepository(db *db.DB) *LikeRepository {
 func (r *LikeRepository) GetByUserAndArticle(ctx context.Context, userID, articleID int) (*models.Like, error) {
 	query := `
 		SELECT id, user_id, frarticle_id, is_liked, created_at, updated_at
-		FROM likes WHERE user_id = ? AND frarticle_id = ?
+		FROM likes WHERE user_id = $1 AND frarticle_id = $2
 	`
 	var l models.Like
-	var createdAt, updatedAt string
 	err := r.db.QueryRowContext(ctx, query, userID, articleID).Scan(
-		&l.ID, &l.UserID, &l.FRArticleID, &l.IsLiked, &createdAt, &updatedAt,
+		&l.ID, &l.UserID, &l.FRArticleID, &l.IsLiked, &l.CreatedAt, &l.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -35,13 +33,11 @@ func (r *LikeRepository) GetByUserAndArticle(ctx context.Context, userID, articl
 	if err != nil {
 		return nil, err
 	}
-	l.CreatedAt, _ = time.Parse(timeformat.DBTime, createdAt)
-	l.UpdatedAt, _ = time.Parse(timeformat.DBTime, updatedAt)
 	return &l, nil
 }
 
 func (r *LikeRepository) Toggle(ctx context.Context, userID, articleID int) (*models.Like, error) {
-	now := time.Now().UTC().Format(timeformat.DBTime)
+	now := time.Now().UTC()
 
 	existing, err := r.GetByUserAndArticle(ctx, userID, articleID)
 	if err != nil {
@@ -49,7 +45,7 @@ func (r *LikeRepository) Toggle(ctx context.Context, userID, articleID int) (*mo
 	}
 
 	if existing != nil {
-		query := "UPDATE likes SET is_liked = CASE WHEN is_liked = 1 THEN 0 ELSE 1 END, updated_at = ? WHERE id = ?"
+		query := "UPDATE likes SET is_liked = CASE WHEN is_liked = 1 THEN 0 ELSE 1 END, updated_at = $1 WHERE id = $2"
 		_, err := r.db.ExecContext(ctx, query, now, existing.ID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to toggle like: %w", err)
@@ -60,24 +56,25 @@ func (r *LikeRepository) Toggle(ctx context.Context, userID, articleID int) (*mo
 
 	query := `
 		INSERT INTO likes (user_id, frarticle_id, is_liked, created_at, updated_at)
-		VALUES (?, ?, 1, ?, ?)
+		VALUES ($1, $2, 1, $3, $4)
+		RETURNING id
 	`
 	var l models.Like
 	l.UserID = userID
 	l.FRArticleID = articleID
 	l.IsLiked = 1
+	l.CreatedAt = now
+	l.UpdatedAt = now
 
-	result, err := r.db.ExecContext(ctx, query, userID, articleID, now, now)
+	err = r.db.QueryRowContext(ctx, query, userID, articleID, now, now).Scan(&l.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create like: %w", err)
 	}
-	id, _ := result.LastInsertId()
-	l.ID = int(id)
 	return &l, nil
 }
 
 func (r *LikeRepository) SetLike(ctx context.Context, userID, articleID int, isPositive bool) (*models.Like, error) {
-	now := time.Now().UTC().Format(timeformat.DBTime)
+	now := time.Now().UTC()
 	isLikedValue := 0
 	if isPositive {
 		isLikedValue = 1
@@ -89,7 +86,7 @@ func (r *LikeRepository) SetLike(ctx context.Context, userID, articleID int, isP
 	}
 
 	if existing != nil {
-		query := "UPDATE likes SET is_liked = ?, updated_at = ? WHERE id = ?"
+		query := "UPDATE likes SET is_liked = $1, updated_at = $2 WHERE id = $3"
 		_, err := r.db.ExecContext(ctx, query, isLikedValue, now, existing.ID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update like: %w", err)
@@ -100,30 +97,31 @@ func (r *LikeRepository) SetLike(ctx context.Context, userID, articleID int, isP
 
 	query := `
 		INSERT INTO likes (user_id, frarticle_id, is_liked, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id
 	`
 	var l models.Like
 	l.UserID = userID
 	l.FRArticleID = articleID
 	l.IsLiked = isLikedValue
+	l.CreatedAt = now
+	l.UpdatedAt = now
 
-	result, err := r.db.ExecContext(ctx, query, userID, articleID, isLikedValue, now, now)
+	err = r.db.QueryRowContext(ctx, query, userID, articleID, isLikedValue, now, now).Scan(&l.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create like: %w", err)
 	}
-	id, _ := result.LastInsertId()
-	l.ID = int(id)
 	return &l, nil
 }
 
 func (r *LikeRepository) GetArticleCounts(ctx context.Context, articleID int) (likes, dislikes int, err error) {
-	query := "SELECT COUNT(*) FROM likes WHERE frarticle_id = ? AND is_liked = 1"
+	query := "SELECT COUNT(*) FROM likes WHERE frarticle_id = $1 AND is_liked = 1"
 	err = r.db.QueryRowContext(ctx, query, articleID).Scan(&likes)
 	if err != nil {
 		return 0, 0, fmt.Errorf("failed to count likes: %w", err)
 	}
 
-	query = "SELECT COUNT(*) FROM likes WHERE frarticle_id = ? AND is_liked = 0"
+	query = "SELECT COUNT(*) FROM likes WHERE frarticle_id = $1 AND is_liked = 0"
 	err = r.db.QueryRowContext(ctx, query, articleID).Scan(&dislikes)
 	if err != nil {
 		return 0, 0, fmt.Errorf("failed to count dislikes: %w", err)
@@ -133,7 +131,7 @@ func (r *LikeRepository) GetArticleCounts(ctx context.Context, articleID int) (l
 }
 
 func (r *LikeRepository) GetUserStatus(ctx context.Context, userID, articleID int) (status *int, err error) {
-	query := "SELECT is_liked FROM likes WHERE user_id = ? AND frarticle_id = ?"
+	query := "SELECT is_liked FROM likes WHERE user_id = $1 AND frarticle_id = $2"
 	var isLiked int
 	err = r.db.QueryRowContext(ctx, query, userID, articleID).Scan(&isLiked)
 	if err == sql.ErrNoRows {
@@ -146,7 +144,7 @@ func (r *LikeRepository) GetUserStatus(ctx context.Context, userID, articleID in
 }
 
 func (r *LikeRepository) Remove(ctx context.Context, userID, articleID int) error {
-	query := "DELETE FROM likes WHERE user_id = ? AND frarticle_id = ?"
+	query := "DELETE FROM likes WHERE user_id = $1 AND frarticle_id = $2"
 	_, err := r.db.ExecContext(ctx, query, userID, articleID)
 	return err
 }
