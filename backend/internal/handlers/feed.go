@@ -6,30 +6,18 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/alex/opengov-go/internal/repository"
-	"github.com/alex/opengov-go/internal/services/assembler"
+	"github.com/alex/opengov-go/internal/middleware"
+	"github.com/alex/opengov-go/internal/services"
 )
 
 type FeedHandler struct {
-	articleRepo *repository.ArticleRepository
-	assembler   *assembler.ArticleAssembler
+	feedService *services.FeedService
 }
 
-func NewFeedHandler(articleRepo *repository.ArticleRepository, assembler *assembler.ArticleAssembler) *FeedHandler {
+func NewFeedHandler(feedService *services.FeedService) *FeedHandler {
 	return &FeedHandler{
-		articleRepo: articleRepo,
-		assembler:   assembler,
+		feedService: feedService,
 	}
-}
-
-type ArticleResponse = assembler.ArticleResponse
-
-type FeedResponse struct {
-	Articles []ArticleResponse `json:"articles"`
-	Page     int               `json:"page"`
-	Limit    int               `json:"limit"`
-	Total    int               `json:"total"`
-	HasNext  bool              `json:"has_next"`
 }
 
 func (h *FeedHandler) GetFeed(c *gin.Context) {
@@ -53,70 +41,50 @@ func (h *FeedHandler) GetFeed(c *gin.Context) {
 		return
 	}
 
-	articles, total, err := h.articleRepo.GetFeed(c.Request.Context(), page, limit, sort)
+	userID, hasAuth := middleware.GetUserID(c)
+	var resp services.FeedResponse
+	var err error
+
+	if hasAuth {
+		resp, err = h.feedService.GetFeed(c.Request.Context(), &userID, page, limit, sort)
+	} else {
+		resp, err = h.feedService.GetFeed(c.Request.Context(), nil, page, limit, sort)
+	}
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch feed"})
 		return
 	}
 
-	c.JSON(http.StatusOK, FeedResponse{
-		Articles: h.assembler.EnrichArticles(c, articles),
-		Page:     page,
-		Limit:    limit,
-		Total:    total,
-		HasNext:  offset+limit < total,
-	})
+	c.JSON(http.StatusOK, resp)
 }
 
-func (h *FeedHandler) GetArticle(c *gin.Context) {
+func (h *FeedHandler) GetItem(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid article ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid feed entry ID"})
 		return
 	}
 
-	article, err := h.articleRepo.GetByID(c.Request.Context(), id)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch article"})
-		return
-	}
-	if article == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Article not found"})
-		return
+	userID, hasAuth := middleware.GetUserID(c)
+	var item *services.FeedEntryResponse
+	var svcErr error
+
+	if hasAuth {
+		item, svcErr = h.feedService.GetItem(c.Request.Context(), &userID, id)
+	} else {
+		item, svcErr = h.feedService.GetItem(c.Request.Context(), nil, id)
 	}
 
-	c.JSON(http.StatusOK, h.assembler.EnrichArticle(c, *article))
-}
-
-func (h *FeedHandler) GetArticleByDocumentNumber(c *gin.Context) {
-	docNumber := c.Param("document_number")
-
-	article, err := h.articleRepo.GetByDocumentNumber(c.Request.Context(), docNumber)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch article"})
+	if svcErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch feed entry"})
 		return
 	}
-	if article == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Article not found"})
+	if item == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Feed entry not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, h.assembler.EnrichArticle(c, *article))
-}
-
-func (h *FeedHandler) GetArticleByUniqueKey(c *gin.Context) {
-	uniqueKey := c.Param("unique_key")
-
-	article, err := h.articleRepo.GetByUniqueKey(c.Request.Context(), uniqueKey)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch article"})
-		return
-	}
-	if article == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Article not found"})
-		return
-	}
-
-	c.JSON(http.StatusOK, h.assembler.EnrichArticle(c, *article))
+	c.JSON(http.StatusOK, item)
 }

@@ -1,8 +1,8 @@
 // Feed queries
 export { useFeedQuery } from "./useFeedQuery";
-export type { FeedResponse } from "./useFeedQuery";
-export { useArticleQuery, useArticleBySlugQuery } from "./useArticleQuery";
-export type { ArticleDetail } from "./useArticleQuery";
+export type { FeedResponse } from "../hook/types";
+export { useFeedEntryQuery } from "./useFeedEntryQuery";
+export type { ArticleDetail } from "./useFeedEntryQuery";
 
 // Bookmarks queries & mutations
 export { useBookmarksQuery } from "./useBookmarksQuery";

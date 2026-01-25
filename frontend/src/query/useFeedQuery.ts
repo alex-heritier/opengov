@@ -1,15 +1,7 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import client from "@/api/client";
-import { Article } from "@/hook/types";
+import { FeedResponse } from "@/hook/types";
 import { useArticleUIStore } from "@/store/article-ui-store";
-
-export interface FeedResponse {
-  articles: Article[];
-  page: number;
-  limit: number;
-  total: number;
-  has_next: boolean;
-}
 
 export function useFeedQuery(limit: number = 20, sort: string = "newest") {
   const hydrate = useArticleUIStore((s) => s.hydrate);
@@ -20,7 +12,7 @@ export function useFeedQuery(limit: number = 20, sort: string = "newest") {
       const { data } = await client.get<FeedResponse>("/api/feed", {
         params: { page: pageParam, limit, sort },
       });
-      hydrate(data.articles);
+      hydrate(data.items);
       return data;
     },
     initialPageParam: 1,

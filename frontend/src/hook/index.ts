@@ -12,7 +12,12 @@ export { useEnvironment } from "./useEnvironment";
 export type { Environment } from "./useEnvironment";
 
 // Types
-export type { User, Article, BookmarkedArticle } from "./types";
+export type {
+  User,
+  Article,
+  FeedEntryResponse,
+  BookmarkedArticle,
+} from "./types";
 
 // Article view hook (merges server data with UI store)
 export { useArticleView } from "./useArticleView";
@@ -20,8 +25,7 @@ export { useArticleView } from "./useArticleView";
 // Low-level query hooks (for advanced use cases)
 export {
   useFeedQuery,
-  useArticleQuery,
-  useArticleBySlugQuery,
+  useFeedEntryQuery,
   useBookmarksQuery,
   useToggleBookmarkMutation,
   useRemoveBookmarkMutation,

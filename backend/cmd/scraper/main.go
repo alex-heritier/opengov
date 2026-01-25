@@ -61,12 +61,14 @@ func main() {
 	}
 	log.Println("Database schema check passed")
 
-	articleRepo := repository.NewArticleRepository(database)
+	docRepo := repository.NewFederalRegisterDocumentRepository(database)
+	feedRepo := repository.NewFeedRepository(database)
 	agencyRepo := repository.NewAgencyRepository(database)
 
 	frService := services.NewFederalRegisterService(cfg)
 	summarizer := services.NewSummarizer(cfg)
-	scraperService := services.NewScraperService(cfg, frService, summarizer, articleRepo, agencyRepo)
+	docService := services.NewFederalRegisterDocumentService(docRepo, feedRepo, database)
+	scraperService := services.NewScraperService(cfg, frService, summarizer, docService, agencyRepo)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

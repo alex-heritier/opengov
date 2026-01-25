@@ -19,7 +19,6 @@ import (
 	"github.com/alex/opengov-go/internal/handlers"
 	"github.com/alex/opengov-go/internal/repository"
 	"github.com/alex/opengov-go/internal/services"
-	"github.com/alex/opengov-go/internal/services/assembler"
 )
 
 func corsMiddleware(cfg *config.Config) gin.HandlerFunc {
@@ -64,24 +63,26 @@ func main() {
 	}
 	defer database.Close()
 
-	articleRepo := repository.NewArticleRepository(database)
+	feedRepo := repository.NewFeedRepository(database)
+	docRepo := repository.NewFederalRegisterDocumentRepository(database)
 	userRepo := repository.NewUserRepository(database)
 	agencyRepo := repository.NewAgencyRepository(database)
 	bookmarkRepo := repository.NewBookmarkRepository(database)
 	likeRepo := repository.NewLikeRepository(database)
 
-	articleAssembler := assembler.NewArticleAssembler(bookmarkRepo, likeRepo)
+	feedService := services.NewFeedService(feedRepo)
+	docService := services.NewFederalRegisterDocumentService(docRepo, feedRepo, database)
 
 	authService := services.NewAuthService(cfg, userRepo)
 
-	feedHandler := handlers.NewFeedHandler(articleRepo, articleAssembler)
-	bookmarkHandler := handlers.NewBookmarkHandler(bookmarkRepo, articleRepo, articleAssembler)
-	likeHandler := handlers.NewLikeHandler(likeRepo, articleRepo)
+	feedHandler := handlers.NewFeedHandler(feedService)
+	bookmarkHandler := handlers.NewBookmarkHandler(bookmarkRepo, feedService)
+	likeHandler := handlers.NewLikeHandler(likeRepo)
 	authHandler := handlers.NewAuthHandler(authService, userRepo)
 	frService := services.NewFederalRegisterService(cfg)
 	summarizer := services.NewSummarizer(cfg)
-	scraperService := services.NewScraperService(cfg, frService, summarizer, articleRepo, agencyRepo)
-	adminHandler := handlers.NewAdminHandler(articleRepo, agencyRepo, scraperService)
+	scraperService := services.NewScraperService(cfg, frService, summarizer, docService, agencyRepo)
+	adminHandler := handlers.NewAdminHandler(docRepo, agencyRepo, scraperService)
 	oauthHandler := handlers.NewOAuthHandler(authService, userRepo, cfg)
 
 	deps := RouteDeps{

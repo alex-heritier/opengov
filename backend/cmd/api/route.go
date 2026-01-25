@@ -81,27 +81,25 @@ func setupRoutes(router *gin.Engine, _ *config.Config, deps RouteDeps) {
 		feed.Use(middleware.OptionalAuthMiddleware(deps.AuthService))
 		{
 			feed.GET("", deps.FeedHandler.GetFeed)
-			feed.GET("/:id", deps.FeedHandler.GetArticle)
-			feed.GET("/document/:document_number", deps.FeedHandler.GetArticleByDocumentNumber)
-			feed.GET("/slug/:unique_key", deps.FeedHandler.GetArticleByUniqueKey)
+			feed.GET("/:id", deps.FeedHandler.GetItem)
 		}
 
 		bookmarks := api.Group("/bookmarks")
 		bookmarks.Use(middleware.AuthMiddleware(deps.AuthService))
 		{
-			bookmarks.POST("/:article_id", deps.BookmarkHandler.Toggle)
+			bookmarks.POST("/:feed_entry_id", deps.BookmarkHandler.Toggle)
 			bookmarks.GET("", deps.BookmarkHandler.GetBookmarks)
-			bookmarks.DELETE("/:article_id", deps.BookmarkHandler.Remove)
-			bookmarks.GET("/status/:article_id", deps.BookmarkHandler.GetStatus)
+			bookmarks.DELETE("/:feed_entry_id", deps.BookmarkHandler.Remove)
+			bookmarks.GET("/status/:feed_entry_id", deps.BookmarkHandler.GetStatus)
 		}
 
 		likes := api.Group("/likes")
 		likes.Use(middleware.AuthMiddleware(deps.AuthService))
 		{
-			likes.POST("/:article_id", deps.LikeHandler.Toggle)
-			likes.GET("/counts/:article_id", deps.LikeHandler.GetCounts)
-			likes.DELETE("/:article_id", deps.LikeHandler.Remove)
-			likes.GET("/status/:article_id", deps.LikeHandler.GetStatus)
+			likes.POST("/:feed_entry_id", deps.LikeHandler.Toggle)
+			likes.GET("/counts/:feed_entry_id", deps.LikeHandler.GetCounts)
+			likes.DELETE("/:feed_entry_id", deps.LikeHandler.Remove)
+			likes.GET("/status/:feed_entry_id", deps.LikeHandler.GetStatus)
 		}
 
 		admin := api.Group("/admin")

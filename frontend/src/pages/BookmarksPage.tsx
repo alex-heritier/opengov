@@ -1,5 +1,5 @@
 import { useBookmarks, useAuth } from "@/hook";
-import type { BookmarkedArticle } from "@/hook/types";
+import type { FeedEntryResponse } from "@/hook/types";
 import { ArticleCard } from "@/components/feed/ArticleCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -79,16 +79,18 @@ export default function BookmarksPage() {
         {/* Bookmarks List */}
         {bookmarks && bookmarks.length > 0 ? (
           <div className="divide-y divide-gray-200 border-t border-gray-200">
-            {bookmarks.map((article: BookmarkedArticle) => (
+            {bookmarks.map((item: FeedEntryResponse) => (
               <ArticleCard
-                key={article.id}
-                id={article.id}
-                title={article.title}
-                summary={article.summary}
-                source_url={article.source_url}
-                published_at={article.published_at}
-                unique_key={article.unique_key}
+                key={item.id}
+                id={item.id}
+                title={item.title}
+                summary={item.summary}
+                source_url={item.source_url}
+                published_at={item.published_at}
                 is_bookmarked={true}
+                user_like_status={item.user_like_status}
+                likes_count={item.likes_count}
+                dislikes_count={item.dislikes_count}
               />
             ))}
           </div>

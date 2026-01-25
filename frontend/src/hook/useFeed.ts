@@ -5,20 +5,21 @@
 import { useMemo } from "react";
 import { useFeedQuery } from "@/query";
 import { useFeedStore } from "@/store/feedStore";
+import type { FeedEntryResponse } from "./types";
 
 export function useFeed() {
   const { sort, pageSize, setSortOrder, setPageSize } = useFeedStore();
   const query = useFeedQuery(pageSize, sort);
 
-  const articles = useMemo(
-    () => query.data?.pages.flatMap((page) => page.articles) ?? [],
+  const items = useMemo<FeedEntryResponse[]>(
+    () => query.data?.pages.flatMap((page) => page.items) ?? [],
     [query.data],
   );
 
   const total = query.data?.pages[0]?.total ?? 0;
 
   return {
-    articles,
+    items,
     total,
     hasNextPage: query.hasNextPage,
     isLoading: query.isLoading,

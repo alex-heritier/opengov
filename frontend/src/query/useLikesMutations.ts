@@ -3,52 +3,48 @@ import client from "@/api/client";
 import { useArticleUIStore, type LikeStatus } from "@/store/article-ui-store";
 
 interface LikeResponse {
-  article?: {
-    id: number;
-    likes_count?: number;
-    dislikes_count?: number;
-    user_like_status?: boolean | null;
-    is_bookmarked?: boolean;
-  };
+  value: number;
+}
+
+interface RemoveLikeResponse {
+  success: boolean;
 }
 
 export function useToggleLikeMutation() {
   const queryClient = useQueryClient();
   const applyReaction = useArticleUIStore((s) => s.applyReaction);
   const restore = useArticleUIStore((s) => s.restore);
-  const hydrate = useArticleUIStore((s) => s.hydrate);
 
   return useMutation({
     mutationFn: async ({
-      articleId,
+      feedEntryId,
       isPositive,
     }: {
-      articleId: number;
+      feedEntryId: number;
       isPositive: boolean;
     }) => {
       const { data } = await client.post<LikeResponse>(
-        `/api/likes/${articleId}`,
+        `/api/likes/${feedEntryId}`,
         {
-          is_positive: isPositive,
+          value: isPositive ? 1 : -1,
         },
       );
       return data;
     },
 
-    onMutate: async ({ articleId, isPositive }) => {
+    onMutate: async ({ feedEntryId, isPositive }) => {
       const next: LikeStatus = isPositive ? true : false;
-      const { prev } = applyReaction(articleId, next);
-      return { articleId, prev };
+      const { prev } = applyReaction(feedEntryId, next);
+      return { feedEntryId, prev };
     },
 
     onError: (_err, _vars, ctx) => {
-      if (ctx?.prev) restore(ctx.articleId, ctx.prev);
+      if (ctx?.prev) restore(ctx.feedEntryId, ctx.prev);
     },
 
-    onSuccess: (data, vars) => {
-      if (data?.article) hydrate([data.article]);
-      queryClient.invalidateQueries({ queryKey: ["article", vars.articleId] });
-      queryClient.invalidateQueries({ queryKey: ["article", "slug"] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+      queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
     },
   });
 }
@@ -57,29 +53,27 @@ export function useRemoveLikeMutation() {
   const queryClient = useQueryClient();
   const applyReaction = useArticleUIStore((s) => s.applyReaction);
   const restore = useArticleUIStore((s) => s.restore);
-  const hydrate = useArticleUIStore((s) => s.hydrate);
 
   return useMutation({
-    mutationFn: async (articleId: number) => {
-      const { data } = await client.delete<LikeResponse>(
-        `/api/likes/${articleId}`,
+    mutationFn: async (feedEntryId: number) => {
+      const { data } = await client.delete<RemoveLikeResponse>(
+        `/api/likes/${feedEntryId}`,
       );
       return data;
     },
 
-    onMutate: async (articleId) => {
-      const { prev } = applyReaction(articleId, null);
-      return { articleId, prev };
+    onMutate: async (feedEntryId) => {
+      const { prev } = applyReaction(feedEntryId, null);
+      return { feedEntryId, prev };
     },
 
     onError: (_err, _vars, ctx) => {
-      if (ctx?.prev) restore(ctx.articleId, ctx.prev);
+      if (ctx?.prev) restore(ctx.feedEntryId, ctx.prev);
     },
 
-    onSuccess: (data, articleId) => {
-      if (data?.article) hydrate([data.article]);
-      queryClient.invalidateQueries({ queryKey: ["article", articleId] });
-      queryClient.invalidateQueries({ queryKey: ["article", "slug"] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+      queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
     },
   });
 }

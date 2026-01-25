@@ -7,27 +7,28 @@ import (
 	"time"
 
 	"github.com/alex/opengov-go/internal/config"
+	"github.com/alex/opengov-go/internal/constants"
 	"github.com/alex/opengov-go/internal/models"
 	"github.com/alex/opengov-go/internal/repository"
 )
 
 const batchSize = 50
 
-const FederalRegisterSource = "fedreg"
-
 type ScraperService struct {
 	frService   *FederalRegisterService
 	summarizer  Summarizer
-	articleRepo *repository.ArticleRepository
+	docSvc      *FederalRegisterDocumentService
+	docRepo     *repository.FederalRegisterDocumentRepository
 	agencyRepo  *repository.AgencyRepository
 	scraperDays int
 }
 
-func NewScraperService(cfg *config.Config, frService *FederalRegisterService, summarizer Summarizer, articleRepo *repository.ArticleRepository, agencyRepo *repository.AgencyRepository) *ScraperService {
+func NewScraperService(cfg *config.Config, frService *FederalRegisterService, summarizer Summarizer, docSvc *FederalRegisterDocumentService, agencyRepo *repository.AgencyRepository) *ScraperService {
 	return &ScraperService{
 		frService:   frService,
 		summarizer:  summarizer,
-		articleRepo: articleRepo,
+		docSvc:      docSvc,
+		docRepo:     nil,
 		agencyRepo:  agencyRepo,
 		scraperDays: cfg.ScraperDaysLookback,
 	}
@@ -48,7 +49,7 @@ func (s *ScraperService) Run(ctx context.Context) {
 	skippedCount := 0
 	errorCount := 0
 
-	var batch []models.FRArticle
+	var batch []models.FederalRegisterDocument
 
 	for _, doc := range docs {
 		select {
@@ -58,7 +59,7 @@ func (s *ScraperService) Run(ctx context.Context) {
 		default:
 		}
 
-		exists, _ := s.articleRepo.ExistsByUniqueKey(ctx, FederalRegisterSource+"_"+doc.DocumentNumber)
+		exists, _ := s.docSvc.ExistsByUniqueKey(ctx, constants.SourceTypeFederalRegister+":"+doc.DocumentNumber)
 
 		if exists {
 			log.Printf("Skipping duplicate: %s", doc.DocumentNumber)
@@ -77,17 +78,14 @@ func (s *ScraperService) Run(ctx context.Context) {
 			abstract = abstract[:1000]
 		}
 
-		// Extract agency from agencies
 		var agency string
 		if len(doc.Agencies) > 0 {
 			agency = doc.Agencies[0].Name
 		}
 
-		// Get AI analysis
 		analysis, err := s.summarizer.Analyze(ctx, doc.Title, abstract, agency)
 		if err != nil {
 			log.Printf("Failed to analyze %s: %v", doc.DocumentNumber, err)
-			// Fallback to basic values
 			analysis = &AIAnalysis{
 				Summary:        abstract,
 				Keypoints:      []string{},
@@ -103,10 +101,10 @@ func (s *ScraperService) Run(ctx context.Context) {
 			agencyPtr = &agency
 		}
 
-		article := &models.FRArticle{
-			Source:         FederalRegisterSource,
+		newDoc := &models.FederalRegisterDocument{
+			Source:         constants.SourceTypeFederalRegister,
 			SourceID:       doc.DocumentNumber,
-			UniqueKey:      FederalRegisterSource + "_" + doc.DocumentNumber,
+			UniqueKey:      constants.SourceTypeFederalRegister + ":" + doc.DocumentNumber,
 			DocumentNumber: doc.DocumentNumber,
 			Title:          doc.Title,
 			Agency:         agencyPtr,
@@ -128,15 +126,16 @@ func (s *ScraperService) Run(ctx context.Context) {
 			},
 		}
 
-		batch = append(batch, *article)
+		batch = append(batch, *newDoc)
 
 		if len(batch) >= batchSize {
 			for _, a := range batch {
-				if err := s.articleRepo.Create(ctx, &a); err != nil {
-					log.Printf("Failed to create article %s: %v", a.DocumentNumber, err)
+				_, err := s.docSvc.CreateFromScrape(ctx, &a)
+				if err != nil {
+					log.Printf("Failed to create document %s: %v", a.DocumentNumber, err)
 					errorCount++
 				} else {
-					log.Printf("Created article: %s - %s", a.DocumentNumber, truncate(a.Title, 60))
+					log.Printf("Created document: %s - %s", a.DocumentNumber, truncate(a.Title, 60))
 					processedCount++
 				}
 			}
@@ -146,11 +145,12 @@ func (s *ScraperService) Run(ctx context.Context) {
 
 	if len(batch) > 0 {
 		for _, a := range batch {
-			if err := s.articleRepo.Create(ctx, &a); err != nil {
-				log.Printf("Failed to create article %s: %v", a.DocumentNumber, err)
+			_, err := s.docSvc.CreateFromScrape(ctx, &a)
+			if err != nil {
+				log.Printf("Failed to create document %s: %v", a.DocumentNumber, err)
 				errorCount++
 			} else {
-				log.Printf("Created article: %s - %s", a.DocumentNumber, truncate(a.Title, 60))
+				log.Printf("Created document: %s - %s", a.DocumentNumber, truncate(a.Title, 60))
 				processedCount++
 			}
 		}

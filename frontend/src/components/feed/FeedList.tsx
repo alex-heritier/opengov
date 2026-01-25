@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useMemo } from "react";
-import { useFeedQuery, useFeedStore, Article } from "@/hook";
+import { useFeedQuery, useFeedStore, type FeedEntryResponse } from "@/hook";
 import type { FeedResponse } from "@/query";
 import { ArticleCard } from "./ArticleCard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,8 +17,8 @@ export const FeedList: React.FC = () => {
     fetchNextPage,
   } = useFeedQuery(pageSize, sort);
 
-  const articles = useMemo<Article[]>(
-    () => data?.pages.flatMap((page: FeedResponse) => page.articles) ?? [],
+  const items = useMemo<FeedEntryResponse[]>(
+    () => data?.pages.flatMap((page: FeedResponse) => page.items) ?? [],
     [data],
   );
 
@@ -50,25 +50,24 @@ export const FeedList: React.FC = () => {
     );
   }
 
-  const showEmptyState = articles.length === 0 && !isLoading;
+  const showEmptyState = items.length === 0 && !isLoading;
   const showLoadingMore = isFetchingNextPage;
 
   return (
     <div className="space-y-0">
       <div className="divide-y divide-gray-200 border-t border-gray-200">
-        {articles.map((article) => (
+        {items.map((item) => (
           <ArticleCard
-            key={article.id}
-            id={article.id}
-            title={article.title}
-            summary={article.summary}
-            source_url={article.source_url}
-            published_at={article.published_at}
-            unique_key={article.unique_key}
-            is_bookmarked={article.is_bookmarked}
-            user_like_status={article.user_like_status}
-            likes_count={article.likes_count}
-            dislikes_count={article.dislikes_count}
+            key={item.id}
+            id={item.id}
+            title={item.title}
+            summary={item.summary}
+            source_url={item.source_url}
+            published_at={item.published_at}
+            is_bookmarked={item.is_bookmarked}
+            user_like_status={item.user_like_status}
+            likes_count={item.likes_count}
+            dislikes_count={item.dislikes_count}
           />
         ))}
       </div>
@@ -95,7 +94,7 @@ export const FeedList: React.FC = () => {
         </div>
       )}
 
-      {!hasNextPage && articles.length > 0 && !isLoading && (
+      {!hasNextPage && items.length > 0 && !isLoading && (
         <div className="text-center py-8 border-t border-gray-200">
           <p className="text-sm text-gray-500">No more articles to load.</p>
         </div>

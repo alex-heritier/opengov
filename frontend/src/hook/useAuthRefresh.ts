@@ -6,7 +6,10 @@ const API_URL =
   (import.meta.env.VITE_API_URL as string) || "http://localhost:8000";
 
 function redirectToLogin(): void {
-  if (typeof window !== "undefined" && !window.location.pathname.startsWith("/auth")) {
+  if (
+    typeof window !== "undefined" &&
+    !window.location.pathname.startsWith("/auth")
+  ) {
     window.location.href = "/auth/login";
   }
 }

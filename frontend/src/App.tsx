@@ -8,7 +8,7 @@ import RootLayout from "./components/layout/RootLayout";
 import FeedPage from "./pages/FeedPage";
 import HomePage from "./pages/HomePage";
 import AdminPage from "./pages/AdminPage";
-import ArticleDetailPage from "./pages/ArticleDetailPage";
+import FeedEntryDetailPage from "./pages/FeedEntryDetailPage";
 import AuthLoginPage from "./pages/AuthLoginPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
 import BookmarksPage from "./pages/BookmarksPage";
@@ -34,18 +34,18 @@ const feedRoute = new Route({
   component: FeedPage,
 });
 
+// Feed item detail route
+const feedEntryRoute = new Route({
+  getParentRoute: () => rootRoute,
+  path: "/feed/$id",
+  component: FeedEntryDetailPage,
+});
+
 // Admin route
 const adminRoute = new Route({
   getParentRoute: () => rootRoute,
   path: "/admin",
   component: AdminPage,
-});
-
-// Article detail route
-const articleDetailRoute = new Route({
-  getParentRoute: () => rootRoute,
-  path: "/articles/$slug",
-  component: ArticleDetailPage,
 });
 
 // Auth login route (redirects to main login)
@@ -87,8 +87,8 @@ const loginRoute = new Route({
 const routeTree = rootRoute.addChildren([
   indexRoute,
   feedRoute,
+  feedEntryRoute,
   adminRoute,
-  articleDetailRoute,
   authLoginRoute,
   authCallbackRoute,
   bookmarksRoute,

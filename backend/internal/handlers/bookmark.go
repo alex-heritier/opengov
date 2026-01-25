@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"database/sql"
-	"errors"
 	"net/http"
 	"strconv"
 
@@ -10,20 +8,18 @@ import (
 
 	"github.com/alex/opengov-go/internal/middleware"
 	"github.com/alex/opengov-go/internal/repository"
-	"github.com/alex/opengov-go/internal/services/assembler"
+	"github.com/alex/opengov-go/internal/services"
 )
 
 type BookmarkHandler struct {
 	bookmarkRepo *repository.BookmarkRepository
-	articleRepo  *repository.ArticleRepository
-	assembler    *assembler.ArticleAssembler
+	feedService  *services.FeedService
 }
 
-func NewBookmarkHandler(bookmarkRepo *repository.BookmarkRepository, articleRepo *repository.ArticleRepository, assembler *assembler.ArticleAssembler) *BookmarkHandler {
+func NewBookmarkHandler(bookmarkRepo *repository.BookmarkRepository, feedService *services.FeedService) *BookmarkHandler {
 	return &BookmarkHandler{
 		bookmarkRepo: bookmarkRepo,
-		articleRepo:  articleRepo,
-		assembler:    assembler,
+		feedService:  feedService,
 	}
 }
 
@@ -34,30 +30,20 @@ func (h *BookmarkHandler) Toggle(c *gin.Context) {
 		return
 	}
 
-	articleID, err := strconv.Atoi(c.Param("article_id"))
+	feedEntryID, err := strconv.Atoi(c.Param("feed_entry_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid article ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid feed entry ID"})
 		return
 	}
 
-	_, err = h.articleRepo.GetByID(c.Request.Context(), articleID)
-	if errors.Is(err, sql.ErrNoRows) {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Article not found"})
-		return
-	}
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check article"})
-		return
-	}
-
-	bookmark, err := h.bookmarkRepo.Toggle(c.Request.Context(), userID, articleID)
+	isBookmarked, err := h.bookmarkRepo.Toggle(c.Request.Context(), userID, feedEntryID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to toggle bookmark"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"is_bookmarked": bookmark.GetIsBookmarked(),
+		"is_bookmarked": isBookmarked,
 	})
 }
 
@@ -68,14 +54,16 @@ func (h *BookmarkHandler) GetBookmarks(c *gin.Context) {
 		return
 	}
 
-	articles, err := h.bookmarkRepo.GetBookmarkedArticles(c.Request.Context(), userID)
+	items, err := h.feedService.GetBookmarkedFeed(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get bookmarks"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch bookmarks"})
 		return
 	}
 
-	articleResponses := h.assembler.EnrichArticles(c, articles)
-	c.JSON(http.StatusOK, gin.H{"articles": articleResponses})
+	c.JSON(http.StatusOK, gin.H{
+		"items": items,
+		"total": len(items),
+	})
 }
 
 func (h *BookmarkHandler) Remove(c *gin.Context) {
@@ -85,13 +73,13 @@ func (h *BookmarkHandler) Remove(c *gin.Context) {
 		return
 	}
 
-	articleID, err := strconv.Atoi(c.Param("article_id"))
+	feedEntryID, err := strconv.Atoi(c.Param("feed_entry_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid article ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid feed entry ID"})
 		return
 	}
 
-	err = h.bookmarkRepo.Remove(c.Request.Context(), userID, articleID)
+	err = h.bookmarkRepo.Remove(c.Request.Context(), userID, feedEntryID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to remove bookmark"})
 		return
@@ -110,13 +98,13 @@ func (h *BookmarkHandler) GetStatus(c *gin.Context) {
 		return
 	}
 
-	articleID, err := strconv.Atoi(c.Param("article_id"))
+	feedEntryID, err := strconv.Atoi(c.Param("feed_entry_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid article ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid feed entry ID"})
 		return
 	}
 
-	isBookmarked, err := h.bookmarkRepo.IsBookmarked(c.Request.Context(), userID, articleID)
+	isBookmarked, err := h.bookmarkRepo.IsBookmarked(c.Request.Context(), userID, feedEntryID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get bookmark status"})
 		return

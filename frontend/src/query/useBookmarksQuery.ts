@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import client from "@/api/client";
-import { BookmarkedArticle } from "@/hook/types";
+import { FeedEntryResponse } from "@/hook/types";
 import { useArticleUIStore } from "@/store/article-ui-store";
 
 export function useBookmarksQuery() {
@@ -9,12 +9,12 @@ export function useBookmarksQuery() {
   return useQuery({
     queryKey: ["bookmarks"],
     queryFn: async () => {
-      const { data } = await client.get<{ articles: BookmarkedArticle[] }>(
+      const { data } = await client.get<{ items: FeedEntryResponse[] }>(
         "/api/bookmarks",
       );
-      hydrate(data.articles);
-      return data.articles;
+      hydrate(data.items);
+      return data.items;
     },
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 1000 * 60 * 2,
   });
 }

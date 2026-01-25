@@ -5,22 +5,23 @@ import {
   Calendar,
   Clock,
   AlertCircle,
-  Building2,
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import ShareButtons from "@/components/share/ShareButtons";
-import { useArticleBySlugQuery } from "@/hook";
+import { useFeedEntryQuery } from "@/hook";
 
-export default function ArticleDetailPage() {
-  const { slug } = useParams({ from: "/articles/$slug" });
+export default function FeedEntryDetailPage() {
+  const { id } = useParams({ from: "/feed/$id" });
+  const feedEntryId = parseInt(id, 10);
+
   const {
-    data: article,
+    data: feedEntry,
     isLoading: loading,
     error,
-  } = useArticleBySlugQuery(slug);
+  } = useFeedEntryQuery(feedEntryId);
 
   if (loading) {
     return (
@@ -32,13 +33,13 @@ export default function ArticleDetailPage() {
     );
   }
 
-  if (error || !article) {
+  if (error || !feedEntry) {
     return (
       <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            {error?.message ?? "Article not found"}
+            {error?.message ?? "Feed entry not found"}
           </AlertDescription>
         </Alert>
         <Button asChild variant="outline" className="mt-4">
@@ -52,14 +53,14 @@ export default function ArticleDetailPage() {
   }
 
   const formattedPublishedDate = new Date(
-    article.published_at,
+    feedEntry.published_at,
   ).toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
 
-  const formattedTime = new Date(article.published_at).toLocaleTimeString(
+  const formattedTime = new Date(feedEntry.published_at).toLocaleTimeString(
     "en-US",
     {
       hour: "2-digit",
@@ -68,7 +69,8 @@ export default function ArticleDetailPage() {
   );
 
   const hasPoliticalScore =
-    article.political_score !== null && article.political_score !== undefined;
+    feedEntry.political_score !== null &&
+    feedEntry.political_score !== undefined;
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
@@ -84,20 +86,14 @@ export default function ArticleDetailPage() {
         </Link>
       </Button>
 
-      {/* Article Header */}
+      {/* Feed Entry Header */}
       <article className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {/* Title Banner */}
         <div className="bg-gray-50 border-b border-gray-200 px-4 sm:px-8 py-4 sm:py-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
-            {article.title}
+            {feedEntry.title}
           </h1>
           <div className="flex flex-wrap gap-3 sm:gap-4 text-gray-600 text-xs sm:text-sm">
-            {article.agency && (
-              <div className="flex items-center gap-2">
-                <Building2 className="w-4 h-4" />
-                <span>{article.agency}</span>
-              </div>
-            )}
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               <span>{formattedPublishedDate}</span>
@@ -106,18 +102,10 @@ export default function ArticleDetailPage() {
               <Clock className="w-4 h-4" />
               <span>{formattedTime}</span>
             </div>
-            {article.document_number && (
-              <div className="flex items-center gap-2">
-                <span className="font-semibold">Doc #:</span>
-                <span className="font-mono text-xs">
-                  {article.document_number}
-                </span>
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Article Content */}
+        {/* Feed Entry Content */}
         <div className="px-4 sm:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
           {/* Summary */}
           <div>
@@ -125,18 +113,18 @@ export default function ArticleDetailPage() {
               Summary
             </h2>
             <p className="text-sm sm:text-base text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {article.summary}
+              {feedEntry.summary}
             </p>
           </div>
 
           {/* Key Points */}
-          {article.keypoints && article.keypoints.length > 0 && (
+          {feedEntry.keypoints && feedEntry.keypoints.length > 0 && (
             <div>
               <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">
                 Key Points
               </h2>
               <ul className="space-y-2">
-                {article.keypoints.map((point, index) => (
+                {feedEntry.keypoints.map((point, index) => (
                   <li
                     key={index}
                     className="flex items-start gap-3 text-sm sm:text-base text-gray-700"
@@ -152,10 +140,10 @@ export default function ArticleDetailPage() {
           )}
 
           {/* Impact & Political Score */}
-          {(article.impact_score || hasPoliticalScore) && (
+          {(feedEntry.impact_score || hasPoliticalScore) && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Impact Score */}
-              {article.impact_score && (
+              {feedEntry.impact_score && (
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Zap className="w-4 h-4 text-yellow-500" />
@@ -166,16 +154,16 @@ export default function ArticleDetailPage() {
                   <div className="flex items-center gap-2">
                     <span
                       className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        article.impact_score === "high"
+                        feedEntry.impact_score === "high"
                           ? "bg-red-100 text-red-700"
-                          : article.impact_score === "medium"
+                          : feedEntry.impact_score === "medium"
                             ? "bg-yellow-100 text-yellow-700"
                             : "bg-green-100 text-green-700"
                       }`}
                     >
-                      {article.impact_score === "high"
+                      {feedEntry.impact_score === "high"
                         ? "High Impact"
-                        : article.impact_score === "medium"
+                        : feedEntry.impact_score === "medium"
                           ? "Notable"
                           : "Routine"}
                     </span>
@@ -184,8 +172,8 @@ export default function ArticleDetailPage() {
               )}
 
               {/* Political Score */}
-              {article.political_score !== null &&
-                article.political_score !== undefined && (
+              {feedEntry.political_score !== null &&
+                feedEntry.political_score !== undefined && (
                   <div className="bg-gray-50 rounded-lg p-4">
                     <div className="text-sm font-semibold text-gray-700 mb-2">
                       Political Leaning
@@ -194,7 +182,7 @@ export default function ArticleDetailPage() {
                       <div
                         className="absolute w-4 h-4 bg-white border-2 border-gray-700 rounded-full -top-0.5 transform -translate-x-1/2"
                         style={{
-                          left: `${((article.political_score + 100) / 200) * 100}%`,
+                          left: `${((feedEntry.political_score + 100) / 200) * 100}%`,
                         }}
                       />
                     </div>
@@ -211,9 +199,9 @@ export default function ArticleDetailPage() {
           {/* Share Buttons */}
           <div className="pt-4 sm:pt-6 border-t border-gray-200">
             <ShareButtons
-              title={article.title}
+              title={feedEntry.title}
               url={typeof window !== "undefined" ? window.location.href : ""}
-              summary={article.summary}
+              summary={feedEntry.summary}
             />
           </div>
 
@@ -221,7 +209,7 @@ export default function ArticleDetailPage() {
           <div className="pt-4 sm:pt-6 border-t border-gray-200">
             <Button asChild className="text-sm sm:text-base">
               <a
-                href={article.source_url}
+                href={feedEntry.source_url}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -235,12 +223,8 @@ export default function ArticleDetailPage() {
           <div className="pt-4 sm:pt-6 border-t border-gray-200 text-xs sm:text-sm text-gray-500">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <span className="font-semibold">Created:</span>{" "}
-                {new Date(article.created_at).toLocaleDateString()}
-              </div>
-              <div>
-                <span className="font-semibold">Last Updated:</span>{" "}
-                {new Date(article.updated_at).toLocaleDateString()}
+                <span className="font-semibold">Published:</span>{" "}
+                {new Date(feedEntry.published_at).toLocaleDateString()}
               </div>
             </div>
           </div>

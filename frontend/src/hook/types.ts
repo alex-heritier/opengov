@@ -16,27 +16,43 @@ export interface User {
 export interface Article {
   id: number;
   title: string;
-  agency?: string | null;
   summary: string;
   keypoints?: string[];
   impact_score?: "low" | "medium" | "high" | null;
-  political_score?: number | null; // -100 (left) to 100 (right)
+  political_score?: number | null;
   source_url: string;
   published_at: string;
   created_at: string;
   is_bookmarked?: boolean;
-  document_number?: string;
-  unique_key?: string;
-  user_like_status?: boolean | null; // null = no vote, true = liked, false = disliked
+  user_like_status?: number | null;
   likes_count?: number;
   dislikes_count?: number;
 }
 
-export type BookmarkedArticle = Article & {
-  is_bookmarked: true;
-  document_number: string;
-  unique_key: string;
-  updated_at: string;
+export interface FeedEntryResponse {
+  id: number;
+  title: string;
+  summary: string;
+  keypoints?: string[];
+  impact_score?: string | null;
+  political_score?: number | null;
+  source_url: string;
+  published_at: string;
+  is_bookmarked?: boolean;
+  user_like_status?: number | null;
   likes_count: number;
   dislikes_count: number;
+}
+
+export type BookmarkedArticle = FeedEntryResponse & {
+  is_bookmarked: true;
+  updated_at: string;
 };
+
+export interface FeedResponse {
+  items: FeedEntryResponse[];
+  page: number;
+  limit: number;
+  total: number;
+  has_next: boolean;
+}

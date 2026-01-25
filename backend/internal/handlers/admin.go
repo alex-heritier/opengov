@@ -14,27 +14,27 @@ import (
 )
 
 type AdminHandler struct {
-	articleRepo *repository.ArticleRepository
-	agencyRepo  *repository.AgencyRepository
-	scraper     *services.ScraperService
+	docRepo    *repository.FederalRegisterDocumentRepository
+	agencyRepo *repository.AgencyRepository
+	scraper    *services.ScraperService
 }
 
-func NewAdminHandler(articleRepo *repository.ArticleRepository, agencyRepo *repository.AgencyRepository, scraper *services.ScraperService) *AdminHandler {
+func NewAdminHandler(docRepo *repository.FederalRegisterDocumentRepository, agencyRepo *repository.AgencyRepository, scraper *services.ScraperService) *AdminHandler {
 	return &AdminHandler{
-		articleRepo: articleRepo,
-		agencyRepo:  agencyRepo,
-		scraper:     scraper,
+		docRepo:    docRepo,
+		agencyRepo: agencyRepo,
+		scraper:    scraper,
 	}
 }
 
 func (h *AdminHandler) GetStats(c *gin.Context) {
-	total, err := h.articleRepo.Count(c.Request.Context())
+	total, err := h.docRepo.Count(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get stats"})
 		return
 	}
 
-	lastArticle, _ := h.articleRepo.GetLatest(c.Request.Context())
+	lastArticle, _ := h.docRepo.GetLatest(c.Request.Context())
 
 	resp := StatsResponse{
 		TotalArticles: total,

@@ -98,16 +98,53 @@ Federal government agencies from Federal Register API.
 - `slug` - For lookups by slug
 - `name` - For searching/filtering by name
 
-## FRArticle
+## FeedEntry
 
-Unified model combining Federal Register raw data and processed article content. Each Federal Register document becomes one article with both raw API data and AI-processed summary for the public feed.
+Unified feed entries table. Contains denormalized data for fast feed retrieval.
 
 {
   "id": 1,
-  "source": "fedreg",
+  "source_type": "federal_register",
+  "title": "Notice of Proposed Rulemaking: Food Safety Standards",
+  "short_text": "The FDA is proposing new food safety standards for processing facilities...",
+  "key_points": [
+    "New safety requirements for food processors",
+    "Public comment period opens",
+    "Implementation deadline in 2026"
+  ],
+  "political_score": -15,
+  "impact_score": "medium",
+  "source_url": "https://www.federalregister.gov/documents/2025/01/10/2025-01234",
+  "published_at": "2025-01-10T10:00:00.000000Z",
+  "created_at": "2025-01-10T10:30:00.000000Z",
+  "updated_at": "2025-01-10T10:30:00.000000Z"
+}
+
+**Fields:**
+- `source_type`: Type of source (e.g., "federal_register" for Federal Register documents)
+- `title`: Entry headline
+- `short_text`: AI-generated summary (1-2 sentences)
+- `key_points`: JSON array of key takeaways (nullable)
+- `political_score`: AI-generated political leaning from -100 (left) to 100 (right), 0 = neutral (nullable)
+- `impact_score`: AI-generated impact level: "low" (routine), "medium" (notable), "high" (major news) (nullable)
+- `source_url`: Link to original document
+- `published_at`: Publication date
+
+**Indexes:**
+- `published_at DESC` - For efficient sorting/filtering by date
+- `source_type` - For filtering by source type
+
+## FederalRegisterDocument
+
+Unified model combining Federal Register raw data and processed document content. Each Federal Register document becomes one entry with both raw API data and AI-processed summary for the public feed.
+
+{
+  "id": 1,
+  "feed_entry_id": 1,
+  "source": "federal_register",
   "source_id": "2025-01234",
   "document_number": "2025-01234",
-  "unique_key": "fedreg:2025-01234",
+  "unique_key": "federal_register:2025-01234",
   "raw_data": { /* complete API response */ },
   "fetched_at": "2025-01-10T10:30:00.000000Z",
   "title": "Notice of Proposed Rulemaking: Food Safety Standards",
@@ -129,13 +166,14 @@ Unified model combining Federal Register raw data and processed article content.
 }
 
 **Fields:**
-- `source`: Data source identifier (e.g., "fedreg" for Federal Register)
+- `feed_entry_id`: Foreign key to feed_entries.id
+- `source`: Data source identifier (e.g., "federal_register" for Federal Register)
 - `source_id`: Source-specific document ID
 - `document_number`: Federal Register document number (unique per source)
 - `unique_key`: Composite unique identifier (source:document_number)
 - `raw_data`: Complete API response for audit/debugging
 - `fetched_at`: When raw data was fetched from API
-- `title`: Article headline
+- `title`: Document headline
 - `agency`: Government agency name from Federal Register (nullable)
 - `summary`: AI-generated viral summary (1-2 sentences)
 - `keypoints`: JSON array of key takeaways (nullable)
@@ -154,56 +192,60 @@ Unified model combining Federal Register raw data and processed article content.
 
 ## Bookmark
 
-User bookmarks for articles. Allows authenticated users to save articles for later reading.
+User bookmarks for feed entries. Allows authenticated users to save entries for later reading.
 
 {
   "id": 1,
   "user_id": 1,
-  "frarticle_id": 1,
-  "is_bookmarked": 1,
+  "feed_entry_id": 1,
   "created_at": "2025-01-10T10:30:00.000000Z",
   "updated_at": "2025-01-10T10:30:00.000000Z"
 }
 
 **Fields:**
 - `user_id`: Foreign key to users.id
-- `frarticle_id`: Foreign key to frarticles.id
-- `is_bookmarked`: Bookmark status (1 = bookmarked, 0 = removed)
+- `feed_entry_id`: Foreign key to feed_entries.id
+
+**Behavior:**
+- Row presence means bookmarked
+- Unbookmarking deletes the row
 
 **Constraints:**
-- Unique constraint on `(user_id, frarticle_id)` - Prevents duplicate bookmarks
+- Primary key on `(user_id, feed_entry_id)` - Prevents duplicate bookmarks
 - Foreign keys with CASCADE delete
 
 **Indexes:**
 - `user_id` - For efficient user bookmark queries
-- `frarticle_id` - For article bookmark lookups
+- `feed_entry_id` - For entry bookmark lookups
 
 ## Like
 
-User likes for articles. Allows authenticated users to vote on articles.
+User likes for feed entries. Allows authenticated users to vote on entries.
 
 {
   "id": 1,
   "user_id": 1,
-  "frarticle_id": 1,
-  "is_liked": 1,
+  "feed_entry_id": 1,
+  "value": 1,
   "created_at": "2025-01-10T10:30:00.000000Z",
   "updated_at": "2025-01-10T10:30:00.000000Z"
 }
 
 **Fields:**
 - `user_id`: Foreign key to users.id
-- `frarticle_id`: Foreign key to frarticles.id
-- `is_liked`: Like status (1 = liked, 0 = disliked)
+- `feed_entry_id`: Foreign key to feed_entries.id
+- `value`: Vote value (1 = like, -1 = dislike)
 
 **Behavior:**
 - Clicking the same vote again removes it
 - Clicking a different vote updates it
 
 **Constraints:**
-- Unique constraint on `(user_id, frarticle_id)` - Prevents duplicate votes
+- Primary key on `(user_id, feed_entry_id)` - Prevents duplicate votes
 - Foreign keys with CASCADE delete
+- Check constraint: `value IN (1, -1)`
 
 **Indexes:**
 - `user_id` - For efficient user like queries
-- `frarticle_id` - For article like lookups
+- `feed_entry_id` - For entry like lookups
+- `(feed_entry_id, value)` - For counting likes/dislikes

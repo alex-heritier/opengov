@@ -6,13 +6,11 @@ import {
 } from "@/store/article-ui-store";
 
 interface BookmarkResponse {
-  article?: {
-    id: number;
-    is_bookmarked?: boolean;
-    likes_count?: number;
-    dislikes_count?: number;
-    user_like_status?: boolean | null;
-  };
+  is_bookmarked: boolean;
+}
+
+interface RemoveBookmarkResponse {
+  success: boolean;
 }
 
 const defaultUI = (): ArticleUIState => ({
@@ -26,33 +24,30 @@ export function useToggleBookmarkMutation() {
   const queryClient = useQueryClient();
   const setBookmark = useArticleUIStore((s) => s.setBookmark);
   const restore = useArticleUIStore((s) => s.restore);
-  const hydrate = useArticleUIStore((s) => s.hydrate);
   const byId = useArticleUIStore((s) => s.byId);
 
   return useMutation({
-    mutationFn: async (articleId: number) => {
+    mutationFn: async (feedEntryId: number) => {
       const { data } = await client.post<BookmarkResponse>(
-        `/api/bookmarks/${articleId}`,
+        `/api/bookmarks/${feedEntryId}`,
         {},
       );
       return data;
     },
 
-    onMutate: async (articleId) => {
-      const prev = byId[articleId] ?? defaultUI();
-      setBookmark(articleId, !prev.is_bookmarked);
-      return { articleId, prev };
+    onMutate: async (feedEntryId) => {
+      const prev = byId[feedEntryId] ?? defaultUI();
+      setBookmark(feedEntryId, !prev.is_bookmarked);
+      return { feedEntryId, prev };
     },
 
     onError: (_err, _vars, ctx) => {
-      if (ctx?.prev) restore(ctx.articleId, ctx.prev);
+      if (ctx?.prev) restore(ctx.feedEntryId, ctx.prev);
     },
 
-    onSuccess: (data, vars) => {
-      if (data?.article) hydrate([data.article]);
+    onSuccess: (_data, _vars) => {
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
       queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
-      queryClient.invalidateQueries({ queryKey: ["article", vars] });
-      queryClient.invalidateQueries({ queryKey: ["article", "slug"] });
     },
   });
 }
@@ -61,32 +56,29 @@ export function useRemoveBookmarkMutation() {
   const queryClient = useQueryClient();
   const setBookmark = useArticleUIStore((s) => s.setBookmark);
   const restore = useArticleUIStore((s) => s.restore);
-  const hydrate = useArticleUIStore((s) => s.hydrate);
   const byId = useArticleUIStore((s) => s.byId);
 
   return useMutation({
-    mutationFn: async (articleId: number) => {
-      const { data } = await client.delete<BookmarkResponse>(
-        `/api/bookmarks/${articleId}`,
+    mutationFn: async (feedEntryId: number) => {
+      const { data } = await client.delete<RemoveBookmarkResponse>(
+        `/api/bookmarks/${feedEntryId}`,
       );
       return data;
     },
 
-    onMutate: async (articleId) => {
-      const prev = byId[articleId] ?? defaultUI();
-      setBookmark(articleId, false);
-      return { articleId, prev };
+    onMutate: async (feedEntryId) => {
+      const prev = byId[feedEntryId] ?? defaultUI();
+      setBookmark(feedEntryId, false);
+      return { feedEntryId, prev };
     },
 
     onError: (_err, _vars, ctx) => {
-      if (ctx?.prev) restore(ctx.articleId, ctx.prev);
+      if (ctx?.prev) restore(ctx.feedEntryId, ctx.prev);
     },
 
-    onSuccess: (data, articleId) => {
-      if (data?.article) hydrate([data.article]);
+    onSuccess: (_data, _feedEntryId) => {
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
       queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
-      queryClient.invalidateQueries({ queryKey: ["article", articleId] });
-      queryClient.invalidateQueries({ queryKey: ["article", "slug"] });
     },
   });
 }

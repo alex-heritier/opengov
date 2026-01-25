@@ -54,6 +54,7 @@ describe("ArticleCard", () => {
   it("renders article title", () => {
     renderWithProviders(
       <ArticleCard
+        id={1}
         title="Test Article"
         summary="Test summary"
         source_url="https://example.com"
@@ -64,26 +65,26 @@ describe("ArticleCard", () => {
     expect(screen.getByText("Test Article")).toBeInTheDocument();
   });
 
-  it("renders article title as link when unique_key is present", () => {
+  it("renders article title as link when id is present", () => {
     renderWithProviders(
       <ArticleCard
+        id={123}
         title="Test Article with Link"
         summary="Test summary"
         source_url="https://example.com"
         published_at="2024-01-01T00:00:00Z"
-        unique_key="fedreg_2024-12345"
       />,
     );
 
     const link = screen.getByRole("link", { name: "Test Article with Link" });
     expect(link).toBeInTheDocument();
-    // Since we mocked Link to put 'to' in 'href'
-    expect(link).toHaveAttribute("href", "/articles/$slug");
+    expect(link).toHaveAttribute("href", "/feed/$id");
   });
 
   it("renders article summary", () => {
     renderWithProviders(
       <ArticleCard
+        id={1}
         title="Test Article"
         summary="Test summary"
         source_url="https://example.com"
@@ -97,6 +98,7 @@ describe("ArticleCard", () => {
   it("renders source link", () => {
     renderWithProviders(
       <ArticleCard
+        id={1}
         title="Test Article"
         summary="Test summary"
         source_url="https://example.com"
@@ -104,7 +106,7 @@ describe("ArticleCard", () => {
       />,
     );
 
-    const link = screen.getByRole("link", { name: /Federal Register/i });
+    const link = screen.getByRole("link", { name: /Source/i });
     expect(link).toHaveAttribute("href", "https://example.com");
     expect(link).toHaveAttribute("target", "_blank");
     expect(link).toHaveAttribute("rel", "noopener noreferrer");
@@ -133,12 +135,15 @@ describe("ArticleCard", () => {
         summary="Test summary"
         source_url="https://example.com"
         published_at="2024-01-01T00:00:00Z"
-        user_like_status={false}
+        user_like_status={-1}
       />,
     );
 
-    const dislikeBtn = screen.getByRole("button", { name: /Dislike article/i });
-    expect(dislikeBtn).not.toHaveClass("bg-red-600");
+    // The thumbs down button should not be highlighted since store has null
+    const buttons = screen.getAllByRole("button");
+    const thumbsDownBtn = buttons.find((btn) => btn.textContent === "0");
+    expect(thumbsDownBtn).toBeDefined();
+    expect(thumbsDownBtn).not.toHaveClass("bg-red-100");
 
     act(() => {
       useArticleUIStore.setState({ byId: {} });

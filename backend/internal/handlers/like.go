@@ -11,19 +11,17 @@ import (
 )
 
 type LikeHandler struct {
-	likeRepo    *repository.LikeRepository
-	articleRepo *repository.ArticleRepository
+	likeRepo *repository.LikeRepository
 }
 
-func NewLikeHandler(likeRepo *repository.LikeRepository, articleRepo *repository.ArticleRepository) *LikeHandler {
+func NewLikeHandler(likeRepo *repository.LikeRepository) *LikeHandler {
 	return &LikeHandler{
-		likeRepo:    likeRepo,
-		articleRepo: articleRepo,
+		likeRepo: likeRepo,
 	}
 }
 
 type ToggleLikeRequest struct {
-	IsPositive bool `json:"is_positive"`
+	Value int `json:"value"`
 }
 
 func (h *LikeHandler) Toggle(c *gin.Context) {
@@ -33,9 +31,9 @@ func (h *LikeHandler) Toggle(c *gin.Context) {
 		return
 	}
 
-	articleID, err := strconv.Atoi(c.Param("article_id"))
+	feedEntryID, err := strconv.Atoi(c.Param("feed_entry_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid article ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid feed entry ID"})
 		return
 	}
 
@@ -44,32 +42,30 @@ func (h *LikeHandler) Toggle(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
-
-	_, err = h.articleRepo.GetByID(c.Request.Context(), articleID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check article"})
+	if req.Value != 1 && req.Value != -1 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "value must be 1 or -1"})
 		return
 	}
 
-	like, err := h.likeRepo.SetLike(c.Request.Context(), userID, articleID, req.IsPositive)
+	like, err := h.likeRepo.SetValue(c.Request.Context(), userID, feedEntryID, req.Value)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to set like"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"is_liked": like.GetIsLiked(),
+		"value": like.Value,
 	})
 }
 
 func (h *LikeHandler) GetCounts(c *gin.Context) {
-	articleID, err := strconv.Atoi(c.Param("article_id"))
+	feedEntryID, err := strconv.Atoi(c.Param("feed_entry_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid article ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid feed entry ID"})
 		return
 	}
 
-	likes, dislikes, err := h.likeRepo.GetArticleCounts(c.Request.Context(), articleID)
+	likes, dislikes, err := h.likeRepo.GetFeedEntryCounts(c.Request.Context(), feedEntryID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get counts"})
 		return
@@ -88,13 +84,13 @@ func (h *LikeHandler) Remove(c *gin.Context) {
 		return
 	}
 
-	articleID, err := strconv.Atoi(c.Param("article_id"))
+	feedEntryID, err := strconv.Atoi(c.Param("feed_entry_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid article ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid feed entry ID"})
 		return
 	}
 
-	err = h.likeRepo.Remove(c.Request.Context(), userID, articleID)
+	err = h.likeRepo.Remove(c.Request.Context(), userID, feedEntryID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to remove like"})
 		return
@@ -113,23 +109,21 @@ func (h *LikeHandler) GetStatus(c *gin.Context) {
 		return
 	}
 
-	articleID, err := strconv.Atoi(c.Param("article_id"))
+	feedEntryID, err := strconv.Atoi(c.Param("feed_entry_id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid article ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid feed entry ID"})
 		return
 	}
 
-	status, err := h.likeRepo.GetUserStatus(c.Request.Context(), userID, articleID)
+	status, err := h.likeRepo.GetUserStatus(c.Request.Context(), userID, feedEntryID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get like status"})
 		return
 	}
 
 	if status == nil {
-		c.JSON(http.StatusOK, gin.H{"is_positive": nil})
+		c.JSON(http.StatusOK, gin.H{"value": nil})
 		return
 	}
-
-	isPositive := *status == 1
-	c.JSON(http.StatusOK, gin.H{"is_positive": isPositive})
+	c.JSON(http.StatusOK, gin.H{"value": *status})
 }

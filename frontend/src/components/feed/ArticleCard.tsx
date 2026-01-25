@@ -18,14 +18,13 @@ import {
 import { useArticleUIStore, type LikeStatus } from "@/store/article-ui-store";
 
 interface ArticleCardProps {
-  id?: number;
+  id: number;
   title: string;
   summary: string;
   source_url: string;
   published_at: string;
-  unique_key?: string | null;
   is_bookmarked?: boolean;
-  user_like_status?: boolean | null;
+  user_like_status?: number | null;
   likes_count?: number;
   dislikes_count?: number;
 }
@@ -36,7 +35,6 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   summary,
   source_url,
   published_at: _published_at,
-  unique_key,
   is_bookmarked = false,
   user_like_status = null,
   likes_count = 0,
@@ -51,10 +49,10 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const ui = useArticleUIStore((s) => (id ? s.byId[id] : undefined));
 
   const bookmarked = ui?.is_bookmarked ?? is_bookmarked;
-  // user_like_status is tri-state (true/false/null). Only fall back to props
-  // when the store has no value (undefined), not when it's explicitly null.
   const likeStatus: LikeStatus =
-    ui?.user_like_status === undefined ? user_like_status : ui.user_like_status;
+    ui?.user_like_status === undefined
+      ? convertLikeStatus(user_like_status)
+      : ui.user_like_status;
   const likesCount = ui?.likes_count ?? likes_count;
   const dislikesCount = ui?.dislikes_count ?? dislikes_count;
 
@@ -85,7 +83,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     if (likeStatus === true) {
       removeLike.mutate(id);
     } else {
-      toggleLike.mutate({ articleId: id, isPositive: true });
+      toggleLike.mutate({ feedEntryId: id, isPositive: true });
     }
   };
 
@@ -96,7 +94,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     if (likeStatus === false) {
       removeLike.mutate(id);
     } else {
-      toggleLike.mutate({ articleId: id, isPositive: false });
+      toggleLike.mutate({ feedEntryId: id, isPositive: false });
     }
   };
 
@@ -104,17 +102,13 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     <article className="border-b border-gray-200 py-4 sm:py-6 hover:bg-gray-50 transition-colors">
       <div className="space-y-3">
         <h3 className="text-base sm:text-lg font-bold text-gray-900 leading-snug">
-          {unique_key ? (
-            <Link
-              to="/articles/$slug"
-              params={{ slug: unique_key }}
-              className="hover:underline hover:text-blue-700 transition-colors"
-            >
-              {title}
-            </Link>
-          ) : (
-            title
-          )}
+          <Link
+            to="/feed/$id"
+            params={{ id: String(id) }}
+            className="hover:underline hover:text-blue-700 transition-colors"
+          >
+            {title}
+          </Link>
         </h3>
         <p
           className="text-sm text-gray-600 line-clamp-3 leading-relaxed"
@@ -122,80 +116,74 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         />
 
         <div className="flex flex-wrap gap-2 pt-2">
-          {unique_key && (
-            <Link
-              to="/articles/$slug"
-              params={{ slug: unique_key }}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium bg-gray-100 hover:bg-gray-200 transition-colors text-gray-900 no-underline"
-            >
-              <FileText className="w-4 h-4" />
-              View Details
-            </Link>
-          )}
-          <a
-            href={source_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Read on Federal Register"
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium border border-gray-300 bg-white hover:bg-gray-50 transition-colors cursor-pointer text-gray-900 no-underline"
+          <Link
+            to="/feed/$id"
+            params={{ id: String(id) }}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium bg-gray-100 hover:bg-gray-200 transition-colors text-gray-900 no-underline"
           >
-            <ExternalLink className="w-4 h-4" />
-            Federal Register
-          </a>
-          {isAuthenticated && (
-            <>
-              <button
-                onClick={handleLike}
-                disabled={toggleLike.isPending || removeLike.isPending}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
-                  likeStatus === true
-                    ? "bg-green-600 text-white"
-                    : "border border-gray-300 bg-white hover:bg-gray-50"
-                }`}
-                aria-label="Like article"
-              >
-                <ThumbsUp className="w-4 h-4" />
-                {likesCount > 0 && <span>{likesCount}</span>}
-              </button>
-              <button
-                onClick={handleDislike}
-                disabled={toggleLike.isPending || removeLike.isPending}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
-                  likeStatus === false
-                    ? "bg-red-600 text-white"
-                    : "border border-gray-300 bg-white hover:bg-gray-50"
-                }`}
-                aria-label="Dislike article"
-              >
-                <ThumbsDown className="w-4 h-4" />
-                {dislikesCount > 0 && <span>{dislikesCount}</span>}
-              </button>
-              <button
-                onClick={handleToggleBookmark}
-                disabled={toggleBookmark.isPending}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
-                  bookmarked
-                    ? "bg-blue-600 text-white"
-                    : "border border-gray-300 bg-white hover:bg-gray-50"
-                }`}
-                aria-label={bookmarked ? "Remove bookmark" : "Bookmark article"}
-              >
-                {bookmarked ? (
-                  <>
-                    <BookmarkCheck className="w-4 h-4" />
-                    Bookmarked
-                  </>
-                ) : (
-                  <>
-                    <Bookmark className="w-4 h-4" />
-                    Bookmark
-                  </>
-                )}
-              </button>
-            </>
+            <FileText className="w-3.5 h-3.5" />
+            <span>View Details</span>
+          </Link>
+          {source_url && (
+            <a
+              href={source_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium bg-blue-50 hover:bg-blue-100 transition-colors text-blue-700 no-underline"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Source</span>
+            </a>
           )}
+          <button
+            onClick={handleToggleBookmark}
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors no-underline ${
+              bookmarked
+                ? "bg-blue-600 text-white hover:bg-blue-700"
+                : "bg-gray-100 hover:bg-gray-200 text-gray-900"
+            }`}
+          >
+            {bookmarked ? (
+              <BookmarkCheck className="w-3.5 h-3.5" />
+            ) : (
+              <Bookmark className="w-3.5 h-3.5" />
+            )}
+            <span>{bookmarked ? "Saved" : "Save"}</span>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-4 text-xs text-gray-500 pt-1">
+          <button
+            onClick={handleLike}
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors ${
+              likeStatus === true
+                ? "bg-green-100 text-green-700"
+                : "hover:bg-gray-100"
+            }`}
+          >
+            <ThumbsUp className="w-3.5 h-3.5" />
+            <span>{likesCount}</span>
+          </button>
+          <button
+            onClick={handleDislike}
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors ${
+              likeStatus === false
+                ? "bg-red-100 text-red-700"
+                : "hover:bg-gray-100"
+            }`}
+          >
+            <ThumbsDown className="w-3.5 h-3.5" />
+            <span>{dislikesCount}</span>
+          </button>
         </div>
       </div>
     </article>
   );
 };
+
+function convertLikeStatus(status: number | null | undefined): LikeStatus {
+  if (status === undefined || status === null) return null;
+  if (status === 1) return true;
+  if (status === -1) return false;
+  return null;
+}

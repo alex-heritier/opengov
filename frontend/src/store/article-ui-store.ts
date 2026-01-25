@@ -16,7 +16,7 @@ interface ArticleUIStore {
     articles: Array<{
       id: number;
       is_bookmarked?: boolean;
-      user_like_status?: boolean | null;
+      user_like_status?: number | null;
       likes_count?: number;
       dislikes_count?: number;
     }>,
@@ -36,6 +36,13 @@ const defaultUI = (): ArticleUIState => ({
   dislikes_count: 0,
 });
 
+function convertLikeStatus(status: number | null | undefined): LikeStatus {
+  if (status === undefined || status === null) return null;
+  if (status === 1) return true;
+  if (status === -1) return false;
+  return null;
+}
+
 export const useArticleUIStore = create<ArticleUIStore>((set, get) => ({
   byId: {},
 
@@ -49,7 +56,7 @@ export const useArticleUIStore = create<ArticleUIStore>((set, get) => ({
           user_like_status:
             a.user_like_status === undefined
               ? existing.user_like_status
-              : a.user_like_status,
+              : convertLikeStatus(a.user_like_status),
           likes_count: a.likes_count ?? existing.likes_count,
           dislikes_count: a.dislikes_count ?? existing.dislikes_count,
         };

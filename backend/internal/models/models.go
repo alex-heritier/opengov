@@ -90,8 +90,9 @@ type Agency struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
-type FRArticle struct {
+type FederalRegisterDocument struct {
 	ID             int       `json:"id"`
+	FeedEntryID    int       `json:"feed_entry_id"`
 	Source         string    `json:"source"`
 	SourceID       string    `json:"source_id"`
 	DocumentNumber string    `json:"document_number"`
@@ -113,27 +114,18 @@ type FRArticle struct {
 }
 
 type Bookmark struct {
-	ID           int       `json:"id"`
-	UserID       int       `json:"user_id"`
-	FRArticleID  int       `json:"frarticle_id"`
-	IsBookmarked int       `json:"is_bookmarked"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
-}
-
-func (b *Bookmark) GetIsBookmarked() bool {
-	return b.IsBookmarked == 1
+	ID          int       `json:"id"`
+	UserID      int       `json:"user_id"`
+	FeedEntryID int       `json:"feed_entry_id"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type Like struct {
 	ID          int       `json:"id"`
 	UserID      int       `json:"user_id"`
-	FRArticleID int       `json:"frarticle_id"`
-	IsLiked     int       `json:"is_liked"`
+	FeedEntryID int       `json:"feed_entry_id"`
+	Value       int       `json:"value"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
-}
-
-func (l *Like) GetIsLiked() bool {
-	return l.IsLiked == 1
 }

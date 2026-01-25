@@ -3,20 +3,20 @@
  * Orchestrates between article query, likes, and bookmarks.
  */
 import {
-  useArticleQuery,
+  useFeedEntryQuery,
   useToggleLikeMutation,
   useRemoveLikeMutation,
   useToggleBookmarkMutation,
 } from "@/query";
 
 export function useArticle(id: number) {
-  const query = useArticleQuery(id);
+  const query = useFeedEntryQuery(id);
   const likeMutation = useToggleLikeMutation();
   const unlikeMutation = useRemoveLikeMutation();
   const bookmarkMutation = useToggleBookmarkMutation();
 
   const like = (isPositive: boolean) => {
-    likeMutation.mutate({ articleId: id, isPositive });
+    likeMutation.mutate({ feedEntryId: id, isPositive });
   };
 
   const unlike = () => {
