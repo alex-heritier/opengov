@@ -71,7 +71,7 @@ func main() {
 	likeRepo := repository.NewLikeRepository(database)
 
 	feedService := services.NewFeedService(feedRepo)
-	docService := services.NewFederalRegisterDocumentService(docRepo, feedRepo, database)
+	fedRegDocService := services.NewFederalRegisterDocumentService(docRepo, feedRepo, database)
 
 	authService := services.NewAuthService(cfg, userRepo)
 
@@ -81,7 +81,7 @@ func main() {
 	authHandler := handlers.NewAuthHandler(authService, userRepo)
 	frService := services.NewFederalRegisterService(cfg)
 	summarizer := services.NewSummarizer(cfg)
-	scraperService := services.NewScraperService(cfg, frService, summarizer, docService, agencyRepo)
+	scraperService := services.NewScraperService(cfg, frService, summarizer, fedRegDocService, agencyRepo)
 	adminHandler := handlers.NewAdminHandler(docRepo, agencyRepo, scraperService)
 	oauthHandler := handlers.NewOAuthHandler(authService, userRepo, cfg)
 
