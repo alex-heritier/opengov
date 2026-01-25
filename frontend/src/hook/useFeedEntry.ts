@@ -1,6 +1,6 @@
 /**
- * Domain hook for article operations.
- * Orchestrates between article query, likes, and bookmarks.
+ * Domain hook for feed entry operations.
+ * Orchestrates between feed entry query, likes, and bookmarks.
  */
 import {
   useFeedEntryQuery,
@@ -9,7 +9,7 @@ import {
   useToggleBookmarkMutation,
 } from "@/query";
 
-export function useArticle(id: number) {
+export function useFeedEntry(id: number) {
   const query = useFeedEntryQuery(id);
   const likeMutation = useToggleLikeMutation();
   const unlikeMutation = useRemoveLikeMutation();
@@ -29,7 +29,7 @@ export function useArticle(id: number) {
 
   return {
     // Query state
-    article: query.data ?? null,
+    entry: query.data ?? null,
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,

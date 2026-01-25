@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import client from "@/api/client";
-import { useArticleUIStore, type LikeStatus } from "@/store/article-ui-store";
+import { useFeedEntryUIStore, type LikeStatus } from "@/store/feed-entry-ui-store";
+import { useStoreWithEqualityFn } from "zustand/traditional";
+import { shallow } from "zustand/shallow";
 
 interface LikeResponse {
   value: number;
@@ -12,8 +14,11 @@ interface RemoveLikeResponse {
 
 export function useToggleLikeMutation() {
   const queryClient = useQueryClient();
-  const applyReaction = useArticleUIStore((s) => s.applyReaction);
-  const restore = useArticleUIStore((s) => s.restore);
+  const { applyReaction, restore } = useStoreWithEqualityFn(
+    useFeedEntryUIStore,
+    (s) => ({ applyReaction: s.applyReaction, restore: s.restore }),
+    shallow,
+  );
 
   return useMutation({
     mutationFn: async ({
@@ -51,8 +56,11 @@ export function useToggleLikeMutation() {
 
 export function useRemoveLikeMutation() {
   const queryClient = useQueryClient();
-  const applyReaction = useArticleUIStore((s) => s.applyReaction);
-  const restore = useArticleUIStore((s) => s.restore);
+  const { applyReaction, restore } = useStoreWithEqualityFn(
+    useFeedEntryUIStore,
+    (s) => ({ applyReaction: s.applyReaction, restore: s.restore }),
+    shallow,
+  );
 
   return useMutation({
     mutationFn: async (feedEntryId: number) => {

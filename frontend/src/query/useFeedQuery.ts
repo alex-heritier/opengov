@@ -1,10 +1,11 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import client from "@/api/client";
 import { FeedResponse } from "@/hook/types";
-import { useArticleUIStore } from "@/store/article-ui-store";
+import { useFeedEntryUIStore } from "@/store/feed-entry-ui-store";
+import { useStoreWithEqualityFn } from "zustand/traditional";
 
 export function useFeedQuery(limit: number = 20, sort: string = "newest") {
-  const hydrate = useArticleUIStore((s) => s.hydrate);
+  const hydrate = useStoreWithEqualityFn(useFeedEntryUIStore, (s) => s.hydrate);
 
   return useInfiniteQuery({
     queryKey: ["feed", limit, sort],

@@ -405,9 +405,16 @@ func (db *DB) addMissingColumns(tx *sql.Tx) error {
 			return fmt.Errorf("failed to add bookmarks primary key: %w", err)
 		}
 
-		_, err = tx.Exec("CREATE INDEX idx_bookmarks_feed_entry_id ON bookmarks(feed_entry_id)")
+		var indexCount int
+		err = tx.QueryRow("SELECT COUNT(*) FROM pg_indexes WHERE indexname = 'idx_bookmarks_feed_entry_id'").Scan(&indexCount)
 		if err != nil {
-			return fmt.Errorf("failed to create bookmarks feed_entry_id index: %w", err)
+			return fmt.Errorf("failed to check idx_bookmarks_feed_entry_id index: %w", err)
+		}
+		if indexCount == 0 {
+			_, err = tx.Exec("CREATE INDEX IF NOT EXISTS idx_bookmarks_feed_entry_id ON bookmarks(feed_entry_id)")
+			if err != nil {
+				return fmt.Errorf("failed to create bookmarks feed_entry_id index: %w", err)
+			}
 		}
 
 		_, err = tx.Exec("ALTER TABLE bookmarks DROP COLUMN IF EXISTS frarticle_id")
@@ -441,9 +448,16 @@ func (db *DB) addMissingColumns(tx *sql.Tx) error {
 			return fmt.Errorf("failed to add likes primary key: %w", err)
 		}
 
-		_, err = tx.Exec("CREATE INDEX idx_likes_feed_entry_id ON likes(feed_entry_id)")
+		var indexCount int
+		err = tx.QueryRow("SELECT COUNT(*) FROM pg_indexes WHERE indexname = 'idx_likes_feed_entry_id'").Scan(&indexCount)
 		if err != nil {
-			return fmt.Errorf("failed to create likes feed_entry_id index: %w", err)
+			return fmt.Errorf("failed to check idx_likes_feed_entry_id index: %w", err)
+		}
+		if indexCount == 0 {
+			_, err = tx.Exec("CREATE INDEX IF NOT EXISTS idx_likes_feed_entry_id ON likes(feed_entry_id)")
+			if err != nil {
+				return fmt.Errorf("failed to create likes feed_entry_id index: %w", err)
+			}
 		}
 
 		_, err = tx.Exec("ALTER TABLE likes DROP COLUMN IF EXISTS frarticle_id")
@@ -500,14 +514,28 @@ func (db *DB) addMissingColumns(tx *sql.Tx) error {
 		}
 	}
 
-	_, err = tx.Exec("ALTER TABLE likes ADD CONSTRAINT likes_value_check CHECK (value IN (1, -1))")
-	if err != nil && !strings.Contains(err.Error(), "already exists") {
-		return fmt.Errorf("failed to add likes.value check constraint: %w", err)
+	var constraintCount int
+	err = tx.QueryRow("SELECT COUNT(*) FROM pg_constraint WHERE conname = 'likes_value_check'").Scan(&constraintCount)
+	if err != nil {
+		return fmt.Errorf("failed to check likes_value_check constraint: %w", err)
+	}
+	if constraintCount == 0 {
+		_, err = tx.Exec("ALTER TABLE likes ADD CONSTRAINT likes_value_check CHECK (value IN (1, -1))")
+		if err != nil {
+			return fmt.Errorf("failed to add likes.value check constraint: %w", err)
+		}
 	}
 
-	_, err = tx.Exec("CREATE INDEX IF NOT EXISTS idx_likes_feed_entry_id_value ON likes(feed_entry_id, value)")
-	if err != nil && !strings.Contains(err.Error(), "already exists") {
-		return fmt.Errorf("failed to create likes composite index: %w", err)
+	var indexCount int
+	err = tx.QueryRow("SELECT COUNT(*) FROM pg_indexes WHERE indexname = 'idx_likes_feed_entry_id_value'").Scan(&indexCount)
+	if err != nil {
+		return fmt.Errorf("failed to check idx_likes_feed_entry_id_value index: %w", err)
+	}
+	if indexCount == 0 {
+		_, err = tx.Exec("CREATE INDEX IF NOT EXISTS idx_likes_feed_entry_id_value ON likes(feed_entry_id, value)")
+		if err != nil {
+			return fmt.Errorf("failed to create likes composite index: %w", err)
+		}
 	}
 
 	return nil

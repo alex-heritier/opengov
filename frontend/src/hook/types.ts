@@ -13,7 +13,7 @@ export interface User {
   last_login_at: string | null;
 }
 
-export interface Article {
+export interface FeedEntry {
   id: number;
   title: string;
   summary: string;
@@ -44,7 +44,7 @@ export interface FeedEntryResponse {
   dislikes_count: number;
 }
 
-export type BookmarkedArticle = FeedEntryResponse & {
+export type BookmarkedEntry = FeedEntryResponse & {
   is_bookmarked: true;
   updated_at: string;
 };

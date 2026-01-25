@@ -1,7 +1,7 @@
 import { useEffect, useCallback, useMemo } from "react";
 import { useFeedQuery, useFeedStore, type FeedEntryResponse } from "@/hook";
 import type { FeedResponse } from "@/query";
-import { ArticleCard } from "./ArticleCard";
+import { FeedEntryCard } from "./FeedEntryCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
@@ -17,10 +17,15 @@ export const FeedList: React.FC = () => {
     fetchNextPage,
   } = useFeedQuery(pageSize, sort);
 
-  const items = useMemo<FeedEntryResponse[]>(
-    () => data?.pages.flatMap((page: FeedResponse) => page.items) ?? [],
-    [data],
-  );
+  const items = useMemo<FeedEntryResponse[]>(() => {
+    const allItems = data?.pages.flatMap((page: FeedResponse) => page.items) ?? [];
+    const seen = new Set<number>();
+    return allItems.filter((item) => {
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
+  }, [data]);
 
   const handleScroll = useCallback(() => {
     if (isFetchingNextPage || !hasNextPage) return;
@@ -44,7 +49,7 @@ export const FeedList: React.FC = () => {
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          Failed to load articles. Please try again later.
+          Failed to load feed entries. Please try again later.
         </AlertDescription>
       </Alert>
     );
@@ -57,7 +62,7 @@ export const FeedList: React.FC = () => {
     <div className="space-y-0">
       <div className="divide-y divide-gray-200 border-t border-gray-200">
         {items.map((item) => (
-          <ArticleCard
+          <FeedEntryCard
             key={item.id}
             id={item.id}
             title={item.title}
@@ -74,7 +79,7 @@ export const FeedList: React.FC = () => {
 
       {showEmptyState && (
         <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">No articles found.</p>
+          <p className="text-gray-500 text-lg">No entries found.</p>
         </div>
       )}
 
@@ -96,7 +101,7 @@ export const FeedList: React.FC = () => {
 
       {!hasNextPage && items.length > 0 && !isLoading && (
         <div className="text-center py-8 border-t border-gray-200">
-          <p className="text-sm text-gray-500">No more articles to load.</p>
+          <p className="text-sm text-gray-500">No more entries to load.</p>
         </div>
       )}
     </div>

@@ -15,9 +15,10 @@ import {
   useRemoveLikeMutation,
   useAuth,
 } from "@/hook";
-import { useArticleUIStore, type LikeStatus } from "@/store/article-ui-store";
+import { useFeedEntryUIStore, type LikeStatus } from "@/store/feed-entry-ui-store";
+import { useStoreWithEqualityFn } from "zustand/traditional";
 
-interface ArticleCardProps {
+interface FeedEntryCardProps {
   id: number;
   title: string;
   summary: string;
@@ -29,7 +30,7 @@ interface ArticleCardProps {
   dislikes_count?: number;
 }
 
-export const ArticleCard: React.FC<ArticleCardProps> = ({
+export const FeedEntryCard: React.FC<FeedEntryCardProps> = ({
   id,
   title,
   summary,
@@ -46,7 +47,10 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const toggleLike = useToggleLikeMutation();
   const removeLike = useRemoveLikeMutation();
 
-  const ui = useArticleUIStore((s) => (id ? s.byId[id] : undefined));
+  const ui = useStoreWithEqualityFn(
+    useFeedEntryUIStore,
+    (s) => (id ? s.byId[id] : undefined),
+  );
 
   const bookmarked = ui?.is_bookmarked ?? is_bookmarked;
   const likeStatus: LikeStatus =

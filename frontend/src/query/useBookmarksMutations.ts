@@ -1,9 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import client from "@/api/client";
 import {
-  useArticleUIStore,
-  type ArticleUIState,
-} from "@/store/article-ui-store";
+  useFeedEntryUIStore,
+  type FeedEntryUIState,
+} from "@/store/feed-entry-ui-store";
+import { useStoreWithEqualityFn } from "zustand/traditional";
+import { shallow } from "zustand/shallow";
 
 interface BookmarkResponse {
   is_bookmarked: boolean;
@@ -13,7 +15,7 @@ interface RemoveBookmarkResponse {
   success: boolean;
 }
 
-const defaultUI = (): ArticleUIState => ({
+const defaultUI = (): FeedEntryUIState => ({
   is_bookmarked: false,
   user_like_status: null,
   likes_count: 0,
@@ -22,9 +24,15 @@ const defaultUI = (): ArticleUIState => ({
 
 export function useToggleBookmarkMutation() {
   const queryClient = useQueryClient();
-  const setBookmark = useArticleUIStore((s) => s.setBookmark);
-  const restore = useArticleUIStore((s) => s.restore);
-  const byId = useArticleUIStore((s) => s.byId);
+  const { setBookmark, restore, byId } = useStoreWithEqualityFn(
+    useFeedEntryUIStore,
+    (s) => ({
+      setBookmark: s.setBookmark,
+      restore: s.restore,
+      byId: s.byId,
+    }),
+    shallow,
+  );
 
   return useMutation({
     mutationFn: async (feedEntryId: number) => {
@@ -54,9 +62,15 @@ export function useToggleBookmarkMutation() {
 
 export function useRemoveBookmarkMutation() {
   const queryClient = useQueryClient();
-  const setBookmark = useArticleUIStore((s) => s.setBookmark);
-  const restore = useArticleUIStore((s) => s.restore);
-  const byId = useArticleUIStore((s) => s.byId);
+  const { setBookmark, restore, byId } = useStoreWithEqualityFn(
+    useFeedEntryUIStore,
+    (s) => ({
+      setBookmark: s.setBookmark,
+      restore: s.restore,
+      byId: s.byId,
+    }),
+    shallow,
+  );
 
   return useMutation({
     mutationFn: async (feedEntryId: number) => {

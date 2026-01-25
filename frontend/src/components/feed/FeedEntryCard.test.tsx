@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { act, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ArticleCard } from "./ArticleCard";
-import { useArticleUIStore } from "@/store/article-ui-store";
+import { FeedEntryCard } from "./FeedEntryCard";
+import { useFeedEntryUIStore } from "@/store/feed-entry-ui-store";
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({
@@ -40,7 +40,7 @@ const createTestQueryClient = () =>
     },
   });
 
-describe("ArticleCard", () => {
+describe("FeedEntryCard", () => {
   const queryClient = createTestQueryClient();
 
   const renderWithProviders = (component: React.ReactNode) => {
@@ -51,9 +51,9 @@ describe("ArticleCard", () => {
     );
   };
 
-  it("renders article title", () => {
+  it("renders feed entry title", () => {
     renderWithProviders(
-      <ArticleCard
+      <FeedEntryCard
         id={1}
         title="Test Article"
         summary="Test summary"
@@ -65,9 +65,9 @@ describe("ArticleCard", () => {
     expect(screen.getByText("Test Article")).toBeInTheDocument();
   });
 
-  it("renders article title as link when id is present", () => {
+  it("renders feed entry title as link when id is present", () => {
     renderWithProviders(
-      <ArticleCard
+      <FeedEntryCard
         id={123}
         title="Test Article with Link"
         summary="Test summary"
@@ -81,9 +81,9 @@ describe("ArticleCard", () => {
     expect(link).toHaveAttribute("href", "/feed/$id");
   });
 
-  it("renders article summary", () => {
+  it("renders feed entry summary", () => {
     renderWithProviders(
-      <ArticleCard
+      <FeedEntryCard
         id={1}
         title="Test Article"
         summary="Test summary"
@@ -97,7 +97,7 @@ describe("ArticleCard", () => {
 
   it("renders source link", () => {
     renderWithProviders(
-      <ArticleCard
+      <FeedEntryCard
         id={1}
         title="Test Article"
         summary="Test summary"
@@ -116,7 +116,7 @@ describe("ArticleCard", () => {
     const id = 123;
 
     act(() => {
-      useArticleUIStore.setState({
+      useFeedEntryUIStore.setState({
         byId: {
           [id]: {
             is_bookmarked: false,
@@ -129,7 +129,7 @@ describe("ArticleCard", () => {
     });
 
     renderWithProviders(
-      <ArticleCard
+      <FeedEntryCard
         id={id}
         title="Test Article"
         summary="Test summary"
@@ -146,7 +146,7 @@ describe("ArticleCard", () => {
     expect(thumbsDownBtn).not.toHaveClass("bg-red-100");
 
     act(() => {
-      useArticleUIStore.setState({ byId: {} });
+      useFeedEntryUIStore.setState({ byId: {} });
     });
   });
 });

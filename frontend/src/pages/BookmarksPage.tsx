@@ -1,6 +1,6 @@
 import { useBookmarks, useAuth } from "@/hook";
 import type { FeedEntryResponse } from "@/hook/types";
-import { ArticleCard } from "@/components/feed/ArticleCard";
+import { FeedEntryCard } from "@/components/feed/FeedEntryCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Bookmark } from "lucide-react";
@@ -80,7 +80,7 @@ export default function BookmarksPage() {
         {bookmarks && bookmarks.length > 0 ? (
           <div className="divide-y divide-gray-200 border-t border-gray-200">
             {bookmarks.map((item: FeedEntryResponse) => (
-              <ArticleCard
+              <FeedEntryCard
                 key={item.id}
                 id={item.id}
                 title={item.title}
@@ -99,7 +99,7 @@ export default function BookmarksPage() {
             <Bookmark className="w-12 h-12 mx-auto text-gray-400 mb-4" />
             <p className="text-gray-500 text-lg mb-2">No bookmarks yet</p>
             <p className="text-gray-400 text-sm">
-              Start bookmarking articles from the feed to save them for later
+              Start bookmarking entries from the feed to save them for later
             </p>
           </div>
         )}

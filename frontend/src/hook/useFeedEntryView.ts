@@ -1,14 +1,15 @@
 import { useMemo } from "react";
 import type { FeedEntryResponse } from "./types";
-import { useArticleUIStore } from "@/store/article-ui-store";
+import { useFeedEntryUIStore } from "@/store/feed-entry-ui-store";
+import { useStoreWithEqualityFn } from "zustand/traditional";
 
-export function useArticleView(article: FeedEntryResponse): FeedEntryResponse {
-  const ui = useArticleUIStore((s) => s.byId[article.id]);
+export function useFeedEntryView(entry: FeedEntryResponse): FeedEntryResponse {
+  const ui = useStoreWithEqualityFn(useFeedEntryUIStore, (s) => s.byId[entry.id]);
 
   return useMemo(() => {
-    if (!ui) return article;
+    if (!ui) return entry;
     return {
-      ...article,
+      ...entry,
       is_bookmarked: ui.is_bookmarked,
       user_like_status:
         ui.user_like_status === true
@@ -19,5 +20,5 @@ export function useArticleView(article: FeedEntryResponse): FeedEntryResponse {
       likes_count: ui.likes_count,
       dislikes_count: ui.dislikes_count,
     };
-  }, [article, ui]);
+  }, [entry, ui]);
 }
