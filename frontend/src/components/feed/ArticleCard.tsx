@@ -13,8 +13,8 @@ import {
   useToggleBookmarkMutation,
   useToggleLikeMutation,
   useRemoveLikeMutation,
+  useAuth,
 } from "@/hook";
-import { useAuthStore } from "@/store/authStore";
 import { useArticleUIStore, type LikeStatus } from "@/store/article-ui-store";
 
 interface ArticleCardProps {
@@ -43,7 +43,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   dislikes_count = 0,
 }) => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated } = useAuth();
   const toggleBookmark = useToggleBookmarkMutation();
   const toggleLike = useToggleLikeMutation();
   const removeLike = useRemoveLikeMutation();

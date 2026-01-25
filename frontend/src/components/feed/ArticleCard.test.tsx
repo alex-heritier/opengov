@@ -20,16 +20,13 @@ vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => vi.fn(),
 }));
 
-vi.mock("@/store/authStore", () => ({
-  useAuthStore: () => ({ isAuthenticated: true }),
-}));
-
 vi.mock("@/hook", () => {
   const base = { mutate: vi.fn(), isPending: false };
   return {
     useToggleBookmarkMutation: () => base,
     useToggleLikeMutation: () => base,
     useRemoveLikeMutation: () => base,
+    useAuth: () => ({ isAuthenticated: true }),
   };
 });
 

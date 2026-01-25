@@ -11,10 +11,9 @@ import {
 } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GoogleLogin } from "../components/auth/GoogleLogin";
-import { AuthProvider, useAuth } from "../hook";
+import { useAuth } from "../hook";
 import { useAuthStore } from "../store/authStore";
 import userEvent from "@testing-library/user-event";
-import client from "../api/client";
 
 const mockUser = {
   id: 1,
@@ -39,11 +38,7 @@ const createWrapper = () => {
   });
 
   return function Wrapper({ children }: { children: React.ReactNode }) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>{children}</AuthProvider>
-      </QueryClientProvider>
-    );
+    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
   };
 };
 
@@ -93,7 +88,7 @@ describe("GoogleLogin Component", () => {
   });
 });
 
-describe("AuthProvider", () => {
+describe("useAuth hook", () => {
   beforeEach(() => {
     useAuthStore.getState().clearAuth();
     vi.clearAllMocks();
@@ -111,15 +106,13 @@ describe("AuthProvider", () => {
     expect(result.current.isAuthenticated).toBe(false);
   });
 
-  it("should fetch user when token is set", async () => {
-    vi.spyOn(client, "get").mockResolvedValue({ data: mockUser } as any);
-
+  it("should return user when authenticated", async () => {
     await act(async () => {
       useAuthStore.setState({
         isAuthenticated: true,
         accessToken: "mock-token",
         tokenExpiresAt: Date.now() + 3600000,
-        user: null,
+        user: mockUser,
       });
     });
 
@@ -127,36 +120,11 @@ describe("AuthProvider", () => {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => {
-      expect(result.current.user).toEqual(mockUser);
-      expect(result.current.isAuthenticated).toBe(true);
-    });
-  });
-
-  it("should handle API error gracefully", async () => {
-    vi.spyOn(client, "get").mockRejectedValue(new Error("Network error"));
-
-    await act(async () => {
-      useAuthStore.setState({
-        isAuthenticated: true,
-        accessToken: "invalid-token",
-        tokenExpiresAt: Date.now() + 3600000,
-        user: null,
-      });
-    });
-
-    const { result } = renderHook(() => useAuth(), {
-      wrapper: createWrapper(),
-    });
-
-    await waitFor(() => {
-      expect(result.current.user).toBeNull();
-    });
+    expect(result.current.user).toEqual(mockUser);
+    expect(result.current.isAuthenticated).toBe(true);
   });
 
   it("should clear auth on logout", async () => {
-    vi.spyOn(client, "get").mockResolvedValue({ data: mockUser } as any);
-
     await act(async () => {
       useAuthStore.setState({
         user: mockUser,
@@ -170,9 +138,7 @@ describe("AuthProvider", () => {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => {
-      expect(result.current.user).toEqual(mockUser);
-    });
+    expect(result.current.user).toEqual(mockUser);
 
     act(() => {
       result.current.logout();

@@ -22,12 +22,12 @@ frontend/
 └── .env.example
 ```
 
-## Always follow these
+## Always follow these rules!
 
 - Never use `any` type
 - Use non-pluralized naming for all code directories (ex. use hook/ not hooks/)
-- Use kebab-case file naming for all .tsx page and components files
-- Use camel-case file naming for all other .ts files like hooks, queries, stores, etc
+- Use kebab-case file naming for all .tsx page and components files (ex. feed-page.tsx, login.button.tsx)
+- Use camel-case file naming for all other .ts files like hooks, queries, stores, etc (ex. useAuth.ts, useBookmarks.ts, useFeed.ts)
 
 ## Implementation Guidelines
 
@@ -48,6 +48,8 @@ frontend/
 - src/query/: TanStack Query code
 - src/store/: Zustand store code
 - src/hook/: Feature-level code that orchestrates between queries and stores
+- Pages / UI components should never directly interact with the store or query layers, they should use the hooks to interact with the store and query layers instead.
+- Use Zustand stores for state management, never use React Context.
 
 ## Testing
 

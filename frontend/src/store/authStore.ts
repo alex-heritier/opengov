@@ -77,6 +77,12 @@ export const useAuthStore = create<AuthState>()(
     {
       name: "opengov-auth",
       storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        user: state.user,
+        accessToken: state.accessToken,
+        tokenExpiresAt: state.tokenExpiresAt,
+        isAuthenticated: state.isAuthenticated,
+      }),
     },
   ),
 );

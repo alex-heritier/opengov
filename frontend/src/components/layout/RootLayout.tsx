@@ -1,8 +1,11 @@
 import { Outlet } from "@tanstack/react-router";
 import Header from "./Header";
 import Footer from "./Footer";
+import { useAuthRefresh } from "@/hook";
 
 export default function RootLayout() {
+  useAuthRefresh();
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <Header />

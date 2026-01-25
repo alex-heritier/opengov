@@ -4,11 +4,11 @@ import { FeedList } from "../components/feed/FeedList";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Search, Bookmark, ThumbsUp } from "lucide-react";
-import { useAuthStore } from "../store/authStore";
+import { useAuth } from "../hook";
 
 export default function FeedPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated } = useAuth();
 
   return (
     <div className="w-full max-w-5xl mx-auto px-4 sm:px-6">

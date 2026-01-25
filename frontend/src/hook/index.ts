@@ -4,15 +4,12 @@ export { useBookmarks } from "./useBookmarks";
 export { useArticle } from "./useArticle";
 export { useProfile } from "./useProfile";
 export type { UserUpdate } from "./useProfile";
+export { useAuth } from "./useAuth";
+export { useAuthRefresh } from "./useAuthRefresh";
 
 // Environment hook
 export { useEnvironment } from "./useEnvironment";
 export type { Environment } from "./useEnvironment";
-
-// Auth hooks
-export { useAuth } from "./useAuth";
-export { AuthProvider } from "./AuthProvider";
-export type { AuthContextValue } from "./AuthProvider";
 
 // Types
 export type { User, Article, BookmarkedArticle } from "./types";

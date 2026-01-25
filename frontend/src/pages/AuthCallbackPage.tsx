@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { useAuthStore } from "../store/authStore";
+import { useAuth } from "../hook";
 import client from "../api/client";
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate();
-  const { setAuth } = useAuthStore();
+  const { setAuth } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

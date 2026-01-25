@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useAuthStore } from "@/store/authStore";
-import { useAuth, useProfile } from "@/hook";
+import { useProfile, useAuth } from "@/hook";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -89,8 +88,7 @@ const US_STATES = [
 ];
 
 export default function ProfilePage() {
-  const { user, updateUser } = useAuthStore();
-  const { logout } = useAuth();
+  const { user, updateUser, logout } = useAuth();
   const { updateProfileAsync, isUpdating } = useProfile();
   const [politicalLeaning, setPoliticalLeaning] = useState("");
   const [state, setState] = useState("");

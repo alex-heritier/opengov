@@ -1,11 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { useAuthStore } from "@/store/authStore";
 import { useAuth } from "@/hook";
 import { Bookmark, UserCircle2, LogOut } from "lucide-react";
 
 export default function Header() {
-  const { isAuthenticated } = useAuthStore();
-  const { logout } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
 
   return (
     <header className="border-b border-gray-200 bg-white sticky top-0 z-50 shadow-sm">

@@ -1,17 +1,16 @@
-import { useBookmarks } from "@/hook";
+import { useBookmarks, useAuth } from "@/hook";
 import type { BookmarkedArticle } from "@/hook/types";
 import { ArticleCard } from "@/components/feed/ArticleCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Bookmark } from "lucide-react";
-import { useAuthStore } from "@/store/authStore";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 export default function BookmarksPage() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuthStore();
-  const { bookmarks, isLoading, error } = useBookmarks();
+  const { isAuthenticated } = useAuth();
+  const { bookmarks, isLoading: isBookmarksLoading, error } = useBookmarks();
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -37,7 +36,7 @@ export default function BookmarksPage() {
     );
   }
 
-  if (isLoading) {
+  if (isBookmarksLoading) {
     return (
       <div className="w-full max-w-5xl mx-auto px-4 sm:px-6">
         <div className="space-y-4 sm:space-y-6">
