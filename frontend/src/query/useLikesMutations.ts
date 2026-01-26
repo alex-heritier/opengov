@@ -1,6 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import client from "@/api/client";
-import { useFeedEntryUIStore, type LikeStatus } from "@/store/feed-entry-ui-store";
+import {
+  useFeedEntryUIStore,
+  type LikeStatus,
+} from "@/store/feed-entry-ui-store";
 import { useStoreWithEqualityFn } from "zustand/traditional";
 import { shallow } from "zustand/shallow";
 

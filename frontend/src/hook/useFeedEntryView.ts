@@ -4,7 +4,10 @@ import { useFeedEntryUIStore } from "@/store/feed-entry-ui-store";
 import { useStoreWithEqualityFn } from "zustand/traditional";
 
 export function useFeedEntryView(entry: FeedEntryResponse): FeedEntryResponse {
-  const ui = useStoreWithEqualityFn(useFeedEntryUIStore, (s) => s.byId[entry.id]);
+  const ui = useStoreWithEqualityFn(
+    useFeedEntryUIStore,
+    (s) => s.byId[entry.id],
+  );
 
   return useMemo(() => {
     if (!ui) return entry;

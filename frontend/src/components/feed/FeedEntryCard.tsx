@@ -15,7 +15,10 @@ import {
   useRemoveLikeMutation,
   useAuth,
 } from "@/hook";
-import { useFeedEntryUIStore, type LikeStatus } from "@/store/feed-entry-ui-store";
+import {
+  useFeedEntryUIStore,
+  type LikeStatus,
+} from "@/store/feed-entry-ui-store";
 import { useStoreWithEqualityFn } from "zustand/traditional";
 
 interface FeedEntryCardProps {
@@ -47,9 +50,8 @@ export const FeedEntryCard: React.FC<FeedEntryCardProps> = ({
   const toggleLike = useToggleLikeMutation();
   const removeLike = useRemoveLikeMutation();
 
-  const ui = useStoreWithEqualityFn(
-    useFeedEntryUIStore,
-    (s) => (id ? s.byId[id] : undefined),
+  const ui = useStoreWithEqualityFn(useFeedEntryUIStore, (s) =>
+    id ? s.byId[id] : undefined,
   );
 
   const bookmarked = ui?.is_bookmarked ?? is_bookmarked;

@@ -18,7 +18,8 @@ export const FeedList: React.FC = () => {
   } = useFeedQuery(pageSize, sort);
 
   const items = useMemo<FeedEntryResponse[]>(() => {
-    const allItems = data?.pages.flatMap((page: FeedResponse) => page.items) ?? [];
+    const allItems =
+      data?.pages.flatMap((page: FeedResponse) => page.items) ?? [];
     const seen = new Set<number>();
     return allItems.filter((item) => {
       if (seen.has(item.id)) return false;
