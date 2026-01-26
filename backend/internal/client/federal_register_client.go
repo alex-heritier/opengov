@@ -1,4 +1,4 @@
-package services
+package client
 
 import (
 	"context"
@@ -12,7 +12,48 @@ import (
 	"github.com/alex/opengov-go/internal/config"
 )
 
-type FederalRegisterService struct {
+type FederalRegisterDocument struct {
+	ID                     int        `json:"id"`
+	DocumentNumber         string     `json:"document_number"`
+	Title                  string     `json:"title"`
+	Type                   string     `json:"type"`
+	Abstract               *string    `json:"abstract"`
+	HTMLURL                string     `json:"html_url"`
+	PublicationDate        string     `json:"publication_date"`
+	PDFURL                 *string    `json:"pdf_url"`
+	PublicInspectionPDFURL *string    `json:"public_inspection_pdf_url"`
+	Excerpts               *string    `json:"excerpts"`
+	Agencies               []FRAgency `json:"agencies"`
+}
+
+type FRAgency struct {
+	ID          int     `json:"id"`
+	Name        string  `json:"name"`
+	ShortName   string  `json:"short_name"`
+	Slug        string  `json:"slug"`
+	URL         string  `json:"url"`
+	ParentID    *int    `json:"parent_id"`
+	Description *string `json:"description"`
+	RawName     string  `json:"raw_name"`
+	JSONURL     string  `json:"json_url"`
+}
+
+type FederalRegisterRecordsResponse struct {
+	Description string                    `json:"description"`
+	Count       int                       `json:"count"`
+	TotalPages  int                       `json:"total_pages"`
+	NextPageURL string                    `json:"next_page_url,omitempty"`
+	Results     []FederalRegisterDocument `json:"results"`
+}
+
+type FederalRegisterDocumentWithRaw struct {
+	Document FederalRegisterDocument
+	RawJSON  []byte
+}
+
+type FRAgenciesResponse []FRAgency
+
+type FederalRegisterClient struct {
 	baseURL  string
 	timeout  time.Duration
 	perPage  int
@@ -20,43 +61,8 @@ type FederalRegisterService struct {
 	client   *http.Client
 }
 
-type FRAgency struct {
-	ID          int     `json:"id"`
-	RawName     string  `json:"raw_name"`
-	Name        string  `json:"name"`
-	ShortName   *string `json:"short_name"`
-	Slug        string  `json:"slug"`
-	Description *string `json:"description,omitempty"`
-	URL         *string `json:"url,omitempty"`
-	JSONURL     *string `json:"json_url,omitempty"`
-	ParentID    *int    `json:"parent_id,omitempty"`
-}
-
-type FRDocument struct {
-	DocumentNumber         string     `json:"document_number"`
-	Title                  string     `json:"title"`
-	Type                   string     `json:"type"`
-	Abstract               *string    `json:"abstract,omitempty"`
-	HTMLURL                string     `json:"html_url"`
-	PublicationDate        string     `json:"publication_date"`
-	PDFURL                 string     `json:"pdf_url,omitempty"`
-	PublicInspectionPDFURL string     `json:"public_inspection_pdf_url,omitempty"`
-	Excerpts               *string    `json:"excerpts,omitempty"`
-	Agencies               []FRAgency `json:"agencies,omitempty"`
-}
-
-type FRDocumentsResponse struct {
-	Description string       `json:"description"`
-	Count       int          `json:"count"`
-	TotalPages  int          `json:"total_pages"`
-	NextPageURL string       `json:"next_page_url,omitempty"`
-	Results     []FRDocument `json:"results"`
-}
-
-type FRAgenciesResponse []FRAgency
-
-func NewFederalRegisterService(cfg *config.Config) *FederalRegisterService {
-	return &FederalRegisterService{
+func NewFederalRegisterClient(cfg *config.Config) *FederalRegisterClient {
+	return &FederalRegisterClient{
 		baseURL:  cfg.FederalRegisterAPIURL,
 		timeout:  time.Duration(cfg.FederalRegisterTimeout) * time.Second,
 		perPage:  cfg.FederalRegisterPerPage,
@@ -67,7 +73,7 @@ func NewFederalRegisterService(cfg *config.Config) *FederalRegisterService {
 	}
 }
 
-func (s *FederalRegisterService) FetchRecentDocuments(ctx context.Context, days int) ([]FRDocument, error) {
+func (s *FederalRegisterClient) Scrape(ctx context.Context, days int) ([]FederalRegisterDocumentWithRaw, error) {
 	endDate := time.Now().UTC()
 	startDate := endDate.AddDate(0, 0, -days)
 
@@ -78,7 +84,7 @@ func (s *FederalRegisterService) FetchRecentDocuments(ctx context.Context, days 
 		"filter[publication_date][lte]": {endDate.Format("2006-01-02")},
 	}
 
-	var allDocs []FRDocument
+	var allDocs []FederalRegisterDocumentWithRaw
 
 	for page := 1; page <= s.maxPages; page++ {
 		params.Set("page", fmt.Sprintf("%d", page))
@@ -100,12 +106,19 @@ func (s *FederalRegisterService) FetchRecentDocuments(ctx context.Context, days 
 			return nil, fmt.Errorf("unexpected status %d: %s", resp.StatusCode, string(body))
 		}
 
-		var result FRDocumentsResponse
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		var result FederalRegisterRecordsResponse
+		if err := json.Unmarshal(bodyBytes, &result); err != nil {
 			return nil, fmt.Errorf("failed to decode response: %w", err)
 		}
 
-		allDocs = append(allDocs, result.Results...)
+		for _, frDoc := range result.Results {
+			docRaw, _ := json.Marshal(frDoc)
+			allDocs = append(allDocs, FederalRegisterDocumentWithRaw{
+				Document: frDoc,
+				RawJSON:  docRaw,
+			})
+		}
 
 		if len(result.Results) < s.perPage {
 			break
@@ -117,7 +130,7 @@ func (s *FederalRegisterService) FetchRecentDocuments(ctx context.Context, days 
 	return allDocs, nil
 }
 
-func (s *FederalRegisterService) FetchAgencies(ctx context.Context) ([]FRAgency, error) {
+func (s *FederalRegisterClient) FetchAgencies(ctx context.Context) ([]FRAgency, error) {
 	reqURL := fmt.Sprintf("%s/agencies", s.baseURL)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
