@@ -7,10 +7,8 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
-	"github.com/robfig/cron/v3"
-
+	"github.com/alex/opengov-go/internal/client"
 	"github.com/alex/opengov-go/internal/config"
 	"github.com/alex/opengov-go/internal/db"
 	"github.com/alex/opengov-go/internal/repository"
@@ -19,22 +17,6 @@ import (
 
 func runMigrations(database *db.DB) error {
 	return database.RunMigrations()
-}
-
-func runOnce(scraperService *services.ScraperService, ctx context.Context) {
-	log.Println("Running immediate scrape...")
-	scraperService.Run(ctx)
-	log.Println("Immediate scrape completed")
-}
-
-func syncAgenciesOnce(scraperService *services.ScraperService, ctx context.Context) {
-	log.Println("Running immediate agency sync...")
-	count, err := scraperService.SyncAgencies(ctx)
-	if err != nil {
-		log.Printf("Error during agency sync: %v", err)
-	} else {
-		log.Printf("Agency sync completed: %d agencies synced", count)
-	}
 }
 
 func main() {
@@ -61,14 +43,15 @@ func main() {
 	}
 	log.Println("Database schema check passed")
 
-	docRepo := repository.NewFederalRegisterDocumentRepository(database)
+	docRepo := repository.NewPolicyDocumentRepository(database)
 	feedRepo := repository.NewFeedRepository(database)
 	agencyRepo := repository.NewAgencyRepository(database)
+	rawEntryRepo := repository.NewRawEntryRepository(database)
 
-	frService := services.NewFederalRegisterService(cfg)
+	frClient := client.NewFederalRegisterClient(cfg)
 	summarizer := services.NewSummarizer(cfg)
-	docService := services.NewFederalRegisterDocumentService(docRepo, feedRepo, database)
-	scraperService := services.NewScraperService(cfg, frService, summarizer, docService, agencyRepo)
+	docService := services.NewPolicyDocumentService(docRepo, feedRepo, rawEntryRepo, database)
+	scraperService := services.NewScraperService(cfg, frClient, summarizer, docService, agencyRepo)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -83,35 +66,27 @@ func main() {
 		os.Exit(0)
 	}()
 
-	runOnceNow := false
 	syncAgenciesNow := false
 	for _, arg := range os.Args[1:] {
 		switch arg {
-		case "--once":
-			runOnceNow = true
 		case "--sync-agencies":
 			syncAgenciesNow = true
 		case "--help", "-h":
 			fmt.Println("Usage: scraping [options]")
 			fmt.Println("Options:")
-			fmt.Println("  --once          Run scrape once and exit")
 			fmt.Println("  --sync-agencies Run agency sync once and exit")
 			fmt.Println("  --help, -h      Show this help message")
 			os.Exit(0)
 		}
 	}
 
-	if runOnceNow {
-		runCtx, runCancel := context.WithTimeout(ctx, 10*time.Minute)
-		defer runCancel()
-		runOnce(scraperService, runCtx)
-		return
-	}
-
 	if syncAgenciesNow {
-		syncCtx, syncCancel := context.WithTimeout(ctx, 5*time.Minute)
-		defer syncCancel()
-		syncAgenciesOnce(scraperService, syncCtx)
+		count, err := scraperService.SyncAgencies(ctx)
+		if err != nil {
+			log.Printf("Error during agency sync: %v", err)
+		} else {
+			log.Printf("Agency sync completed: %d agencies synced", count)
+		}
 		return
 	}
 
@@ -127,31 +102,9 @@ func main() {
 		log.Println("No agencies returned from Federal Register API during startup")
 	}
 
-	log.Println("Scheduling initial scraper in 5 minutes...")
-	go func() {
-		timer := time.NewTimer(5 * time.Minute)
-		defer timer.Stop()
-		select {
-		case <-timer.C:
-			runCtx, runCancel := context.WithTimeout(ctx, 10*time.Minute)
-			defer runCancel()
-			runOnce(scraperService, runCtx)
-		case <-ctx.Done():
-			log.Println("Initial scraper cancelled: service shutting down")
-		}
-	}()
+	log.Println("Running scrape...")
+	scraperService.Run(ctx)
+	log.Println("Scraper completed")
 
-	c := cron.New()
-	intervalSeconds := int(cfg.ScraperInterval().Seconds())
-	c.AddFunc(fmt.Sprintf("@every %ds", intervalSeconds), func() {
-		runCtx, runCancel := context.WithTimeout(context.Background(), 10*time.Minute)
-		defer runCancel()
-		scraperService.Run(runCtx)
-	})
-	c.Start()
-
-	log.Printf("Scraper service started. Interval: %d seconds", intervalSeconds)
-	log.Println("Press Ctrl+C to stop")
-
-	select {}
+	os.Exit(0)
 }
