@@ -16,9 +16,6 @@ import (
 
 	"github.com/alex/opengov-go/internal/config"
 	"github.com/alex/opengov-go/internal/db"
-	"github.com/alex/opengov-go/internal/handlers"
-	"github.com/alex/opengov-go/internal/repository"
-	"github.com/alex/opengov-go/internal/services"
 )
 
 func corsMiddleware(cfg *config.Config) gin.HandlerFunc {
@@ -63,37 +60,9 @@ func main() {
 	}
 	defer database.Close()
 
-	feedRepo := repository.NewFeedRepository(database)
-	docRepo := repository.NewFederalRegisterDocumentRepository(database)
-	userRepo := repository.NewUserRepository(database)
-	agencyRepo := repository.NewAgencyRepository(database)
-	bookmarkRepo := repository.NewBookmarkRepository(database)
-	likeRepo := repository.NewLikeRepository(database)
-
-	feedService := services.NewFeedService(feedRepo)
-	fedRegDocService := services.NewFederalRegisterDocumentService(docRepo, feedRepo, database)
-
-	authService := services.NewAuthService(cfg, userRepo)
-
-	feedHandler := handlers.NewFeedHandler(feedService)
-	bookmarkHandler := handlers.NewBookmarkHandler(bookmarkRepo, feedService)
-	likeHandler := handlers.NewLikeHandler(likeRepo)
-	authHandler := handlers.NewAuthHandler(authService, userRepo)
-	frService := services.NewFederalRegisterService(cfg)
-	summarizer := services.NewSummarizer(cfg)
-	scraperService := services.NewScraperService(cfg, frService, summarizer, fedRegDocService, agencyRepo)
-	adminHandler := handlers.NewAdminHandler(docRepo, agencyRepo, scraperService)
-	oauthHandler := handlers.NewOAuthHandler(authService, userRepo, cfg)
-
-	deps := RouteDeps{
-		DB:              database,
-		AuthService:     authService,
-		FeedHandler:     feedHandler,
-		BookmarkHandler: bookmarkHandler,
-		LikeHandler:     likeHandler,
-		AuthHandler:     authHandler,
-		AdminHandler:    adminHandler,
-		OAuthHandler:    oauthHandler,
+	deps, err := wireDependencies(cfg, database)
+	if err != nil {
+		log.Fatalf("Failed to wire dependencies: %v", err)
 	}
 
 	log.Println("Starting OpenGov API")
