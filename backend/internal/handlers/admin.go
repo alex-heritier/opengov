@@ -14,12 +14,12 @@ import (
 )
 
 type AdminHandler struct {
-	docRepo    *repository.FederalRegisterDocumentRepository
+	docRepo    *repository.PolicyDocumentRepository
 	agencyRepo *repository.AgencyRepository
 	scraper    *services.ScraperService
 }
 
-func NewAdminHandler(docRepo *repository.FederalRegisterDocumentRepository, agencyRepo *repository.AgencyRepository, scraper *services.ScraperService) *AdminHandler {
+func NewAdminHandler(docRepo *repository.PolicyDocumentRepository, agencyRepo *repository.AgencyRepository, scraper *services.ScraperService) *AdminHandler {
 	return &AdminHandler{
 		docRepo:    docRepo,
 		agencyRepo: agencyRepo,

@@ -3,28 +3,32 @@ package services
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/alex/opengov-go/internal/constants"
 	"github.com/alex/opengov-go/internal/db"
 	"github.com/alex/opengov-go/internal/models"
 	"github.com/alex/opengov-go/internal/repository"
+	"github.com/lib/pq"
 )
 
-type FederalRegisterDocumentService struct {
-	docRepo  *repository.FederalRegisterDocumentRepository
+type PolicyDocumentService struct {
+	docRepo  *repository.PolicyDocumentRepository
 	feedRepo *repository.FeedRepository
+	rawRepo  *repository.RawEntryRepository
 	db       *db.DB
 }
 
-func NewFederalRegisterDocumentService(docRepo *repository.FederalRegisterDocumentRepository, feedRepo *repository.FeedRepository, db *db.DB) *FederalRegisterDocumentService {
-	return &FederalRegisterDocumentService{
+func NewPolicyDocumentService(docRepo *repository.PolicyDocumentRepository, feedRepo *repository.FeedRepository, rawRepo *repository.RawEntryRepository, db *db.DB) *PolicyDocumentService {
+	return &PolicyDocumentService{
 		docRepo:  docRepo,
 		feedRepo: feedRepo,
+		rawRepo:  rawRepo,
 		db:       db,
 	}
 }
 
-func (s *FederalRegisterDocumentService) CreateFromScrape(ctx context.Context, doc *models.FederalRegisterDocument) (*models.FederalRegisterDocument, error) {
+func (s *PolicyDocumentService) CreateFromScrape(ctx context.Context, doc *models.PolicyDocument, rawPayload []byte, fetchedAt time.Time) (*models.PolicyDocument, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
@@ -38,7 +42,20 @@ func (s *FederalRegisterDocumentService) CreateFromScrape(ctx context.Context, d
 
 	err = s.docRepo.Create(ctx, tx, doc, feedEntryID)
 	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+			tx.Rollback()
+			existing, fetchErr := s.docRepo.GetByUniqueKey(ctx, doc.UniqueKey)
+			if fetchErr != nil {
+				return nil, fmt.Errorf("failed to fetch existing document: %w", fetchErr)
+			}
+			return existing, nil
+		}
 		return nil, fmt.Errorf("failed to create document: %w", err)
+	}
+
+	err = s.rawRepo.Create(ctx, tx, doc.Source, doc.DocumentNumber, rawPayload, fetchedAt, doc.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create raw entry: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -48,7 +65,7 @@ func (s *FederalRegisterDocumentService) CreateFromScrape(ctx context.Context, d
 	return doc, nil
 }
 
-func (s *FederalRegisterDocumentService) Update(ctx context.Context, id int, updates *models.FederalRegisterDocument) (*models.FederalRegisterDocument, error) {
+func (s *PolicyDocumentService) Update(ctx context.Context, id int, updates *models.PolicyDocument) (*models.PolicyDocument, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
@@ -99,18 +116,22 @@ func (s *FederalRegisterDocumentService) Update(ctx context.Context, id int, upd
 	return existing, nil
 }
 
-func (s *FederalRegisterDocumentService) GetByID(ctx context.Context, id int) (*models.FederalRegisterDocument, error) {
+func (s *PolicyDocumentService) GetByID(ctx context.Context, id int) (*models.PolicyDocument, error) {
 	return s.docRepo.GetByID(ctx, id)
 }
 
-func (s *FederalRegisterDocumentService) GetByDocumentNumber(ctx context.Context, docNumber string) (*models.FederalRegisterDocument, error) {
+func (s *PolicyDocumentService) GetByDocumentNumber(ctx context.Context, docNumber string) (*models.PolicyDocument, error) {
 	return s.docRepo.GetByDocumentNumber(ctx, docNumber)
 }
 
-func (s *FederalRegisterDocumentService) ExistsByUniqueKey(ctx context.Context, uniqueKey string) (bool, error) {
+func (s *PolicyDocumentService) ExistsByUniqueKey(ctx context.Context, uniqueKey string) (bool, error) {
 	return s.docRepo.ExistsByUniqueKey(ctx, uniqueKey)
 }
 
-func (s *FederalRegisterDocumentService) Count(ctx context.Context) (int, error) {
+func (s *PolicyDocumentService) GetByUniqueKey(ctx context.Context, uniqueKey string) (*models.PolicyDocument, error) {
+	return s.docRepo.GetByUniqueKey(ctx, uniqueKey)
+}
+
+func (s *PolicyDocumentService) Count(ctx context.Context) (int, error) {
 	return s.docRepo.Count(ctx)
 }

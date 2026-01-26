@@ -11,27 +11,26 @@ import (
 	"github.com/alex/opengov-go/internal/models"
 )
 
-type FederalRegisterDocumentRepository struct {
+type PolicyDocumentRepository struct {
 	db *db.DB
 }
 
-func NewFederalRegisterDocumentRepository(db *db.DB) *FederalRegisterDocumentRepository {
-	return &FederalRegisterDocumentRepository{db: db}
+func NewPolicyDocumentRepository(db *db.DB) *PolicyDocumentRepository {
+	return &PolicyDocumentRepository{db: db}
 }
 
-func (r *FederalRegisterDocumentRepository) GetByID(ctx context.Context, id int) (*models.FederalRegisterDocument, error) {
+func (r *PolicyDocumentRepository) GetByID(ctx context.Context, id int) (*models.PolicyDocument, error) {
 	query := `
-		SELECT id, source, source_id, unique_key, document_number, raw_data, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, feed_entry_id, created_at, updated_at
-		FROM federal_register_documents WHERE id = $1
+		SELECT id, source, source_id, unique_key, document_number, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, feed_entry_id, created_at, updated_at
+		FROM policy_documents WHERE id = $1
 	`
-	var a models.FederalRegisterDocument
-	var rawData []byte
+	var a models.PolicyDocument
 	var agency, impactScore, documentType, pdfURL *string
 	var keypointsRaw []byte
 	var politicalScore *int
 	var feedEntryID sql.NullInt64
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &rawData, &a.FetchedAt,
+		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &a.FetchedAt,
 		&a.Title, &agency, &a.Summary, &keypointsRaw, &impactScore, &politicalScore, &a.SourceURL, &a.PublishedAt,
 		&documentType, &pdfURL, &feedEntryID, &a.CreatedAt, &a.UpdatedAt,
 	)
@@ -49,23 +48,21 @@ func (r *FederalRegisterDocumentRepository) GetByID(ctx context.Context, id int)
 	if feedEntryID.Valid {
 		a.FeedEntryID = int(feedEntryID.Int64)
 	}
-	json.Unmarshal(rawData, &a.RawData)
 	return &a, nil
 }
 
-func (r *FederalRegisterDocumentRepository) GetByDocumentNumber(ctx context.Context, docNumber string) (*models.FederalRegisterDocument, error) {
+func (r *PolicyDocumentRepository) GetByDocumentNumber(ctx context.Context, docNumber string) (*models.PolicyDocument, error) {
 	query := `
-		SELECT id, source, source_id, unique_key, document_number, raw_data, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, feed_entry_id, created_at, updated_at
-		FROM federal_register_documents WHERE document_number = $1
+		SELECT id, source, source_id, unique_key, document_number, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, feed_entry_id, created_at, updated_at
+		FROM policy_documents WHERE document_number = $1
 	`
-	var a models.FederalRegisterDocument
-	var rawData []byte
+	var a models.PolicyDocument
 	var agency, impactScore, documentType, pdfURL *string
 	var keypointsRaw []byte
 	var politicalScore *int
 	var feedEntryID sql.NullInt64
 	err := r.db.QueryRowContext(ctx, query, docNumber).Scan(
-		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &rawData, &a.FetchedAt,
+		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &a.FetchedAt,
 		&a.Title, &agency, &a.Summary, &keypointsRaw, &impactScore, &politicalScore, &a.SourceURL, &a.PublishedAt,
 		&documentType, &pdfURL, &feedEntryID, &a.CreatedAt, &a.UpdatedAt,
 	)
@@ -83,30 +80,28 @@ func (r *FederalRegisterDocumentRepository) GetByDocumentNumber(ctx context.Cont
 	if feedEntryID.Valid {
 		a.FeedEntryID = int(feedEntryID.Int64)
 	}
-	json.Unmarshal(rawData, &a.RawData)
 	return &a, nil
 }
 
-func (r *FederalRegisterDocumentRepository) ExistsByUniqueKey(ctx context.Context, uniqueKey string) (bool, error) {
-	query := "SELECT COUNT(*) FROM federal_register_documents WHERE unique_key = $1"
+func (r *PolicyDocumentRepository) ExistsByUniqueKey(ctx context.Context, uniqueKey string) (bool, error) {
+	query := "SELECT COUNT(*) FROM policy_documents WHERE unique_key = $1"
 	var count int
 	err := r.db.QueryRowContext(ctx, query, uniqueKey).Scan(&count)
 	return count > 0, err
 }
 
-func (r *FederalRegisterDocumentRepository) GetByUniqueKey(ctx context.Context, uniqueKey string) (*models.FederalRegisterDocument, error) {
+func (r *PolicyDocumentRepository) GetByUniqueKey(ctx context.Context, uniqueKey string) (*models.PolicyDocument, error) {
 	query := `
-		SELECT id, source, source_id, unique_key, document_number, raw_data, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, feed_entry_id, created_at, updated_at
-		FROM federal_register_documents WHERE unique_key = $1
+		SELECT id, source, source_id, unique_key, document_number, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, feed_entry_id, created_at, updated_at
+		FROM policy_documents WHERE unique_key = $1
 	`
-	var a models.FederalRegisterDocument
-	var rawData []byte
+	var a models.PolicyDocument
 	var agency, impactScore, documentType, pdfURL *string
 	var keypointsRaw []byte
 	var politicalScore *int
 	var feedEntryID sql.NullInt64
 	err := r.db.QueryRowContext(ctx, query, uniqueKey).Scan(
-		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &rawData, &a.FetchedAt,
+		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &a.FetchedAt,
 		&a.Title, &agency, &a.Summary, &keypointsRaw, &impactScore, &politicalScore, &a.SourceURL, &a.PublishedAt,
 		&documentType, &pdfURL, &feedEntryID, &a.CreatedAt, &a.UpdatedAt,
 	)
@@ -124,21 +119,16 @@ func (r *FederalRegisterDocumentRepository) GetByUniqueKey(ctx context.Context, 
 	if feedEntryID.Valid {
 		a.FeedEntryID = int(feedEntryID.Int64)
 	}
-	json.Unmarshal(rawData, &a.RawData)
 	return &a, nil
 }
 
-func (r *FederalRegisterDocumentRepository) Create(ctx context.Context, tx *sql.Tx, doc *models.FederalRegisterDocument, feedEntryID int) error {
-	rawData, err := json.Marshal(doc.RawData)
-	if err != nil {
-		return fmt.Errorf("failed to marshal raw_data: %w", err)
-	}
-
+func (r *PolicyDocumentRepository) Create(ctx context.Context, tx *sql.Tx, doc *models.PolicyDocument, feedEntryID int) error {
 	now := time.Now().UTC()
 	doc.CreatedAt = now
 	doc.UpdatedAt = now
 	doc.FetchedAt = now
 
+	var err error
 	var keypointsJSON []byte
 	if len(doc.Keypoints) > 0 {
 		keypointsJSON, err = json.Marshal(doc.Keypoints)
@@ -148,12 +138,12 @@ func (r *FederalRegisterDocumentRepository) Create(ctx context.Context, tx *sql.
 	}
 
 	query := `
-		INSERT INTO federal_register_documents (source, source_id, unique_key, document_number, raw_data, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, feed_entry_id, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+		INSERT INTO policy_documents (source, source_id, unique_key, document_number, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, feed_entry_id, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
 		RETURNING id
 	`
 	err = tx.QueryRowContext(ctx, query,
-		doc.Source, doc.SourceID, doc.UniqueKey, doc.DocumentNumber, rawData, doc.FetchedAt,
+		doc.Source, doc.SourceID, doc.UniqueKey, doc.DocumentNumber, doc.FetchedAt,
 		doc.Title, doc.Agency, doc.Summary, keypointsJSON, doc.ImpactScore, doc.PoliticalScore,
 		doc.SourceURL, doc.PublishedAt,
 		doc.DocumentType, doc.PDFURL,
@@ -167,14 +157,10 @@ func (r *FederalRegisterDocumentRepository) Create(ctx context.Context, tx *sql.
 	return nil
 }
 
-func (r *FederalRegisterDocumentRepository) Update(ctx context.Context, tx *sql.Tx, doc *models.FederalRegisterDocument) error {
-	rawData, err := json.Marshal(doc.RawData)
-	if err != nil {
-		return fmt.Errorf("failed to marshal raw_data: %w", err)
-	}
-
+func (r *PolicyDocumentRepository) Update(ctx context.Context, tx *sql.Tx, doc *models.PolicyDocument) error {
 	doc.UpdatedAt = time.Now().UTC()
 
+	var err error
 	var keypointsJSON []byte
 	if len(doc.Keypoints) > 0 {
 		keypointsJSON, err = json.Marshal(doc.Keypoints)
@@ -184,14 +170,14 @@ func (r *FederalRegisterDocumentRepository) Update(ctx context.Context, tx *sql.
 	}
 
 	query := `
-		UPDATE federal_register_documents
-		SET source = $1, source_id = $2, unique_key = $3, document_number = $4, raw_data = $5, fetched_at = $6,
-			title = $7, agency = $8, summary = $9, keypoints = $10, impact_score = $11, political_score = $12,
-			source_url = $13, published_at = $14, document_type = $15, pdf_url = $16, updated_at = $17
-		WHERE id = $18
+		UPDATE policy_documents
+		SET source = $1, source_id = $2, unique_key = $3, document_number = $4, fetched_at = $5,
+			title = $6, agency = $7, summary = $8, keypoints = $9, impact_score = $10, political_score = $11,
+			source_url = $12, published_at = $13, document_type = $14, pdf_url = $15, updated_at = $16
+		WHERE id = $17
 	`
 	_, err = tx.ExecContext(ctx, query,
-		doc.Source, doc.SourceID, doc.UniqueKey, doc.DocumentNumber, rawData, doc.FetchedAt,
+		doc.Source, doc.SourceID, doc.UniqueKey, doc.DocumentNumber, doc.FetchedAt,
 		doc.Title, doc.Agency, doc.Summary, keypointsJSON, doc.ImpactScore, doc.PoliticalScore,
 		doc.SourceURL, doc.PublishedAt,
 		doc.DocumentType, doc.PDFURL,
@@ -205,27 +191,26 @@ func (r *FederalRegisterDocumentRepository) Update(ctx context.Context, tx *sql.
 	return nil
 }
 
-func (r *FederalRegisterDocumentRepository) Count(ctx context.Context) (int, error) {
+func (r *PolicyDocumentRepository) Count(ctx context.Context) (int, error) {
 	var count int
-	err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM federal_register_documents").Scan(&count)
+	err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM policy_documents").Scan(&count)
 	return count, err
 }
 
-func (r *FederalRegisterDocumentRepository) GetLatest(ctx context.Context) (*models.FederalRegisterDocument, error) {
+func (r *PolicyDocumentRepository) GetLatest(ctx context.Context) (*models.PolicyDocument, error) {
 	query := `
-		SELECT id, source, source_id, unique_key, document_number, raw_data, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, feed_entry_id, created_at, updated_at
-		FROM federal_register_documents
+		SELECT id, source, source_id, unique_key, document_number, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, feed_entry_id, created_at, updated_at
+		FROM policy_documents
 		ORDER BY fetched_at DESC
 		LIMIT 1
 	`
-	var a models.FederalRegisterDocument
-	var rawData []byte
+	var a models.PolicyDocument
 	var agency, impactScore, documentType, pdfURL *string
 	var keypointsRaw []byte
 	var politicalScore *int
 	var feedEntryID sql.NullInt64
 	err := r.db.QueryRowContext(ctx, query).Scan(
-		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &rawData, &a.FetchedAt,
+		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &a.FetchedAt,
 		&a.Title, &agency, &a.Summary, &keypointsRaw, &impactScore, &politicalScore, &a.SourceURL, &a.PublishedAt,
 		&documentType, &pdfURL, &feedEntryID, &a.CreatedAt, &a.UpdatedAt,
 	)
@@ -243,6 +228,5 @@ func (r *FederalRegisterDocumentRepository) GetLatest(ctx context.Context) (*mod
 	if feedEntryID.Valid {
 		a.FeedEntryID = int(feedEntryID.Int64)
 	}
-	json.Unmarshal(rawData, &a.RawData)
 	return &a, nil
 }

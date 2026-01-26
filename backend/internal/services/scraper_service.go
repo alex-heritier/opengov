@@ -6,157 +6,164 @@ import (
 	"log"
 	"time"
 
+	"github.com/alex/opengov-go/internal/client"
 	"github.com/alex/opengov-go/internal/config"
 	"github.com/alex/opengov-go/internal/constants"
 	"github.com/alex/opengov-go/internal/models"
 	"github.com/alex/opengov-go/internal/repository"
+	"github.com/alex/opengov-go/internal/scrape"
 )
 
-const batchSize = 50
-
 type ScraperService struct {
-	frService   *FederalRegisterService
-	summarizer  Summarizer
-	docSvc      *FederalRegisterDocumentService
-	docRepo     *repository.FederalRegisterDocumentRepository
-	agencyRepo  *repository.AgencyRepository
-	scraperDays int
+	summarizer          Summarizer
+	docSvc              *PolicyDocumentService
+	agencyRepo          *repository.AgencyRepository
+	scraperDaysLookback int
+	fedregScraper       *scrape.FedregScraper
+
+	// Use a slice to support multiple scrapers in the future
+	retrievers []scrape.PolicyDocumentScraper
 }
 
-func NewScraperService(cfg *config.Config, frService *FederalRegisterService, summarizer Summarizer, docSvc *FederalRegisterDocumentService, agencyRepo *repository.AgencyRepository) *ScraperService {
-	return &ScraperService{
-		frService:   frService,
-		summarizer:  summarizer,
-		docSvc:      docSvc,
-		docRepo:     nil,
-		agencyRepo:  agencyRepo,
-		scraperDays: cfg.ScraperDaysLookback,
+func NewScraperService(cfg *config.Config, frClient *client.FederalRegisterClient, summarizer Summarizer, docSvc *PolicyDocumentService, agencyRepo *repository.AgencyRepository) *ScraperService {
+	svc := ScraperService{
+		summarizer:          summarizer,
+		docSvc:              docSvc,
+		agencyRepo:          agencyRepo,
+		scraperDaysLookback: cfg.ScraperDaysLookback,
 	}
+
+	svc.fedregScraper = scrape.NewFedregScraper(frClient)
+	svc.retrievers = []scrape.PolicyDocumentScraper{
+		svc.fedregScraper,
+	}
+
+	return &svc
 }
 
 func (s *ScraperService) Run(ctx context.Context) {
-	log.Println("Starting scraper...")
+	log.Println("Starting scrape...")
 
-	docs, err := s.frService.FetchRecentDocuments(ctx, s.scraperDays)
-	if err != nil {
-		log.Printf("Failed to fetch documents: %v", err)
-		return
+	totalProcessed := 0
+	totalSkipped := 0
+	totalErrors := 0
+
+	for _, retriever := range s.retrievers {
+		results, err := retriever.Scrape(ctx, s.scraperDaysLookback)
+		if err != nil {
+			log.Printf("Failed to fetch documents from retriever: %v", err)
+			continue
+		}
+
+		log.Printf("Fetched %d documents", len(results))
+
+		processed, skipped, errors := s.processScrapeResults(ctx, results)
+		totalProcessed += processed
+		totalSkipped += skipped
+		totalErrors += errors
 	}
 
-	log.Printf("Fetched %d documents", len(docs))
+	log.Printf("Scraper completed. Total Processed: %d, Skipped: %d, Errors: %d", totalProcessed, totalSkipped, totalErrors)
+}
 
+func (s *ScraperService) processScrapeResults(ctx context.Context, results []scrape.ScrapeResult) (int, int, int) {
 	processedCount := 0
 	skippedCount := 0
 	errorCount := 0
 
-	var batch []models.FederalRegisterDocument
-
-	for _, doc := range docs {
+	for _, result := range results {
 		select {
 		case <-ctx.Done():
 			log.Println("Scraper cancelled mid-run, stopping...")
-			return
+			return processedCount, skippedCount, errorCount
 		default:
 		}
 
-		exists, _ := s.docSvc.ExistsByUniqueKey(ctx, constants.SourceTypeFederalRegister+":"+doc.DocumentNumber)
-
-		if exists {
-			log.Printf("Skipping duplicate: %s", doc.DocumentNumber)
+		status := s.processSingleScrapeResult(ctx, result)
+		switch status {
+		case "processed":
+			processedCount++
+		case "skipped":
 			skippedCount++
-			continue
-		}
-
-		abstract := ""
-		if doc.Abstract != nil {
-			abstract = *doc.Abstract
-		}
-		if abstract == "" && doc.Excerpts != nil {
-			abstract = *doc.Excerpts
-		}
-		if len(abstract) > 1000 {
-			abstract = abstract[:1000]
-		}
-
-		var agency string
-		if len(doc.Agencies) > 0 {
-			agency = doc.Agencies[0].Name
-		}
-
-		analysis, err := s.summarizer.Analyze(ctx, doc.Title, abstract, agency)
-		if err != nil {
-			log.Printf("Failed to analyze %s: %v", doc.DocumentNumber, err)
-			analysis = &AIAnalysis{
-				Summary:        abstract,
-				Keypoints:      []string{},
-				ImpactScore:    "medium",
-				PoliticalScore: 0,
-			}
-		}
-
-		pubDate, _ := time.Parse("2006-01-02", doc.PublicationDate)
-
-		var agencyPtr *string
-		if agency != "" {
-			agencyPtr = &agency
-		}
-
-		newDoc := &models.FederalRegisterDocument{
-			Source:         constants.SourceTypeFederalRegister,
-			SourceID:       doc.DocumentNumber,
-			UniqueKey:      constants.SourceTypeFederalRegister + ":" + doc.DocumentNumber,
-			DocumentNumber: doc.DocumentNumber,
-			Title:          doc.Title,
-			Agency:         agencyPtr,
-			Summary:        analysis.Summary,
-			Keypoints:      analysis.Keypoints,
-			ImpactScore:    &analysis.ImpactScore,
-			PoliticalScore: &analysis.PoliticalScore,
-			SourceURL:      doc.HTMLURL,
-			PublishedAt:    pubDate,
-			DocumentType:   &doc.Type,
-			PDFURL:         &doc.PDFURL,
-			RawData: models.JSONMap{
-				"abstract":                  doc.Abstract,
-				"excerpts":                  doc.Excerpts,
-				"pdf_url":                   doc.PDFURL,
-				"public_inspection_pdf_url": doc.PublicInspectionPDFURL,
-				"type":                      doc.Type,
-				"agencies":                  doc.Agencies,
-			},
-		}
-
-		batch = append(batch, *newDoc)
-
-		if len(batch) >= batchSize {
-			for _, a := range batch {
-				_, err := s.docSvc.CreateFromScrape(ctx, &a)
-				if err != nil {
-					log.Printf("Failed to create document %s: %v", a.DocumentNumber, err)
-					errorCount++
-				} else {
-					log.Printf("Created document: %s - %s", a.DocumentNumber, truncate(a.Title, 60))
-					processedCount++
-				}
-			}
-			batch = batch[:0]
+		case "error":
+			errorCount++
 		}
 	}
 
-	if len(batch) > 0 {
-		for _, a := range batch {
-			_, err := s.docSvc.CreateFromScrape(ctx, &a)
-			if err != nil {
-				log.Printf("Failed to create document %s: %v", a.DocumentNumber, err)
-				errorCount++
-			} else {
-				log.Printf("Created document: %s - %s", a.DocumentNumber, truncate(a.Title, 60))
-				processedCount++
-			}
+	log.Printf("Retriever completed. Processed: %d, Skipped: %d, Errors: %d", processedCount, skippedCount, errorCount)
+	return processedCount, skippedCount, errorCount
+}
+
+func (s *ScraperService) processSingleScrapeResult(ctx context.Context, result scrape.ScrapeResult) string {
+	doc := result.PolicyDocument
+
+	abstract := ""
+	if doc.Abstract != nil {
+		abstract = *doc.Abstract
+	}
+	if doc.Excerpts != nil {
+		abstract = *doc.Excerpts
+	}
+	if len(abstract) > 1000 {
+		abstract = abstract[:1000]
+	}
+
+	var agency string
+	if len(doc.Agencies) > 0 {
+		agency = doc.Agencies[0].Name
+	}
+
+	analysis, err := s.summarizer.Analyze(ctx, doc.Title, abstract, agency)
+	if err != nil {
+		log.Printf("Failed to analyze %s: %v", doc.DocumentNumber, err)
+		analysis = &AIAnalysis{
+			Summary:        abstract,
+			Keypoints:      []string{},
+			ImpactScore:    "medium",
+			PoliticalScore: 0,
 		}
 	}
 
-	log.Printf("Scraper completed. Processed: %d, Skipped: %d, Errors: %d", processedCount, skippedCount, errorCount)
+	pubDate, _ := time.Parse("2006-01-02", doc.PublicationDate)
+
+	var agencyPtr *string
+	if agency != "" {
+		agencyPtr = &agency
+	}
+
+	newDoc := &models.PolicyDocument{
+		Source:         constants.SourceTypeFederalRegister,
+		SourceID:       doc.DocumentNumber,
+		UniqueKey:      constants.SourceTypeFederalRegister + ":" + doc.DocumentNumber,
+		DocumentNumber: doc.DocumentNumber,
+		Title:          doc.Title,
+		Agency:         agencyPtr,
+		Summary:        analysis.Summary,
+		Keypoints:      analysis.Keypoints,
+		ImpactScore:    &analysis.ImpactScore,
+		PoliticalScore: &analysis.PoliticalScore,
+		SourceURL:      doc.HTMLURL,
+		PublishedAt:    pubDate,
+		DocumentType:   &doc.Type,
+		PDFURL:         doc.PDFURL,
+	}
+
+	rawPayload := result.RawResult
+	fetchedAt := time.Now().UTC()
+
+	resultDoc, err := s.docSvc.CreateFromScrape(ctx, newDoc, rawPayload, fetchedAt)
+	if err != nil {
+		log.Printf("Failed to create document %s: %v", doc.DocumentNumber, err)
+		return "error"
+	}
+
+	if time.Since(resultDoc.CreatedAt) < 5*time.Second {
+		log.Printf("Created document: %s - %s", doc.DocumentNumber, truncate(newDoc.Title, 60))
+		return "processed"
+	}
+
+	log.Printf("Skipped duplicate: %s", doc.DocumentNumber)
+	return "skipped"
 }
 
 func truncate(s string, maxLen int) string {
@@ -169,13 +176,13 @@ func truncate(s string, maxLen int) string {
 func (s *ScraperService) SyncAgencies(ctx context.Context) (int, error) {
 	log.Println("Syncing agencies...")
 
-	agencies, err := s.frService.FetchAgencies(ctx)
+	frAgencies, err := s.fedregScraper.Client().FetchAgencies(ctx)
 	if err != nil {
 		return 0, err
 	}
 
 	count := 0
-	for _, frAgency := range agencies {
+	for _, frAgency := range frAgencies {
 		rawData, _ := json.Marshal(frAgency)
 
 		now := time.Now().UTC()
@@ -183,11 +190,11 @@ func (s *ScraperService) SyncAgencies(ctx context.Context) (int, error) {
 			FRAgencyID:  frAgency.ID,
 			RawName:     frAgency.RawName,
 			Name:        frAgency.Name,
-			ShortName:   frAgency.ShortName,
+			ShortName:   &frAgency.ShortName,
 			Slug:        frAgency.Slug,
 			Description: frAgency.Description,
-			URL:         frAgency.URL,
-			JSONURL:     frAgency.JSONURL,
+			URL:         &frAgency.URL,
+			JSONURL:     &frAgency.JSONURL,
 			ParentID:    frAgency.ParentID,
 			RawData:     models.JSONMap{},
 			CreatedAt:   now,
