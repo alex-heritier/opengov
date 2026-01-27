@@ -190,7 +190,7 @@ Unified model combining Federal Register raw data and processed document content
 - `published_at` - For efficient sorting/filtering by date
 - `source` - For filtering by source
 
-## RawEntry
+## PolicyDocumentSource
 
 Ingestion log storing raw upstream data for each document. One row per upstream document.
 
@@ -210,10 +210,10 @@ Ingestion log storing raw upstream data for each document. One row per upstream 
 - `raw_data`: Complete API response JSON
 - `fetched_at`: When data was fetched from upstream API
 - `policy_document_id`: Foreign key to policy_documents.id
-- `created_at`: When the raw entry was created
+- `created_at`: When the source record was created
 
 **Constraints:**
-- `UNIQUE (source_key, external_id)` - One raw entry per upstream document
+- `UNIQUE (source_key, external_id)` - One source record per upstream document
 - `FK policy_document_id → policy_documents(id) ON DELETE CASCADE`
 
 **Indexes:**
