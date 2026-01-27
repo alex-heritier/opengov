@@ -13,18 +13,18 @@ import (
 )
 
 type PolicyDocumentService struct {
-	docRepo  *repository.PolicyDocumentRepository
-	feedRepo *repository.FeedRepository
-	rawRepo  *repository.RawEntryRepository
-	db       *db.DB
+	docRepo    *repository.PolicyDocumentRepository
+	feedRepo   *repository.FeedRepository
+	sourceRepo *repository.PolicyDocumentSourceRepository
+	db         *db.DB
 }
 
-func NewPolicyDocumentService(docRepo *repository.PolicyDocumentRepository, feedRepo *repository.FeedRepository, rawRepo *repository.RawEntryRepository, db *db.DB) *PolicyDocumentService {
+func NewPolicyDocumentService(docRepo *repository.PolicyDocumentRepository, feedRepo *repository.FeedRepository, sourceRepo *repository.PolicyDocumentSourceRepository, db *db.DB) *PolicyDocumentService {
 	return &PolicyDocumentService{
-		docRepo:  docRepo,
-		feedRepo: feedRepo,
-		rawRepo:  rawRepo,
-		db:       db,
+		docRepo:    docRepo,
+		feedRepo:   feedRepo,
+		sourceRepo: sourceRepo,
+		db:         db,
 	}
 }
 
@@ -53,7 +53,7 @@ func (s *PolicyDocumentService) CreateFromScrape(ctx context.Context, doc *model
 		return nil, fmt.Errorf("failed to create document: %w", err)
 	}
 
-	err = s.rawRepo.Create(ctx, tx, doc.Source, doc.DocumentNumber, rawPayload, fetchedAt, doc.ID)
+	err = s.sourceRepo.Create(ctx, tx, doc.Source, doc.DocumentNumber, rawPayload, fetchedAt, doc.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create raw entry: %w", err)
 	}

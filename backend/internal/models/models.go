@@ -136,7 +136,7 @@ type Like struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
-type RawEntry struct {
+type PolicyDocumentSource struct {
 	ID               int       `json:"id"`
 	SourceKey        string    `json:"source_key"`
 	ExternalID       string    `json:"external_id"`

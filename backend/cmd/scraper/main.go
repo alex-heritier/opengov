@@ -46,11 +46,11 @@ func main() {
 	docRepo := repository.NewPolicyDocumentRepository(database)
 	feedRepo := repository.NewFeedRepository(database)
 	agencyRepo := repository.NewAgencyRepository(database)
-	rawEntryRepo := repository.NewRawEntryRepository(database)
+	sourceRepo := repository.NewPolicyDocumentSourceRepository(database)
 
 	frClient := client.NewFederalRegisterClient(cfg)
 	summarizer := services.NewSummarizer(cfg)
-	docService := services.NewPolicyDocumentService(docRepo, feedRepo, rawEntryRepo, database)
+	docService := services.NewPolicyDocumentService(docRepo, feedRepo, sourceRepo, database)
 	scraperService := services.NewScraperService(cfg, frClient, summarizer, docService, agencyRepo)
 
 	ctx, cancel := context.WithCancel(context.Background())
