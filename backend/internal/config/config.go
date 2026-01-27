@@ -62,7 +62,6 @@ type Config struct {
 
 	// JWT
 	JWTSecretKey            string
-	JWTAlgorithm            string
 	JWTAccessTokenExpireMin int
 
 	// Frontend URL
@@ -93,7 +92,6 @@ func Load() (*Config, error) {
 		BehindProxy:             false,
 		UseMockGrok:             false,
 		CookieSecure:            false,
-		JWTAlgorithm:            "HS256",
 		JWTAccessTokenExpireMin: 60,
 		FrontendURL:             "http://localhost:5173",
 		GrokModel:               "grok-4-1-fast-non-reasoning",
@@ -241,10 +239,6 @@ func Load() (*Config, error) {
 		c.JWTSecretKey = "development-secret-key-change-in-production-32chars"
 	} else {
 		return nil, fmt.Errorf("JWT_SECRET_KEY is required")
-	}
-
-	if v := os.Getenv("JWT_ALGORITHM"); v != "" {
-		c.JWTAlgorithm = v
 	}
 
 	if v := os.Getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES"); v != "" {

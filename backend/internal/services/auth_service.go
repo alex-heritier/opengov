@@ -14,10 +14,9 @@ import (
 )
 
 type AuthService struct {
-	jwtSecret    string
-	jwtExpiry    time.Duration
-	jwtAlgorithm string
-	userRepo     *repository.UserRepository
+	jwtSecret string
+	jwtExpiry time.Duration
+	userRepo  *repository.UserRepository
 }
 
 type Claims struct {
@@ -29,10 +28,9 @@ type Claims struct {
 
 func NewAuthService(cfg *config.Config, userRepo *repository.UserRepository) *AuthService {
 	return &AuthService{
-		jwtSecret:    cfg.JWTSecretKey,
-		jwtExpiry:    time.Duration(cfg.JWTAccessTokenExpireMin) * time.Minute,
-		jwtAlgorithm: cfg.JWTAlgorithm,
-		userRepo:     userRepo,
+		jwtSecret: cfg.JWTSecretKey,
+		jwtExpiry: time.Duration(cfg.JWTAccessTokenExpireMin) * time.Minute,
+		userRepo:  userRepo,
 	}
 }
 
@@ -55,7 +53,8 @@ func (s *AuthService) GenerateToken(user *models.User) (string, error) {
 
 func (s *AuthService) ValidateToken(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+		// Hardcoded: we only accept HS256 tokens.
+		if token.Method == nil || token.Method.Alg() != jwt.SigningMethodHS256.Alg() {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 		return []byte(s.jwtSecret), nil

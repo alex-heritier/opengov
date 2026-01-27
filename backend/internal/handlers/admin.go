@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -47,19 +46,6 @@ func (h *AdminHandler) GetStats(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, resp)
-}
-
-func (h *AdminHandler) TriggerScrape(c *gin.Context) {
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-		defer cancel()
-		h.scraper.Run(ctx)
-	}()
-
-	c.JSON(http.StatusOK, gin.H{
-		"status":  "queued",
-		"message": "Scrape job queued in background",
-	})
 }
 
 func (h *AdminHandler) SyncAgencies(c *gin.Context) {
