@@ -49,8 +49,16 @@ func (s *ScraperService) Run(ctx context.Context) {
 	totalErrors := 0
 
 	for _, retriever := range s.retrievers {
+		if ctx.Err() != nil {
+			log.Println("Scraper cancelled before retriever start, stopping...")
+			return
+		}
 		results, err := retriever.Scrape(ctx, s.scraperDaysLookback)
 		if err != nil {
+			if ctx.Err() != nil {
+				log.Println("Scraper cancelled during retriever scrape, stopping...")
+				return
+			}
 			log.Printf("Failed to fetch documents from retriever: %v", err)
 			continue
 		}

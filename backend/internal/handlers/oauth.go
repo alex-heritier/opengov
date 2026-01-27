@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -17,7 +18,6 @@ import (
 	"github.com/alex/opengov-go/internal/models"
 	"github.com/alex/opengov-go/internal/repository"
 	"github.com/alex/opengov-go/internal/services"
-	"github.com/alex/opengov-go/internal/timeformat"
 )
 
 type OAuthHandler struct {
@@ -31,7 +31,8 @@ type OAuthHandler struct {
 	//   1. Add sync.Mutex to protect map access
 	//   2. Use sync.Map (but needs separate expiration handling)
 	//   3. Move to signed cookie (stateless) or Redis (persistent, distributed)
-	oauthStates map[string]time.Time
+	oauthStatesMu sync.Mutex
+	oauthStates   map[string]time.Time
 }
 
 const oauthStateTTL = 10 * time.Minute
@@ -45,8 +46,7 @@ func NewOAuthHandler(authService *services.AuthService, userRepo *repository.Use
 	}
 }
 
-func (h *OAuthHandler) cleanupExpiredStates() {
-	now := time.Now()
+func (h *OAuthHandler) cleanupExpiredStatesLocked(now time.Time) {
 	for state, timestamp := range h.oauthStates {
 		if now.Sub(timestamp) > oauthStateTTL {
 			delete(h.oauthStates, state)
@@ -55,9 +55,12 @@ func (h *OAuthHandler) cleanupExpiredStates() {
 }
 
 func (h *OAuthHandler) GoogleLogin(c *gin.Context) {
-	h.cleanupExpiredStates()
+	now := time.Now()
 	state := generateState()
-	h.oauthStates[state] = time.Now()
+	h.oauthStatesMu.Lock()
+	h.cleanupExpiredStatesLocked(now)
+	h.oauthStates[state] = now
+	h.oauthStatesMu.Unlock()
 
 	authURL := fmt.Sprintf(
 		"https://accounts.google.com/o/oauth2/v2/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=email%%20profile&state=%s",
@@ -74,12 +77,18 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 	state := c.Query("state")
 
 	// Validate state
-	if _, ok := h.oauthStates[state]; !ok {
+	h.oauthStatesMu.Lock()
+	h.cleanupExpiredStatesLocked(time.Now())
+	_, ok := h.oauthStates[state]
+	if ok {
+		delete(h.oauthStates, state)
+	}
+	h.oauthStatesMu.Unlock()
+	if !ok {
 		log.Printf("Invalid or expired OAuth state: %s", state)
 		c.Redirect(http.StatusTemporaryRedirect, h.cfg.FrontendURL+"/login?error=invalid_state")
 		return
 	}
-	delete(h.oauthStates, state)
 
 	// Exchange code for token
 	token, err := exchangeGoogleToken(code, h.cfg)
@@ -331,25 +340,4 @@ func (h *OAuthHandler) TestLogin(c *gin.Context) {
 	// Redirect to frontend callback with token in URL fragment (same as Google OAuth)
 	log.Printf("Test user logged in: %s", testEmail)
 	c.Redirect(http.StatusTemporaryRedirect, h.cfg.FrontendURL+"/auth/callback#access_token="+jwtToken)
-}
-
-func userToAuthResponse(u *models.User) *AuthUserResponse {
-	var lastLoginAt *string
-	if u.LastLoginAt != nil {
-		s := u.LastLoginAt.Format(timeformat.RFC3339)
-		lastLoginAt = &s
-	}
-	return &AuthUserResponse{
-		ID:               u.ID,
-		Email:            u.Email,
-		Name:             u.Name,
-		PictureURL:       u.PictureURL,
-		GoogleID:         u.GoogleID,
-		PoliticalLeaning: u.PoliticalLeaning,
-		IsActive:         u.GetIsActive(),
-		IsVerified:       u.GetIsVerified(),
-		CreatedAt:        u.CreatedAt.Format(timeformat.RFC3339),
-		UpdatedAt:        u.UpdatedAt.Format(timeformat.RFC3339),
-		LastLoginAt:      lastLoginAt,
-	}
 }

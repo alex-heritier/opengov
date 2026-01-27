@@ -35,15 +35,9 @@ func (s *PolicyDocumentService) CreateFromScrape(ctx context.Context, doc *model
 	}
 	defer tx.Rollback()
 
-	feedEntryID, err := s.feedRepo.CreateFeedEntry(ctx, tx, constants.SourceTypeFederalRegister, doc.Title, doc.Summary, doc.Keypoints, doc.PoliticalScore, "", doc.SourceURL, doc.PublishedAt)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create feed entry: %w", err)
-	}
-
-	err = s.docRepo.Create(ctx, tx, doc, feedEntryID)
+	err = s.docRepo.Create(ctx, tx, doc, nil)
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
-			tx.Rollback()
 			existing, fetchErr := s.docRepo.GetByUniqueKey(ctx, doc.UniqueKey)
 			if fetchErr != nil {
 				return nil, fmt.Errorf("failed to fetch existing document: %w", fetchErr)
@@ -52,6 +46,20 @@ func (s *PolicyDocumentService) CreateFromScrape(ctx context.Context, doc *model
 		}
 		return nil, fmt.Errorf("failed to create document: %w", err)
 	}
+
+	impactScore := ""
+	if doc.ImpactScore != nil {
+		impactScore = *doc.ImpactScore
+	}
+	feedEntryID, err := s.feedRepo.CreateFeedEntry(ctx, tx, constants.SourceTypeFederalRegister, doc.Title, doc.Summary, doc.Keypoints, doc.PoliticalScore, impactScore, doc.SourceURL, doc.PublishedAt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create feed entry: %w", err)
+	}
+
+	if err := s.docRepo.AttachFeedEntry(ctx, tx, doc.ID, feedEntryID); err != nil {
+		return nil, err
+	}
+	doc.FeedEntryID = feedEntryID
 
 	err = s.sourceRepo.Create(ctx, tx, doc.Source, doc.DocumentNumber, rawPayload, fetchedAt, doc.ID)
 	if err != nil {
@@ -104,7 +112,11 @@ func (s *PolicyDocumentService) Update(ctx context.Context, id int, updates *mod
 		return nil, fmt.Errorf("failed to update document: %w", err)
 	}
 
-	err = s.feedRepo.UpdateFeedEntry(ctx, tx, existing.FeedEntryID, existing.Title, existing.Summary, existing.Keypoints, existing.PoliticalScore, "", existing.SourceURL, existing.PublishedAt)
+	impactScore := ""
+	if existing.ImpactScore != nil {
+		impactScore = *existing.ImpactScore
+	}
+	err = s.feedRepo.UpdateFeedEntry(ctx, tx, existing.FeedEntryID, existing.Title, existing.Summary, existing.Keypoints, existing.PoliticalScore, impactScore, existing.SourceURL, existing.PublishedAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update feed entry: %w", err)
 	}

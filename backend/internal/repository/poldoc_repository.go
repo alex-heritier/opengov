@@ -122,7 +122,7 @@ func (r *PolicyDocumentRepository) GetByUniqueKey(ctx context.Context, uniqueKey
 	return &a, nil
 }
 
-func (r *PolicyDocumentRepository) Create(ctx context.Context, tx *sql.Tx, doc *models.PolicyDocument, feedEntryID int) error {
+func (r *PolicyDocumentRepository) Create(ctx context.Context, tx *sql.Tx, doc *models.PolicyDocument, feedEntryID *int) error {
 	now := time.Now().UTC()
 	doc.CreatedAt = now
 	doc.UpdatedAt = now
@@ -154,6 +154,26 @@ func (r *PolicyDocumentRepository) Create(ctx context.Context, tx *sql.Tx, doc *
 		return fmt.Errorf("failed to insert document: %w", err)
 	}
 
+	return nil
+}
+
+func (r *PolicyDocumentRepository) AttachFeedEntry(ctx context.Context, tx *sql.Tx, policyDocID, feedEntryID int) error {
+	res, err := tx.ExecContext(ctx, `
+		UPDATE policy_documents
+		SET feed_entry_id = $1, updated_at = NOW()
+		WHERE id = $2 AND feed_entry_id IS NULL
+	`, feedEntryID, policyDocID)
+	if err != nil {
+		return fmt.Errorf("failed to attach feed entry: %w", err)
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to attach feed entry: %w", err)
+	}
+	if rows != 1 {
+		return fmt.Errorf("failed to attach feed entry: expected 1 row affected, got %d", rows)
+	}
 	return nil
 }
 
