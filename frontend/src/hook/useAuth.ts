@@ -4,21 +4,17 @@
  */
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/authStore";
-import { shallow } from "zustand/shallow";
 
 export function useAuth() {
   const queryClient = useQueryClient();
   const { user, isAuthenticated, setAuth, updateUser, clearAuth } =
-    useAuthStore(
-      (s) => ({
-        user: s.user,
-        isAuthenticated: s.isAuthenticated,
-        setAuth: s.setAuth,
-        updateUser: s.updateUser,
-        clearAuth: s.clearAuth,
-      }),
-      shallow,
-    );
+    useAuthStore((s) => ({
+      user: s.user,
+      isAuthenticated: s.isAuthenticated,
+      setAuth: s.setAuth,
+      updateUser: s.updateUser,
+      clearAuth: s.clearAuth,
+    }));
 
   const login = () => {
     const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
