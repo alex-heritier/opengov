@@ -67,17 +67,26 @@ func main() {
 	}()
 
 	syncAgenciesNow := false
+	migrateOnly := false
 	for _, arg := range os.Args[1:] {
 		switch arg {
 		case "--sync-agencies":
 			syncAgenciesNow = true
+		case "--migrate-only":
+			migrateOnly = true
 		case "--help", "-h":
 			fmt.Println("Usage: scraping [options]")
 			fmt.Println("Options:")
 			fmt.Println("  --sync-agencies Run agency sync once and exit")
+			fmt.Println("  --migrate-only  Run migrations only and exit")
 			fmt.Println("  --help, -h      Show this help message")
 			os.Exit(0)
 		}
+	}
+
+	if migrateOnly {
+		log.Println("Migrations completed successfully")
+		return
 	}
 
 	if syncAgenciesNow {
