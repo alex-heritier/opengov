@@ -59,7 +59,8 @@ Always use time.Time for timestamps.
 
 ## Migrations
 
-Schema in `internal/db/migrations.go`. Auto-runs on server startup via `RunMigrations()`.
+Schema migrations live as ordered `.sql` files in `backend/migration/` and auto-run on server startup via `internal/db.RunMigrations()`.
+Migrations must be safe to re-run or explicitly guarded with IF EXISTS / IF NOT EXISTS.
 
 ## Commands
 
