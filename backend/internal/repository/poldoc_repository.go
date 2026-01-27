@@ -4,12 +4,16 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/alex/opengov-go/internal/db"
 	"github.com/alex/opengov-go/internal/models"
+	"github.com/lib/pq"
 )
+
+var ErrDuplicateDocument = errors.New("document already exists")
 
 type PolicyDocumentRepository struct {
 	db *db.DB
@@ -21,18 +25,17 @@ func NewPolicyDocumentRepository(db *db.DB) *PolicyDocumentRepository {
 
 func (r *PolicyDocumentRepository) GetByID(ctx context.Context, id int) (*models.PolicyDocument, error) {
 	query := `
-		SELECT id, source, source_id, unique_key, document_number, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, feed_entry_id, created_at, updated_at
+		SELECT id, source, source_id, unique_key, document_number, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, created_at, updated_at
 		FROM policy_documents WHERE id = $1
 	`
 	var a models.PolicyDocument
 	var agency, impactScore, documentType, pdfURL *string
 	var keypointsRaw []byte
 	var politicalScore *int
-	var feedEntryID sql.NullInt64
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &a.FetchedAt,
 		&a.Title, &agency, &a.Summary, &keypointsRaw, &impactScore, &politicalScore, &a.SourceURL, &a.PublishedAt,
-		&documentType, &pdfURL, &feedEntryID, &a.CreatedAt, &a.UpdatedAt,
+		&documentType, &pdfURL, &a.CreatedAt, &a.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -45,26 +48,22 @@ func (r *PolicyDocumentRepository) GetByID(ctx context.Context, id int) (*models
 	a.PoliticalScore = politicalScore
 	a.DocumentType = documentType
 	a.PDFURL = pdfURL
-	if feedEntryID.Valid {
-		a.FeedEntryID = int(feedEntryID.Int64)
-	}
 	return &a, nil
 }
 
 func (r *PolicyDocumentRepository) GetByDocumentNumber(ctx context.Context, docNumber string) (*models.PolicyDocument, error) {
 	query := `
-		SELECT id, source, source_id, unique_key, document_number, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, feed_entry_id, created_at, updated_at
+		SELECT id, source, source_id, unique_key, document_number, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, created_at, updated_at
 		FROM policy_documents WHERE document_number = $1
 	`
 	var a models.PolicyDocument
 	var agency, impactScore, documentType, pdfURL *string
 	var keypointsRaw []byte
 	var politicalScore *int
-	var feedEntryID sql.NullInt64
 	err := r.db.QueryRowContext(ctx, query, docNumber).Scan(
 		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &a.FetchedAt,
 		&a.Title, &agency, &a.Summary, &keypointsRaw, &impactScore, &politicalScore, &a.SourceURL, &a.PublishedAt,
-		&documentType, &pdfURL, &feedEntryID, &a.CreatedAt, &a.UpdatedAt,
+		&documentType, &pdfURL, &a.CreatedAt, &a.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -77,9 +76,6 @@ func (r *PolicyDocumentRepository) GetByDocumentNumber(ctx context.Context, docN
 	a.PoliticalScore = politicalScore
 	a.DocumentType = documentType
 	a.PDFURL = pdfURL
-	if feedEntryID.Valid {
-		a.FeedEntryID = int(feedEntryID.Int64)
-	}
 	return &a, nil
 }
 
@@ -92,18 +88,17 @@ func (r *PolicyDocumentRepository) ExistsByUniqueKey(ctx context.Context, unique
 
 func (r *PolicyDocumentRepository) GetByUniqueKey(ctx context.Context, uniqueKey string) (*models.PolicyDocument, error) {
 	query := `
-		SELECT id, source, source_id, unique_key, document_number, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, feed_entry_id, created_at, updated_at
+		SELECT id, source, source_id, unique_key, document_number, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, created_at, updated_at
 		FROM policy_documents WHERE unique_key = $1
 	`
 	var a models.PolicyDocument
 	var agency, impactScore, documentType, pdfURL *string
 	var keypointsRaw []byte
 	var politicalScore *int
-	var feedEntryID sql.NullInt64
 	err := r.db.QueryRowContext(ctx, query, uniqueKey).Scan(
 		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &a.FetchedAt,
 		&a.Title, &agency, &a.Summary, &keypointsRaw, &impactScore, &politicalScore, &a.SourceURL, &a.PublishedAt,
-		&documentType, &pdfURL, &feedEntryID, &a.CreatedAt, &a.UpdatedAt,
+		&documentType, &pdfURL, &a.CreatedAt, &a.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -116,13 +111,10 @@ func (r *PolicyDocumentRepository) GetByUniqueKey(ctx context.Context, uniqueKey
 	a.PoliticalScore = politicalScore
 	a.DocumentType = documentType
 	a.PDFURL = pdfURL
-	if feedEntryID.Valid {
-		a.FeedEntryID = int(feedEntryID.Int64)
-	}
 	return &a, nil
 }
 
-func (r *PolicyDocumentRepository) Create(ctx context.Context, tx *sql.Tx, doc *models.PolicyDocument, feedEntryID *int) error {
+func (r *PolicyDocumentRepository) Create(ctx context.Context, tx *sql.Tx, doc *models.PolicyDocument) error {
 	now := time.Now().UTC()
 	doc.CreatedAt = now
 	doc.UpdatedAt = now
@@ -138,8 +130,8 @@ func (r *PolicyDocumentRepository) Create(ctx context.Context, tx *sql.Tx, doc *
 	}
 
 	query := `
-		INSERT INTO policy_documents (source, source_id, unique_key, document_number, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, feed_entry_id, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+		INSERT INTO policy_documents (source, source_id, unique_key, document_number, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 		RETURNING id
 	`
 	err = tx.QueryRowContext(ctx, query,
@@ -147,33 +139,14 @@ func (r *PolicyDocumentRepository) Create(ctx context.Context, tx *sql.Tx, doc *
 		doc.Title, doc.Agency, doc.Summary, keypointsJSON, doc.ImpactScore, doc.PoliticalScore,
 		doc.SourceURL, doc.PublishedAt,
 		doc.DocumentType, doc.PDFURL,
-		feedEntryID,
-		doc.CreatedAt, doc.UpdatedAt,
 	).Scan(&doc.ID)
 	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+			return ErrDuplicateDocument
+		}
 		return fmt.Errorf("failed to insert document: %w", err)
 	}
 
-	return nil
-}
-
-func (r *PolicyDocumentRepository) AttachFeedEntry(ctx context.Context, tx *sql.Tx, policyDocID, feedEntryID int) error {
-	res, err := tx.ExecContext(ctx, `
-		UPDATE policy_documents
-		SET feed_entry_id = $1, updated_at = NOW()
-		WHERE id = $2 AND feed_entry_id IS NULL
-	`, feedEntryID, policyDocID)
-	if err != nil {
-		return fmt.Errorf("failed to attach feed entry: %w", err)
-	}
-
-	rows, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to attach feed entry: %w", err)
-	}
-	if rows != 1 {
-		return fmt.Errorf("failed to attach feed entry: expected 1 row affected, got %d", rows)
-	}
 	return nil
 }
 
@@ -193,15 +166,15 @@ func (r *PolicyDocumentRepository) Update(ctx context.Context, tx *sql.Tx, doc *
 		UPDATE policy_documents
 		SET source = $1, source_id = $2, unique_key = $3, document_number = $4, fetched_at = $5,
 			title = $6, agency = $7, summary = $8, keypoints = $9, impact_score = $10, political_score = $11,
-			source_url = $12, published_at = $13, document_type = $14, pdf_url = $15, updated_at = $16
-		WHERE id = $17
+			source_url = $12, published_at = $13, document_type = $14, pdf_url = $15,
+			updated_at = NOW()
+		WHERE id = $16
 	`
 	_, err = tx.ExecContext(ctx, query,
 		doc.Source, doc.SourceID, doc.UniqueKey, doc.DocumentNumber, doc.FetchedAt,
 		doc.Title, doc.Agency, doc.Summary, keypointsJSON, doc.ImpactScore, doc.PoliticalScore,
 		doc.SourceURL, doc.PublishedAt,
 		doc.DocumentType, doc.PDFURL,
-		doc.UpdatedAt,
 		doc.ID,
 	)
 	if err != nil {
@@ -219,7 +192,7 @@ func (r *PolicyDocumentRepository) Count(ctx context.Context) (int, error) {
 
 func (r *PolicyDocumentRepository) GetLatest(ctx context.Context) (*models.PolicyDocument, error) {
 	query := `
-		SELECT id, source, source_id, unique_key, document_number, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, feed_entry_id, created_at, updated_at
+		SELECT id, source, source_id, unique_key, document_number, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, created_at, updated_at
 		FROM policy_documents
 		ORDER BY fetched_at DESC
 		LIMIT 1
@@ -228,11 +201,10 @@ func (r *PolicyDocumentRepository) GetLatest(ctx context.Context) (*models.Polic
 	var agency, impactScore, documentType, pdfURL *string
 	var keypointsRaw []byte
 	var politicalScore *int
-	var feedEntryID sql.NullInt64
 	err := r.db.QueryRowContext(ctx, query).Scan(
 		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &a.FetchedAt,
 		&a.Title, &agency, &a.Summary, &keypointsRaw, &impactScore, &politicalScore, &a.SourceURL, &a.PublishedAt,
-		&documentType, &pdfURL, &feedEntryID, &a.CreatedAt, &a.UpdatedAt,
+		&documentType, &pdfURL, &a.CreatedAt, &a.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -245,8 +217,5 @@ func (r *PolicyDocumentRepository) GetLatest(ctx context.Context) (*models.Polic
 	a.PoliticalScore = politicalScore
 	a.DocumentType = documentType
 	a.PDFURL = pdfURL
-	if feedEntryID.Valid {
-		a.FeedEntryID = int(feedEntryID.Int64)
-	}
 	return &a, nil
 }

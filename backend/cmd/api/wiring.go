@@ -16,7 +16,7 @@ func wireDependencies(cfg *config.Config, database *db.DB) (RouteDeps, error) {
 	agencyRepo := repository.NewAgencyRepository(database)
 	bookmarkRepo := repository.NewBookmarkRepository(database)
 	likeRepo := repository.NewLikeRepository(database)
-	sourceRepo := repository.NewPolicyDocumentSourceRepository(database)
+	sourceRepo := repository.NewRawPolicyDocumentRepository(database)
 
 	feedService := services.NewFeedService(feedRepo)
 	policyDocService := services.NewPolicyDocumentService(docRepo, feedRepo, sourceRepo, database)

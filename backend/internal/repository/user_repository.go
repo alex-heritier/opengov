@@ -101,14 +101,13 @@ func (r *UserRepository) Create(ctx context.Context, user *models.User, password
 	user.IsVerified = 0
 
 	query := `
-		INSERT INTO users (email, hashed_password, is_active, is_superuser, is_verified, google_id, name, picture_url, political_leaning, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		INSERT INTO users (email, hashed_password, is_active, is_superuser, is_verified, google_id, name, picture_url, political_leaning)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id
 	`
 	err = r.db.QueryRowContext(ctx, query,
 		user.Email, string(hashedPassword), user.IsActive, user.IsSuperuser, user.IsVerified,
 		user.GoogleID, user.Name, user.PictureURL, user.PoliticalLeaning,
-		user.CreatedAt, user.UpdatedAt,
 	).Scan(&user.ID)
 	if err != nil {
 		return fmt.Errorf("failed to insert user: %w", err)
@@ -125,14 +124,13 @@ func (r *UserRepository) CreateFromGoogle(ctx context.Context, user *models.User
 	user.IsVerified = 1
 
 	query := `
-		INSERT INTO users (email, hashed_password, is_active, is_superuser, is_verified, google_id, name, picture_url, political_leaning, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		INSERT INTO users (email, hashed_password, is_active, is_superuser, is_verified, google_id, name, picture_url, political_leaning)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id
 	`
 	err := r.db.QueryRowContext(ctx, query,
 		user.Email, "", user.IsActive, user.IsSuperuser, user.IsVerified,
 		user.GoogleID, user.Name, user.PictureURL, user.PoliticalLeaning,
-		user.CreatedAt, user.UpdatedAt,
 	).Scan(&user.ID)
 	if err != nil {
 		return fmt.Errorf("failed to insert user: %w", err)
@@ -141,7 +139,7 @@ func (r *UserRepository) CreateFromGoogle(ctx context.Context, user *models.User
 }
 
 func (r *UserRepository) UpdateLoginTime(ctx context.Context, id int) error {
-	query := "UPDATE users SET last_login_at = $1 WHERE id = $2"
+	query := "UPDATE users SET last_login_at = $1, updated_at = NOW() WHERE id = $2"
 	_, err := r.db.ExecContext(ctx, query, time.Now().UTC(), id)
 	return err
 }
@@ -154,12 +152,13 @@ func (r *UserRepository) VerifyPassword(user *models.User, password string) bool
 func (r *UserRepository) Update(ctx context.Context, user *models.User) error {
 	query := `
 		UPDATE users SET
-			name = $1, picture_url = $2, political_leaning = $3, state = $4, updated_at = $5
-		WHERE id = $6
+			name = $1, picture_url = $2, political_leaning = $3, state = $4,
+			updated_at = NOW()
+		WHERE id = $5
 	`
 	_, err := r.db.ExecContext(ctx, query,
 		user.Name, user.PictureURL, user.PoliticalLeaning, user.State,
-		time.Now().UTC(), user.ID,
+		user.ID,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update user: %w", err)

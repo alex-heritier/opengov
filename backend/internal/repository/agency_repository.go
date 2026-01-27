@@ -59,14 +59,14 @@ func (r *AgencyRepository) GetAll(ctx context.Context, limit, offset int) ([]mod
 
 func (r *AgencyRepository) Create(ctx context.Context, agency *models.Agency) error {
 	query := `
-		INSERT INTO agencies (fr_agency_id, raw_name, name, short_name, slug, description, url, json_url, parent_id, raw_data, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		INSERT INTO agencies (fr_agency_id, raw_name, name, short_name, slug, description, url, json_url, parent_id, raw_data)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING id
 	`
 	err := r.db.QueryRowContext(ctx, query,
 		agency.FRAgencyID, agency.RawName, agency.Name, agency.ShortName, agency.Slug,
 		agency.Description, agency.URL, agency.JSONURL, agency.ParentID,
-		agency.RawData, agency.CreatedAt, agency.UpdatedAt,
+		agency.RawData,
 	).Scan(&agency.ID)
 	if err != nil {
 		return fmt.Errorf("failed to insert agency: %w", err)
@@ -89,13 +89,13 @@ func (r *AgencyRepository) Upsert(ctx context.Context, agency *models.Agency) er
 
 	if exists {
 		query := `
-			UPDATE agencies SET raw_name=$1, name=$2, short_name=$3, slug=$4, description=$5, url=$6, json_url=$7, parent_id=$8, raw_data=$9, updated_at=$10
-			WHERE fr_agency_id=$11
+			UPDATE agencies SET raw_name=$1, name=$2, short_name=$3, slug=$4, description=$5, url=$6, json_url=$7, parent_id=$8, raw_data=$9, updated_at=NOW()
+			WHERE fr_agency_id=$10
 		`
 		_, err = r.db.ExecContext(ctx, query,
 			agency.RawName, agency.Name, agency.ShortName, agency.Slug, agency.Description,
 			agency.URL, agency.JSONURL, agency.ParentID, agency.RawData,
-			agency.UpdatedAt, agency.FRAgencyID,
+			agency.FRAgencyID,
 		)
 		return err
 	}

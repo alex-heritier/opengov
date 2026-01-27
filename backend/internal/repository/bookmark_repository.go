@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/alex/opengov-go/internal/db"
 	"github.com/alex/opengov-go/internal/models"
@@ -37,8 +36,6 @@ func (r *BookmarkRepository) GetByUserAndFeedEntry(ctx context.Context, userID, 
 }
 
 func (r *BookmarkRepository) Toggle(ctx context.Context, userID, feedEntryID int) (bool, error) {
-	now := time.Now().UTC()
-
 	existing, err := r.GetByUserAndFeedEntry(ctx, userID, feedEntryID)
 	if err != nil {
 		return false, err
@@ -54,10 +51,10 @@ func (r *BookmarkRepository) Toggle(ctx context.Context, userID, feedEntryID int
 	}
 
 	query := `
-		INSERT INTO bookmarks (user_id, feed_entry_id, created_at, updated_at)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO bookmarks (user_id, feed_entry_id)
+		VALUES ($1, $2)
 	`
-	_, err = r.db.ExecContext(ctx, query, userID, feedEntryID, now, now)
+	_, err = r.db.ExecContext(ctx, query, userID, feedEntryID)
 	if err != nil {
 		return false, fmt.Errorf("failed to create bookmark: %w", err)
 	}

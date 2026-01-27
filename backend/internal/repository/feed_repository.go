@@ -21,7 +21,6 @@ func NewFeedRepository(db *db.DB) *FeedRepository {
 type FeedEntryRow struct {
 	FeedEntryID int
 	PublishedAt time.Time
-	SourceType  string
 
 	Title          string
 	ShortText      string
@@ -63,7 +62,6 @@ func (r *FeedRepository) GetFeedAnon(ctx context.Context, page, limit int, sort 
 		SELECT
 			fi.id AS feed_entry_id,
 			fi.published_at,
-			fi.source_type,
 			fi.title,
 			fi.short_text,
 			fi.key_points,
@@ -92,7 +90,6 @@ func (r *FeedRepository) GetFeedAnon(ctx context.Context, page, limit int, sort 
 		err := rows.Scan(
 			&item.FeedEntryID,
 			&item.PublishedAt,
-			&item.SourceType,
 			&item.Title,
 			&item.ShortText,
 			&keyPointsRaw,
@@ -113,7 +110,9 @@ func (r *FeedRepository) GetFeedAnon(ctx context.Context, page, limit int, sort 
 			item.ImpactScore = &impactScore.String
 		}
 		if len(keyPointsRaw) > 0 {
-			json.Unmarshal(keyPointsRaw, &item.KeyPoints)
+			if err := json.Unmarshal(keyPointsRaw, &item.KeyPoints); err != nil {
+				return nil, 0, fmt.Errorf("failed to unmarshal key_points: %w", err)
+			}
 		}
 		items = append(items, item)
 	}
@@ -158,7 +157,6 @@ func (r *FeedRepository) GetFeedForUser(ctx context.Context, userID, page, limit
 		SELECT
 			fi.id AS feed_entry_id,
 			fi.published_at,
-			fi.source_type,
 			fi.title,
 			fi.short_text,
 			fi.key_points,
@@ -191,7 +189,6 @@ func (r *FeedRepository) GetFeedForUser(ctx context.Context, userID, page, limit
 		err := rows.Scan(
 			&item.FeedEntryID,
 			&item.PublishedAt,
-			&item.SourceType,
 			&item.Title,
 			&item.ShortText,
 			&keyPointsRaw,
@@ -220,7 +217,9 @@ func (r *FeedRepository) GetFeedForUser(ctx context.Context, userID, page, limit
 			item.UserLikeStatus = &uls
 		}
 		if len(keyPointsRaw) > 0 {
-			json.Unmarshal(keyPointsRaw, &item.KeyPoints)
+			if err := json.Unmarshal(keyPointsRaw, &item.KeyPoints); err != nil {
+				return nil, 0, fmt.Errorf("failed to unmarshal key_points: %w", err)
+			}
 		}
 		items = append(items, item)
 	}
@@ -239,7 +238,6 @@ func (r *FeedRepository) GetByIDAnon(ctx context.Context, feedEntryID int) (*Fee
 		SELECT
 			fi.id AS feed_entry_id,
 			fi.published_at,
-			fi.source_type,
 			fi.title,
 			fi.short_text,
 			fi.key_points,
@@ -267,7 +265,6 @@ func (r *FeedRepository) GetByIDAnon(ctx context.Context, feedEntryID int) (*Fee
 	err := r.db.QueryRowContext(ctx, query, feedEntryID).Scan(
 		&item.FeedEntryID,
 		&item.PublishedAt,
-		&item.SourceType,
 		&item.Title,
 		&item.ShortText,
 		&keyPointsRaw,
@@ -291,7 +288,9 @@ func (r *FeedRepository) GetByIDAnon(ctx context.Context, feedEntryID int) (*Fee
 		item.ImpactScore = &impactScore.String
 	}
 	if len(keyPointsRaw) > 0 {
-		json.Unmarshal(keyPointsRaw, &item.KeyPoints)
+		if err := json.Unmarshal(keyPointsRaw, &item.KeyPoints); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal key_points: %w", err)
+		}
 	}
 	return &item, nil
 }
@@ -301,7 +300,6 @@ func (r *FeedRepository) GetByIDForUser(ctx context.Context, userID, feedEntryID
 		SELECT
 			fi.id AS feed_entry_id,
 			fi.published_at,
-			fi.source_type,
 			fi.title,
 			fi.short_text,
 			fi.key_points,
@@ -335,7 +333,6 @@ func (r *FeedRepository) GetByIDForUser(ctx context.Context, userID, feedEntryID
 	err := r.db.QueryRowContext(ctx, query, feedEntryID, userID).Scan(
 		&item.FeedEntryID,
 		&item.PublishedAt,
-		&item.SourceType,
 		&item.Title,
 		&item.ShortText,
 		&keyPointsRaw,
@@ -367,44 +364,76 @@ func (r *FeedRepository) GetByIDForUser(ctx context.Context, userID, feedEntryID
 		item.UserLikeStatus = &uls
 	}
 	if len(keyPointsRaw) > 0 {
-		json.Unmarshal(keyPointsRaw, &item.KeyPoints)
+		if err := json.Unmarshal(keyPointsRaw, &item.KeyPoints); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal key_points: %w", err)
+		}
 	}
 	return &item, nil
 }
 
-func (r *FeedRepository) CreateFeedEntry(ctx context.Context, tx *sql.Tx, sourceType, title, shortText string, keyPoints []string, politicalScore *int, impactScore, sourceURL string, publishedAt time.Time) (int, error) {
-	var keyPointsJSON []byte
-	var err error
-	if len(keyPoints) > 0 {
-		keyPointsJSON, err = json.Marshal(keyPoints)
-		if err != nil {
-			return 0, fmt.Errorf("failed to marshal keypoints: %w", err)
-		}
-	}
-
-	var impactScorePtr *string
-	if impactScore != "" {
-		impactScorePtr = &impactScore
-	}
-
+func (r *FeedRepository) GetByPolicyDocID(ctx context.Context, policyDocID int) (*FeedEntryRow, error) {
 	query := `
-		INSERT INTO feed_entries (source_type, title, short_text, key_points, political_score, impact_score, source_url, published_at, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id
+		SELECT
+			fi.id AS feed_entry_id,
+			fi.published_at,
+			fi.title,
+			fi.short_text,
+			fi.key_points,
+			fi.political_score,
+			fi.impact_score,
+			fi.source_url,
+			COALESCE(agg.likes_count, 0) AS likes_count,
+			COALESCE(agg.dislikes_count, 0) AS dislikes_count
+		FROM feed_entries fi
+		LEFT JOIN (
+			SELECT
+				feed_entry_id,
+				SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END) AS likes_count,
+				SUM(CASE WHEN value = -1 THEN 1 ELSE 0 END) AS dislikes_count
+			FROM likes
+			GROUP BY feed_entry_id
+		) agg ON agg.feed_entry_id = fi.id
+		WHERE fi.policy_document_id = $1
 	`
 
-	var id int
-	now := time.Now().UTC()
-	err = tx.QueryRowContext(ctx, query,
-		sourceType, title, shortText, keyPointsJSON, politicalScore, impactScorePtr, sourceURL, publishedAt, now, now,
-	).Scan(&id)
-	if err != nil {
-		return 0, fmt.Errorf("failed to create feed entry: %w", err)
+	var item FeedEntryRow
+	var keyPointsRaw []byte
+	var politicalScore sql.NullInt64
+	var impactScore sql.NullString
+	err := r.db.QueryRowContext(ctx, query, policyDocID).Scan(
+		&item.FeedEntryID,
+		&item.PublishedAt,
+		&item.Title,
+		&item.ShortText,
+		&keyPointsRaw,
+		&politicalScore,
+		&impactScore,
+		&item.SourceURL,
+		&item.LikesCount,
+		&item.DislikesCount,
+	)
+	if err == sql.ErrNoRows {
+		return nil, nil
 	}
-	return id, nil
+	if err != nil {
+		return nil, fmt.Errorf("failed to get feed entry by policy doc id: %w", err)
+	}
+	if politicalScore.Valid {
+		ps := int(politicalScore.Int64)
+		item.PoliticalScore = &ps
+	}
+	if impactScore.Valid {
+		item.ImpactScore = &impactScore.String
+	}
+	if len(keyPointsRaw) > 0 {
+		if err := json.Unmarshal(keyPointsRaw, &item.KeyPoints); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal key_points: %w", err)
+		}
+	}
+	return &item, nil
 }
 
-func (r *FeedRepository) UpdateFeedEntry(ctx context.Context, tx *sql.Tx, id int, title, shortText string, keyPoints []string, politicalScore *int, impactScore, sourceURL string, publishedAt time.Time) error {
+func (r *FeedRepository) UpsertFeedEntryByPolicyDocID(ctx context.Context, tx *sql.Tx, policyDocID int, title, shortText string, keyPoints []string, politicalScore *int, impactScore, sourceURL string, publishedAt time.Time) error {
 	var keyPointsJSON []byte
 	var err error
 	if len(keyPoints) > 0 {
@@ -420,14 +449,27 @@ func (r *FeedRepository) UpdateFeedEntry(ctx context.Context, tx *sql.Tx, id int
 	}
 
 	query := `
-		UPDATE feed_entries
-		SET title = $1, short_text = $2, key_points = $3, political_score = $4, impact_score = $5, source_url = $6, published_at = $7, updated_at = $8
-		WHERE id = $9
+		INSERT INTO feed_entries (
+			policy_document_id, title, short_text, key_points,
+			political_score, impact_score, source_url, published_at
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		ON CONFLICT (policy_document_id) DO UPDATE SET
+			title           = EXCLUDED.title,
+			short_text      = EXCLUDED.short_text,
+			key_points      = EXCLUDED.key_points,
+			political_score = EXCLUDED.political_score,
+			impact_score    = EXCLUDED.impact_score,
+			source_url      = EXCLUDED.source_url,
+			published_at    = EXCLUDED.published_at,
+			updated_at      = NOW()
 	`
 
-	_, err = tx.ExecContext(ctx, query, title, shortText, keyPointsJSON, politicalScore, impactScorePtr, sourceURL, publishedAt, time.Now().UTC(), id)
+	_, err = tx.ExecContext(ctx, query,
+		policyDocID, title, shortText, keyPointsJSON, politicalScore, impactScorePtr, sourceURL, publishedAt,
+	)
 	if err != nil {
-		return fmt.Errorf("failed to update feed entry: %w", err)
+		return fmt.Errorf("failed to upsert feed entry: %w", err)
 	}
 	return nil
 }
@@ -437,7 +479,6 @@ func (r *FeedRepository) GetBookmarkedFeed(ctx context.Context, userID int) ([]F
 		SELECT
 			fi.id AS feed_entry_id,
 			fi.published_at,
-			fi.source_type,
 			fi.title,
 			fi.short_text,
 			fi.key_points,
@@ -480,7 +521,6 @@ func (r *FeedRepository) GetBookmarkedFeed(ctx context.Context, userID int) ([]F
 		err := rows.Scan(
 			&item.FeedEntryID,
 			&item.PublishedAt,
-			&item.SourceType,
 			&item.Title,
 			&item.ShortText,
 			&keyPointsRaw,
@@ -509,7 +549,9 @@ func (r *FeedRepository) GetBookmarkedFeed(ctx context.Context, userID int) ([]F
 			item.UserLikeStatus = &uls
 		}
 		if len(keyPointsRaw) > 0 {
-			json.Unmarshal(keyPointsRaw, &item.KeyPoints)
+			if err := json.Unmarshal(keyPointsRaw, &item.KeyPoints); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal key_points: %w", err)
+			}
 		}
 		items = append(items, item)
 	}

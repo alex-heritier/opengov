@@ -37,37 +37,34 @@ func (r *LikeRepository) GetByUserAndFeedEntry(ctx context.Context, userID, feed
 }
 
 func (r *LikeRepository) SetValue(ctx context.Context, userID, feedEntryID int, value int) (*models.Like, error) {
-	now := time.Now().UTC()
-
 	existing, err := r.GetByUserAndFeedEntry(ctx, userID, feedEntryID)
 	if err != nil {
 		return nil, err
 	}
 
 	if existing != nil {
-		query := "UPDATE likes SET value = $1, updated_at = $2 WHERE id = $3"
-		_, err := r.db.ExecContext(ctx, query, value, now, existing.ID)
+		query := "UPDATE likes SET value = $1, updated_at = NOW() WHERE id = $2"
+		_, err := r.db.ExecContext(ctx, query, value, existing.ID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to update like: %w", err)
 		}
 		existing.Value = value
-		existing.UpdatedAt = now
 		return existing, nil
 	}
 
 	query := `
-		INSERT INTO likes (user_id, feed_entry_id, value, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO likes (user_id, feed_entry_id, value)
+		VALUES ($1, $2, $3)
 		RETURNING id
 	`
 	var l models.Like
 	l.UserID = userID
 	l.FeedEntryID = feedEntryID
 	l.Value = value
-	l.CreatedAt = now
-	l.UpdatedAt = now
+	l.CreatedAt = time.Now().UTC()
+	l.UpdatedAt = l.CreatedAt
 
-	err = r.db.QueryRowContext(ctx, query, userID, feedEntryID, value, now, now).Scan(&l.ID)
+	err = r.db.QueryRowContext(ctx, query, userID, feedEntryID, value).Scan(&l.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create like: %w", err)
 	}

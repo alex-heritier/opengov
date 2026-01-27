@@ -104,7 +104,7 @@ Unified feed entries table. Contains denormalized data for fast feed retrieval.
 
 {
   "id": 1,
-  "source_type": "federal_register",
+  "policy_document_id": 1,
   "title": "Notice of Proposed Rulemaking: Food Safety Standards",
   "short_text": "The FDA is proposing new food safety standards for processing facilities...",
   "key_points": [
@@ -121,7 +121,7 @@ Unified feed entries table. Contains denormalized data for fast feed retrieval.
 }
 
 **Fields:**
-- `source_type`: Type of source (e.g., "federal_register" for Federal Register documents)
+- `policy_document_id`: Foreign key to policy_documents.id (unique)
 - `title`: Entry headline
 - `short_text`: AI-generated summary (1-2 sentences)
 - `key_points`: JSON array of key takeaways (nullable)
@@ -130,9 +130,12 @@ Unified feed entries table. Contains denormalized data for fast feed retrieval.
 - `source_url`: Link to original document
 - `published_at`: Publication date
 
+**Constraints:**
+- `UNIQUE (policy_document_id)` - One feed entry per policy document
+- `FK policy_document_id → policy_documents(id) ON DELETE CASCADE`
+
 **Indexes:**
 - `published_at DESC` - For efficient sorting/filtering by date
-- `source_type` - For filtering by source type
 
 ## PolicyDocument
 

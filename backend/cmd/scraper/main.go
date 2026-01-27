@@ -46,7 +46,7 @@ func main() {
 	docRepo := repository.NewPolicyDocumentRepository(database)
 	feedRepo := repository.NewFeedRepository(database)
 	agencyRepo := repository.NewAgencyRepository(database)
-	sourceRepo := repository.NewPolicyDocumentSourceRepository(database)
+	sourceRepo := repository.NewRawPolicyDocumentRepository(database)
 
 	frClient := client.NewFederalRegisterClient(cfg)
 	summarizer := services.NewSummarizer(cfg)

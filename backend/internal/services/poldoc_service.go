@@ -2,24 +2,23 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
-	"github.com/alex/opengov-go/internal/constants"
 	"github.com/alex/opengov-go/internal/db"
 	"github.com/alex/opengov-go/internal/models"
 	"github.com/alex/opengov-go/internal/repository"
-	"github.com/lib/pq"
 )
 
 type PolicyDocumentService struct {
 	docRepo    *repository.PolicyDocumentRepository
 	feedRepo   *repository.FeedRepository
-	sourceRepo *repository.PolicyDocumentSourceRepository
+	sourceRepo *repository.RawPolicyDocumentRepository
 	db         *db.DB
 }
 
-func NewPolicyDocumentService(docRepo *repository.PolicyDocumentRepository, feedRepo *repository.FeedRepository, sourceRepo *repository.PolicyDocumentSourceRepository, db *db.DB) *PolicyDocumentService {
+func NewPolicyDocumentService(docRepo *repository.PolicyDocumentRepository, feedRepo *repository.FeedRepository, sourceRepo *repository.RawPolicyDocumentRepository, db *db.DB) *PolicyDocumentService {
 	return &PolicyDocumentService{
 		docRepo:    docRepo,
 		feedRepo:   feedRepo,
@@ -35,12 +34,29 @@ func (s *PolicyDocumentService) CreateFromScrape(ctx context.Context, doc *model
 	}
 	defer tx.Rollback()
 
-	err = s.docRepo.Create(ctx, tx, doc, nil)
+	err = s.docRepo.Create(ctx, tx, doc)
 	if err != nil {
-		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+		if errors.Is(err, repository.ErrDuplicateDocument) {
 			existing, fetchErr := s.docRepo.GetByUniqueKey(ctx, doc.UniqueKey)
 			if fetchErr != nil {
 				return nil, fmt.Errorf("failed to fetch existing document: %w", fetchErr)
+			}
+
+			impactScore := ""
+			if existing.ImpactScore != nil {
+				impactScore = *existing.ImpactScore
+			}
+			if upsertErr := s.feedRepo.UpsertFeedEntryByPolicyDocID(
+				ctx, tx, existing.ID,
+				existing.Title, existing.Summary, existing.Keypoints,
+				existing.PoliticalScore, impactScore,
+				existing.SourceURL, existing.PublishedAt,
+			); upsertErr != nil {
+				return nil, fmt.Errorf("failed to upsert feed entry for existing doc: %w", upsertErr)
+			}
+
+			if commitErr := tx.Commit(); commitErr != nil {
+				return nil, fmt.Errorf("failed to commit transaction: %w", commitErr)
 			}
 			return existing, nil
 		}
@@ -51,15 +67,10 @@ func (s *PolicyDocumentService) CreateFromScrape(ctx context.Context, doc *model
 	if doc.ImpactScore != nil {
 		impactScore = *doc.ImpactScore
 	}
-	feedEntryID, err := s.feedRepo.CreateFeedEntry(ctx, tx, constants.SourceTypeFederalRegister, doc.Title, doc.Summary, doc.Keypoints, doc.PoliticalScore, impactScore, doc.SourceURL, doc.PublishedAt)
+	err = s.feedRepo.UpsertFeedEntryByPolicyDocID(ctx, tx, doc.ID, doc.Title, doc.Summary, doc.Keypoints, doc.PoliticalScore, impactScore, doc.SourceURL, doc.PublishedAt)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create feed entry: %w", err)
+		return nil, fmt.Errorf("failed to upsert feed entry: %w", err)
 	}
-
-	if err := s.docRepo.AttachFeedEntry(ctx, tx, doc.ID, feedEntryID); err != nil {
-		return nil, err
-	}
-	doc.FeedEntryID = feedEntryID
 
 	err = s.sourceRepo.Create(ctx, tx, doc.Source, doc.DocumentNumber, rawPayload, fetchedAt, doc.ID)
 	if err != nil {
@@ -116,9 +127,10 @@ func (s *PolicyDocumentService) Update(ctx context.Context, id int, updates *mod
 	if existing.ImpactScore != nil {
 		impactScore = *existing.ImpactScore
 	}
-	err = s.feedRepo.UpdateFeedEntry(ctx, tx, existing.FeedEntryID, existing.Title, existing.Summary, existing.Keypoints, existing.PoliticalScore, impactScore, existing.SourceURL, existing.PublishedAt)
+
+	err = s.feedRepo.UpsertFeedEntryByPolicyDocID(ctx, tx, existing.ID, existing.Title, existing.Summary, existing.Keypoints, existing.PoliticalScore, impactScore, existing.SourceURL, existing.PublishedAt)
 	if err != nil {
-		return nil, fmt.Errorf("failed to update feed entry: %w", err)
+		return nil, fmt.Errorf("failed to upsert feed entry: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {

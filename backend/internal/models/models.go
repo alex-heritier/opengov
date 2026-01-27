@@ -92,7 +92,6 @@ type Agency struct {
 
 type PolicyDocument struct {
 	ID                     int       `json:"id"`
-	FeedEntryID            int       `json:"feed_entry_id"`
 	Source                 string    `json:"source"`
 	SourceID               string    `json:"source_id"`
 	DocumentNumber         string    `json:"document_number"`
@@ -136,7 +135,7 @@ type Like struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
-type PolicyDocumentSource struct {
+type RawPolicyDocument struct {
 	ID               int       `json:"id"`
 	SourceKey        string    `json:"source_key"`
 	ExternalID       string    `json:"external_id"`

@@ -11,17 +11,17 @@ import (
 	"github.com/alex/opengov-go/internal/models"
 )
 
-type PolicyDocumentSourceRepository struct {
+type RawPolicyDocumentRepository struct {
 	db *db.DB
 }
 
-func NewPolicyDocumentSourceRepository(db *db.DB) *PolicyDocumentSourceRepository {
-	return &PolicyDocumentSourceRepository{db: db}
+func NewRawPolicyDocumentRepository(db *db.DB) *RawPolicyDocumentRepository {
+	return &RawPolicyDocumentRepository{db: db}
 }
 
-func (r *PolicyDocumentSourceRepository) Create(ctx context.Context, tx *sql.Tx, sourceKey, externalID string, rawPayload []byte, fetchedAt time.Time, policyDocID int) error {
+func (r *RawPolicyDocumentRepository) Create(ctx context.Context, tx *sql.Tx, sourceKey, externalID string, rawPayload []byte, fetchedAt time.Time, policyDocID int) error {
 	query := `
-		INSERT INTO policy_document_sources (source_key, external_id, raw_data, fetched_at, policy_document_id, created_at)
+		INSERT INTO raw_policy_documents (source_key, external_id, raw_data, fetched_at, policy_document_id, created_at)
 		VALUES ($1, $2, $3, $4, $5, NOW())
 	`
 
@@ -32,12 +32,12 @@ func (r *PolicyDocumentSourceRepository) Create(ctx context.Context, tx *sql.Tx,
 	return nil
 }
 
-func (r *PolicyDocumentSourceRepository) GetByID(ctx context.Context, id int) (*models.PolicyDocumentSource, error) {
+func (r *RawPolicyDocumentRepository) GetByID(ctx context.Context, id int) (*models.RawPolicyDocument, error) {
 	query := `
 		SELECT id, source_key, external_id, raw_data, fetched_at, policy_document_id, created_at
-		FROM policy_document_sources WHERE id = $1
+		FROM raw_policy_documents WHERE id = $1
 	`
-	var entry models.PolicyDocumentSource
+	var entry models.RawPolicyDocument
 	var rawData []byte
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&entry.ID,
@@ -57,10 +57,10 @@ func (r *PolicyDocumentSourceRepository) GetByID(ctx context.Context, id int) (*
 	return &entry, nil
 }
 
-func (r *PolicyDocumentSourceRepository) GetByDocumentID(ctx context.Context, policyDocID int) ([]*models.PolicyDocumentSource, error) {
+func (r *RawPolicyDocumentRepository) GetByDocumentID(ctx context.Context, policyDocID int) ([]*models.RawPolicyDocument, error) {
 	query := `
 		SELECT id, source_key, external_id, raw_data, fetched_at, policy_document_id, created_at
-		FROM policy_document_sources WHERE policy_document_id = $1
+		FROM raw_policy_documents WHERE policy_document_id = $1
 		ORDER BY created_at ASC
 	`
 	rows, err := r.db.QueryContext(ctx, query, policyDocID)
@@ -69,9 +69,9 @@ func (r *PolicyDocumentSourceRepository) GetByDocumentID(ctx context.Context, po
 	}
 	defer rows.Close()
 
-	var entries []*models.PolicyDocumentSource
+	var entries []*models.RawPolicyDocument
 	for rows.Next() {
-		var entry models.PolicyDocumentSource
+		var entry models.RawPolicyDocument
 		var rawData []byte
 		err := rows.Scan(
 			&entry.ID,
