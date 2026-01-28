@@ -174,11 +174,11 @@ describe("AuthLoginPage", () => {
     useAuthStore.getState().clearAuth();
   });
 
-  it("should display OpenGov branding", () => {
-    render(<div>OpenGov - Your Government, Transparent</div>, {
+  it("should display USFedPolicy branding", () => {
+    render(<div>USFedPolicy - Your Government, Transparent</div>, {
       wrapper: createWrapper(),
     });
-    expect(screen.getByText(/OpenGov/i)).toBeTruthy();
+    expect(screen.getByText(/USFedPolicy/i)).toBeTruthy();
   });
 
   it("should render GoogleLogin component", () => {

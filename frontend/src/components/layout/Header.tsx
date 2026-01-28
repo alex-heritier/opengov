@@ -12,8 +12,9 @@ export default function Header() {
           to="/"
           className="flex items-center gap-2 hover:opacity-80 transition-opacity min-h-[44px]"
         >
-          <span className="text-xl sm:text-2xl font-bold text-gray-900">
-            OpenGov
+          <span className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <span className="text-2xl">🇺🇸</span>
+            USFedPolicy
           </span>
         </Link>
         <nav className="flex gap-2 sm:gap-4">

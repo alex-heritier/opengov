@@ -47,9 +47,9 @@ export const FeedList: React.FC = () => {
 
   if (error) {
     return (
-      <Alert variant="destructive">
+      <Alert variant="destructive" className="rounded-lg border border-destructive/20 bg-destructive/5 text-destructive">
         <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
+        <AlertDescription className="font-medium">
           Failed to load feed entries. Please try again later.
         </AlertDescription>
       </Alert>
@@ -60,8 +60,8 @@ export const FeedList: React.FC = () => {
   const showLoadingMore = isFetchingNextPage;
 
   return (
-    <div className="space-y-0">
-      <div className="divide-y divide-gray-200 border-t border-gray-200">
+    <div className="space-y-4">
+      <div className="">
         {items.map((item) => (
           <FeedEntryCard
             key={item.id}
@@ -79,21 +79,35 @@ export const FeedList: React.FC = () => {
       </div>
 
       {showEmptyState && (
-        <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">No entries found.</p>
+        <div className="text-center py-16 px-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/5 mb-4">
+            <AlertCircle className="w-8 h-8 text-primary/40" />
+          </div>
+          <h3 className="font-chicago text-lg text-foreground mb-2">No documents found</h3>
+          <p className="text-muted-foreground text-sm max-w-sm mx-auto leading-relaxed">
+            Looks like the federal register is quiet today, or try adjusting your search terms.
+          </p>
         </div>
       )}
 
       {(isLoading || showLoadingMore) && (
-        <div className="divide-y divide-gray-200 border-t border-gray-200">
+        <div className="space-y-4">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="py-4 sm:py-6 space-y-3">
-              <Skeleton className="h-6 w-3/4" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-5/6" />
-              <div className="flex gap-2 pt-2">
-                <Skeleton className="h-8 w-24" />
-                <Skeleton className="h-8 w-32" />
+            <div key={i} className="bg-card border border-border rounded-lg p-6 shadow-sm space-y-4">
+              <div className="flex gap-3 mb-2">
+                <Skeleton className="h-4 w-24 rounded bg-secondary" />
+                <Skeleton className="h-4 w-32 rounded bg-secondary" />
+              </div>
+              <Skeleton className="h-8 w-3/4 rounded bg-secondary" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-full rounded bg-secondary" />
+                <Skeleton className="h-4 w-5/6 rounded bg-secondary" />
+                <Skeleton className="h-4 w-4/6 rounded bg-secondary" />
+              </div>
+              <div className="flex gap-4 pt-4 border-t border-border mt-2">
+                <Skeleton className="h-8 w-24 rounded bg-secondary" />
+                <Skeleton className="h-8 w-24 rounded bg-secondary" />
+                <Skeleton className="h-8 w-24 rounded bg-secondary" />
               </div>
             </div>
           ))}
@@ -101,8 +115,8 @@ export const FeedList: React.FC = () => {
       )}
 
       {!hasNextPage && items.length > 0 && !isLoading && (
-        <div className="text-center py-8 border-t border-gray-200">
-          <p className="text-sm text-gray-500">No more entries to load.</p>
+        <div className="text-center py-12 border-t border-border border-dashed mt-8">
+          <p className="text-sm font-medium text-muted-foreground">End of Feed</p>
         </div>
       )}
     </div>

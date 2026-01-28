@@ -2,59 +2,77 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Chicago';
+  src: url('/fonts/ChicagoFLF.woff') format('woff');
+  font-display: swap;
+  font-weight: normal;
+  font-style: normal;
+}
+
 @layer base {
   :root {
-    /* Primary Blue - Main brand color */
-    --primary: 221 83% 53%;
+    /* Civic Palette - Harmonized */
+    --liberty-blue: 221 45% 48%;      /* Desaturated #4A6FA5 */
+    --old-glory-red: 0 65% 52%;       /* Muted brick #D32F2F */
+    --paper-white: 60 20% 98%;        /* Warm #FAFAFA */
+    --cream: 55 60% 98%;              /* #FEFDF5 */
+    --platinum: 0 0% 90%;             /* #E5E5E5 */
+    --charcoal: 0 0% 20%;             /* #333333 */
+    
+    /* Semantic Mapping */
+    --primary: var(--liberty-blue);
     --primary-foreground: 0 0% 100%;
-
-    /* Secondary/Muted - Neutral grays */
-    --secondary: 220 13% 91%;
-    --secondary-foreground: 222 47% 11%;
-
-    --muted: 220 13% 91%;
-    --muted-foreground: 215 16% 47%;
-
-    /* Accent colors */
-    --accent: 220 13% 91%;
-    --accent-foreground: 222 47% 11%;
-
-    /* Background and surface colors */
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
-
+    
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 14% 20%;
+    
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 14% 40%;
+    
+    --accent: var(--cream);
+    --accent-foreground: var(--charcoal);
+    
+    --background: var(--paper-white);
+    --foreground: var(--charcoal);
+    
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-
+    --card-foreground: var(--charcoal);
+    
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-
-    /* Borders and inputs */
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 221 83% 53%;
-
-    /* Semantic colors */
-    --success: 142 71% 45%;
+    --popover-foreground: var(--charcoal);
+    
+    --border: var(--platinum);
+    --input: 0 0% 88%;
+    --ring: var(--liberty-blue);
+    
+    /* Fun feedback colors - slightly muted */
+    --success: 142 56% 45%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-
-    --destructive: 0 84% 60%;
+    --destructive: var(--old-glory-red);
     --destructive-foreground: 0 0% 100%;
 
+    --warning: 38 80% 50%;
+    --warning-foreground: 0 0% 100%;
+    
     --info: 189 94% 43%;
     --info-foreground: 0 0% 100%;
-
-    /* Government category colors */
-    --category-executive: 258 90% 66%;
-    --category-rules: 189 94% 43%;
-    --category-notices: 38 92% 50%;
-    --category-presidential: 0 84% 60%;
-
-    /* Radius */
-    --radius: 0.5rem;
+    
+    /* Spacing Scale - System 7 grids */
+    --space-1: 0.25rem;  /* 4px - tight */
+    --space-2: 0.5rem;   /* 8px - standard unit */
+    --space-3: 0.75rem;  /* 12px */
+    --space-4: 1rem;     /* 16px */
+    --space-6: 1.5rem;   /* 24px */
+    --space-8: 2rem;     /* 32px */
+    
+    /* Radii - Mac OS style */
+    --radius-sm: 3px;    /* Sharp but safe */
+    --radius-md: 6px;    /* Window corners */
+    --radius-lg: 8px;    /* Modal dialogs */
+    --radius-full: 9999px;
+    --radius: 0.5rem; /* fallback/default */
 
     /* Custom design tokens from style guide */
 
@@ -237,6 +255,36 @@
 
   .text-small {
     @apply text-sm leading-normal text-neutral-600 dark:text-neutral-400;
+  }
+
+  /* Gentle "bloom" on hover for interactive elements */
+  .hover-lift {
+    @apply transition-all duration-200 ease-out;
+  }
+  .hover-lift:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(74, 111, 165, 0.15);
+  }
+  
+  /* Retro cursor blink for loading states */
+  @keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+  }
+  .cursor-blink::after {
+    content: '▋';
+    animation: blink 1s step-end infinite;
+    color: hsl(var(--primary));
+    margin-left: 2px;
+  }
+  
+  /* Subtle "throb" for active states - like old Mac selections */
+  @keyframes throb {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+  .selection-active {
+    animation: throb 2s ease-in-out infinite;
   }
 
   /* Animation utilities */

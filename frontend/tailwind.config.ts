@@ -134,6 +134,7 @@ const config = {
         "24": "var(--space-24)",
       },
       fontFamily: {
+        chicago: ["Chicago", "ChicagoFLF", "sans-serif"],
         sans: [
           "Inter",
           "-apple-system",
@@ -142,6 +143,7 @@ const config = {
           "system-ui",
           "sans-serif",
         ],
+        serif: ["Georgia", "Times New Roman", "Times", "serif"],
         mono: ["JetBrains Mono", "Fira Code", "Courier New", "monospace"],
       },
       fontSize: {

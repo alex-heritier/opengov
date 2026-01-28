@@ -3,7 +3,6 @@ import {
   ExternalLink,
   FileText,
   Bookmark,
-  BookmarkCheck,
   ThumbsUp,
   ThumbsDown,
 } from "lucide-react";
@@ -20,6 +19,9 @@ import {
   type LikeStatus,
 } from "@/store/feed-entry-ui-store";
 import { useStoreWithEqualityFn } from "zustand/traditional";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface FeedEntryCardProps {
   id: number;
@@ -38,7 +40,7 @@ export const FeedEntryCard: React.FC<FeedEntryCardProps> = ({
   title,
   summary,
   source_url,
-  published_at: _published_at,
+  published_at,
   is_bookmarked = false,
   user_like_status = null,
   likes_count = 0,
@@ -104,83 +106,106 @@ export const FeedEntryCard: React.FC<FeedEntryCardProps> = ({
     }
   };
 
+  // Format date nicely
+  const formattedDate = published_at
+    ? new Date(published_at).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : "Date unavailable";
+
   return (
-    <article className="border-b border-gray-200 py-4 sm:py-6 hover:bg-gray-50 transition-colors">
-      <div className="space-y-3">
-        <h3 className="text-base sm:text-lg font-bold text-gray-900 leading-snug">
-          <Link
-            to="/feed/$id"
-            params={{ id: String(id) }}
-            className="hover:underline hover:text-blue-700 transition-colors"
+    <article 
+      className="group relative bg-card border border-border rounded-md shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-200 ease-out"
+      aria-labelledby={`entry-title-${id}`}
+    >
+      <div className="p-5 space-y-4">
+        {/* Meta row - cleaner pill design */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-wider bg-accent/50 text-accent-foreground border-primary/20">
+              Fed Register
+            </Badge>
+            <time className="text-xs font-mono text-muted-foreground/70 tabular-nums">
+              {formattedDate}
+            </time>
+          </div>
+          
+          {/* Subtle bookmark icon - cleaner than button text */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5"
+            onClick={handleToggleBookmark}
           >
+            <Bookmark className={cn("w-4 h-4 transition-all", bookmarked && "fill-current text-primary")} />
+          </Button>
+        </div>
+
+        {/* Title - better hierarchy with Chicago font */}
+        <h3 
+          id={`entry-title-${id}`}
+          className="font-chicago text-lg leading-snug text-foreground group-hover:text-primary transition-colors"
+        >
+          <Link to="/feed/$id" params={{ id: String(id) }} className="focus:outline-none focus:underline decoration-2 underline-offset-2">
             {title}
           </Link>
         </h3>
-        <p
-          className="text-sm text-gray-600 line-clamp-3 leading-relaxed"
+
+        {/* Summary - improved readability */}
+        <div 
+          className="text-sm leading-relaxed text-muted-foreground line-clamp-2 font-sans"
           dangerouslySetInnerHTML={{ __html: sanitizedSummary }}
         />
 
-        <div className="flex flex-wrap gap-2 pt-2">
-          <Link
-            to="/feed/$id"
-            params={{ id: String(id) }}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium bg-gray-100 hover:bg-gray-200 transition-colors text-gray-900 no-underline"
-          >
-            <FileText className="w-3.5 h-3.5" />
-            <span>View Details</span>
-          </Link>
-          {source_url && (
-            <a
-              href={source_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium bg-blue-50 hover:bg-blue-100 transition-colors text-blue-700 no-underline"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              <span>Source</span>
-            </a>
-          )}
-          <button
-            onClick={handleToggleBookmark}
-            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors no-underline ${
-              bookmarked
-                ? "bg-blue-600 text-white hover:bg-blue-700"
-                : "bg-gray-100 hover:bg-gray-200 text-gray-900"
-            }`}
-          >
-            {bookmarked ? (
-              <BookmarkCheck className="w-3.5 h-3.5" />
-            ) : (
-              <Bookmark className="w-3.5 h-3.5" />
+        {/* Actions - minimal icon row */}
+        <div className="flex items-center justify-between pt-3 border-t border-border/50">
+          <div className="flex gap-1">
+            <Button variant="ghost" size="sm" asChild className="h-8 text-xs font-medium text-muted-foreground hover:text-foreground gap-1.5 px-2">
+              <Link to="/feed/$id" params={{ id: String(id) }}>
+                <FileText className="w-3.5 h-3.5" />
+                Read
+              </Link>
+            </Button>
+            {source_url && (
+              <Button variant="ghost" size="sm" asChild className="h-8 text-xs font-medium text-muted-foreground hover:text-foreground gap-1.5 px-2">
+                <a href={source_url} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Source
+                </a>
+              </Button>
             )}
-            <span>{bookmarked ? "Saved" : "Save"}</span>
-          </button>
-        </div>
+          </div>
 
-        <div className="flex items-center gap-4 text-xs text-gray-500 pt-1">
-          <button
-            onClick={handleLike}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors ${
-              likeStatus === true
-                ? "bg-green-100 text-green-700"
-                : "hover:bg-gray-100"
-            }`}
-          >
-            <ThumbsUp className="w-3.5 h-3.5" />
-            <span>{likesCount}</span>
-          </button>
-          <button
-            onClick={handleDislike}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors ${
-              likeStatus === false
-                ? "bg-red-100 text-red-700"
-                : "hover:bg-gray-100"
-            }`}
-          >
-            <ThumbsDown className="w-3.5 h-3.5" />
-            <span>{dislikesCount}</span>
-          </button>
+          {/* Voting - cleaner segmented control style */}
+          <div className="flex items-center bg-secondary/50 rounded-md p-0.5">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleLike}
+              className={cn(
+                "h-7 px-2 text-xs gap-1 rounded-sm transition-all",
+                likeStatus === true ? "bg-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <ThumbsUp className="w-3.5 h-3.5" />
+              <span className="font-mono min-w-[1rem] text-center">{likesCount}</span>
+            </Button>
+            <div className="w-px h-4 bg-border mx-0.5" />
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleDislike}
+              className={cn(
+                "h-7 px-2 text-xs gap-1 rounded-sm transition-all",
+                likeStatus === false ? "bg-white text-destructive shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <ThumbsDown className="w-3.5 h-3.5" />
+              <span className="font-mono min-w-[1rem] text-center">{dislikesCount}</span>
+            </Button>
+          </div>
         </div>
       </div>
     </article>
