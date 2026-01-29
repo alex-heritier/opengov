@@ -95,6 +95,6 @@ type RawPolicyDocument struct {
 	ExternalID       string
 	RawData          dbtypes.JSONMap
 	FetchedAt        time.Time
-	PolicyDocumentID int64
+	PolicyDocumentID *int64
 	CreatedAt        time.Time
 }

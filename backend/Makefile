@@ -4,7 +4,7 @@
 GOCMD=go
 GOBIN=$(PWD)/bin
 API_BINARY=api
-SCRAPER_BINARY=scraper
+SCRAPER_BINARY=jobs
 
 all: deps build
 

@@ -456,6 +456,8 @@ func (r *FeedRepository) UpsertFeedEntryByPolicyDocID(ctx context.Context, tx *s
 		if err != nil {
 			return fmt.Errorf("failed to marshal keypoints: %w", err)
 		}
+	} else {
+		keyPointsJSON = []byte("[]")
 	}
 
 	var impactScorePtr *string

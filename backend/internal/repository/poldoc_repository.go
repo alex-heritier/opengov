@@ -99,6 +99,8 @@ func (r *PolicyDocumentRepository) Create(ctx context.Context, tx *sql.Tx, doc *
 		if err != nil {
 			return fmt.Errorf("failed to marshal keypoints: %w", err)
 		}
+	} else {
+		keypointsJSON = []byte("[]")
 	}
 
 	query := `
@@ -122,6 +124,132 @@ func (r *PolicyDocumentRepository) Create(ctx context.Context, tx *sql.Tx, doc *
 	return nil
 }
 
+// UpsertCanonical inserts/updates a policy_documents row keyed by (source_key, external_id).
+// This is used by the canonicalization stage to create a stable canonical document from raw ingestion.
+func (r *PolicyDocumentRepository) UpsertCanonical(ctx context.Context, tx *sql.Tx, doc *domain.PolicyDocument) (int64, error) {
+	var err error
+	var keypointsJSON []byte
+	if len(doc.Keypoints) > 0 {
+		keypointsJSON, err = json.Marshal(doc.Keypoints)
+		if err != nil {
+			return 0, fmt.Errorf("failed to marshal keypoints: %w", err)
+		}
+	} else {
+		keypointsJSON = []byte("[]")
+	}
+
+	query := `
+		INSERT INTO policy_documents (
+			source_key, external_id, fetched_at,
+			title, agency, summary, keypoints,
+			impact_score, political_score,
+			source_url, published_at, document_type, pdf_url
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		ON CONFLICT (source_key, external_id) DO UPDATE SET
+			fetched_at      = EXCLUDED.fetched_at,
+			title           = EXCLUDED.title,
+			agency          = EXCLUDED.agency,
+			summary         = EXCLUDED.summary,
+			keypoints       = EXCLUDED.keypoints,
+			impact_score    = EXCLUDED.impact_score,
+			political_score = EXCLUDED.political_score,
+			source_url      = EXCLUDED.source_url,
+			published_at    = EXCLUDED.published_at,
+			document_type   = EXCLUDED.document_type,
+			pdf_url         = EXCLUDED.pdf_url,
+			updated_at      = NOW()
+		RETURNING id
+	`
+
+	var id int64
+	err = tx.QueryRowContext(ctx, query,
+		doc.SourceKey, doc.ExternalID, doc.FetchedAt,
+		doc.Title, doc.Agency, doc.Summary, keypointsJSON,
+		doc.ImpactScore, doc.PoliticalScore,
+		doc.SourceURL, doc.PublishedAt,
+		doc.DocumentType, doc.PDFURL,
+	).Scan(&id)
+	if err != nil {
+		return 0, fmt.Errorf("failed to upsert canonical document: %w", err)
+	}
+	return id, nil
+}
+
+func (r *PolicyDocumentRepository) ListNeedingMaterialization(ctx context.Context, limit int) ([]*domain.PolicyDocument, error) {
+	query := `
+		SELECT
+			pd.id,
+			pd.source_key,
+			pd.external_id,
+			pd.fetched_at,
+			pd.title,
+			pd.agency,
+			pd.summary,
+			pd.keypoints,
+			pd.impact_score,
+			pd.political_score,
+			pd.source_url,
+			pd.published_at,
+			pd.document_type,
+			pd.pdf_url,
+			pd.created_at,
+			pd.updated_at
+		FROM policy_documents pd
+		LEFT JOIN feed_entries fe ON fe.policy_document_id = pd.id
+		WHERE fe.policy_document_id IS NULL OR fe.updated_at < pd.updated_at
+		ORDER BY pd.published_at DESC
+		LIMIT $1
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query documents for materialization: %w", err)
+	}
+	defer rows.Close()
+
+	var out []*domain.PolicyDocument
+	for rows.Next() {
+		var d domain.PolicyDocument
+		var agency, impactScore, documentType, pdfURL *string
+		var keypointsRaw []byte
+		var politicalScore *int
+		if err := rows.Scan(
+			&d.ID,
+			&d.SourceKey,
+			&d.ExternalID,
+			&d.FetchedAt,
+			&d.Title,
+			&agency,
+			&d.Summary,
+			&keypointsRaw,
+			&impactScore,
+			&politicalScore,
+			&d.SourceURL,
+			&d.PublishedAt,
+			&documentType,
+			&pdfURL,
+			&d.CreatedAt,
+			&d.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan document for materialization: %w", err)
+		}
+		d.Agency = agency
+		if len(keypointsRaw) > 0 {
+			_ = json.Unmarshal(keypointsRaw, &d.Keypoints)
+		}
+		d.ImpactScore = impactScore
+		d.PoliticalScore = politicalScore
+		d.DocumentType = documentType
+		d.PDFURL = pdfURL
+		out = append(out, &d)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating documents for materialization: %w", err)
+	}
+	return out, nil
+}
+
 func (r *PolicyDocumentRepository) Update(ctx context.Context, tx *sql.Tx, doc *domain.PolicyDocument) error {
 	doc.UpdatedAt = time.Now().UTC()
 
@@ -132,6 +260,8 @@ func (r *PolicyDocumentRepository) Update(ctx context.Context, tx *sql.Tx, doc *
 		if err != nil {
 			return fmt.Errorf("failed to marshal keypoints: %w", err)
 		}
+	} else {
+		keypointsJSON = []byte("[]")
 	}
 
 	query := `

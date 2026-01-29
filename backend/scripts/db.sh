@@ -38,7 +38,7 @@ reset_db() {
     psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres -c "CREATE DATABASE $DB_NAME;"
 
     echo "Running migrations..."
-    go run ./cmd/scraper/main.go --migrate-only
+    go run ./cmd/jobs/main.go --job migrate
 
     echo "Database $DB_NAME recreated successfully."
 }

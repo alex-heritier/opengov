@@ -197,7 +197,7 @@ Ingestion log storing raw upstream data for each document. One row per upstream 
   "external_id": "2025-01234",
   "raw_data": { /* complete API response */ },
   "fetched_at": "2025-01-10T10:30:00.000000Z",
-  "policy_document_id": 1,
+  "policy_document_id": null,
   "created_at": "2025-01-10T10:30:00.000000Z"
 }
 
@@ -206,12 +206,12 @@ Ingestion log storing raw upstream data for each document. One row per upstream 
 - `external_id`: Source-specific document ID (e.g., document_number for Federal Register)
 - `raw_data`: Complete API response JSON
 - `fetched_at`: When data was fetched from upstream API
-- `policy_document_id`: Foreign key to policy_documents.id
+- `policy_document_id`: Foreign key to policy_documents.id (nullable; set during canonicalization)
 - `created_at`: When the source record was created
 
 **Constraints:**
 - `UNIQUE (source_key, external_id)` - One source record per upstream document
-- `FK policy_document_id → policy_documents(id) ON DELETE CASCADE`
+- `FK policy_document_id → policy_documents(id) ON DELETE CASCADE` (nullable)
 
 **Indexes:**
 - `policy_document_id` - For looking up raw data by document

@@ -16,11 +16,8 @@ func wireDependencies(cfg *config.Config, database *db.DB) (RouteDeps, error) {
 	agencyRepo := repository.NewAgencyRepository(database)
 	bookmarkRepo := repository.NewBookmarkRepository(database)
 	likeRepo := repository.NewLikeRepository(database)
-	sourceRepo := repository.NewRawPolicyDocumentRepository(database)
 
 	feedService := services.NewFeedService(feedRepo)
-	policyDocService := services.NewPolicyDocumentService(docRepo, feedRepo, sourceRepo, database)
-
 	authService := services.NewAuthService(cfg, userRepo)
 
 	feedHandler := handlers.NewFeedHandler(feedService)
@@ -29,10 +26,9 @@ func wireDependencies(cfg *config.Config, database *db.DB) (RouteDeps, error) {
 	authHandler := handlers.NewAuthHandler(authService, userRepo)
 
 	frClient := client.NewFederalRegisterClient(cfg)
-	summarizer := services.NewSummarizer(cfg)
-	scraperService := services.NewScraperService(cfg, frClient, summarizer, policyDocService, agencyRepo)
+	agencySync := services.NewAgencySyncService(frClient, agencyRepo)
 
-	adminHandler := handlers.NewAdminHandler(docRepo, agencyRepo, scraperService)
+	adminHandler := handlers.NewAdminHandler(docRepo, agencyRepo, agencySync)
 	oauthHandler := handlers.NewOAuthHandler(authService, userRepo, cfg)
 
 	return RouteDeps{

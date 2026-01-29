@@ -2,13 +2,13 @@
 
 ## Context
 
-Today the pipeline is monolithic:
+The legacy pipeline was monolithic (`backend/cmd/scraper/`).
 
-- Entrypoint: `backend/cmd/scraper/main.go`
-- One run does: agency sync + scrape + enrichment + materialization + raw payload persistence
+It has been refactored into a single jobs executable that can run one stage at a time:
+
+- Entrypoint: `backend/cmd/jobs/main.go`
+- One run (`--job pipeline`) will do: agency sync + scrape + canonicalize + enrich + materialize (**enrichment not implemented yet**)
 - Writes: `policy_documents`, `feed_entries`, `raw_policy_documents`
-
-This plan refactors that into a single jobs executable that can run one stage at a time.
 
 ## Goal
 
@@ -79,7 +79,7 @@ Design note: raw ingestion must not require a `policy_documents` row.
 
 Schema constraint note: `policy_documents.summary` is currently NOT NULL, so canonicalization must write a non-empty placeholder summary derived from raw (e.g. abstract/excerpts truncated) until enrichment runs.
 
-### 3) Enrichment (`--job enrich`)
+### 3) Enrichment (`--job enrich`) (planned; not implemented yet)
 
 - Input: `policy_documents`
 - Output: AI fields on `policy_documents` (summary, keypoints, impact_score, political_score)
@@ -115,12 +115,12 @@ Code changes required:
 ## Implementation Steps
 
 1) Introduce `backend/cmd/jobs/main.go`
-- Move wiring/config/db init from `backend/cmd/scraper/main.go`.
+- Move wiring/config/db init from the legacy scraper entrypoint.
 - Parse `--job` and dispatch to a single stage.
 
 2) Split the monolith into stage-callable methods
 - Keep existing logic, but separate it so each stage can run independently.
-- Likely touch: `backend/internal/services/scraper_service.go`, `backend/internal/services/poldoc_service.go`.
+- Likely touch: `backend/internal/services/jobs_service.go`.
 
 3) Update raw ingestion to write unlinked raw rows
 - Insert into `raw_policy_documents` without `policy_document_id`.

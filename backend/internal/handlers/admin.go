@@ -16,14 +16,14 @@ import (
 type AdminHandler struct {
 	docRepo    *repository.PolicyDocumentRepository
 	agencyRepo *repository.AgencyRepository
-	scraper    *services.ScraperService
+	agencySync *services.AgencySyncService
 }
 
-func NewAdminHandler(docRepo *repository.PolicyDocumentRepository, agencyRepo *repository.AgencyRepository, scraper *services.ScraperService) *AdminHandler {
+func NewAdminHandler(docRepo *repository.PolicyDocumentRepository, agencyRepo *repository.AgencyRepository, agencySync *services.AgencySyncService) *AdminHandler {
 	return &AdminHandler{
 		docRepo:    docRepo,
 		agencyRepo: agencyRepo,
-		scraper:    scraper,
+		agencySync: agencySync,
 	}
 }
 
@@ -50,7 +50,7 @@ func (h *AdminHandler) GetStats(c *gin.Context) {
 }
 
 func (h *AdminHandler) SyncAgencies(c *gin.Context) {
-	count, err := h.scraper.SyncAgencies(c.Request.Context())
+	count, err := h.agencySync.SyncAgencies(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to sync agencies", "detail": err.Error()})
 		return
