@@ -17,7 +17,7 @@ import (
 )
 
 func main() {
-	job := flag.String("job", "", "job to run (migrate|sync-agencies|scrape|canonicalize|materialize|pipeline)")
+	job := flag.String("job", "", "job to run (migrate|sync-agencies|scrape|canonicalize|enrich|materialize|pipeline)")
 	flag.Parse()
 
 	if *job == "" {
@@ -81,6 +81,12 @@ func main() {
 			log.Fatalf("canonicalize failed: %v", err)
 		}
 		log.Printf("canonicalize completed: linked=%d", linked)
+	case "enrich":
+		wouldEnrich, err := jobs.Enrich(ctx, 200)
+		if err != nil {
+			log.Fatalf("enrich failed: %v", err)
+		}
+		log.Printf("enrich completed (dry-run): would_enrich=%d", wouldEnrich)
 	case "materialize":
 		upserted, err := jobs.Materialize(ctx, 500)
 		if err != nil {

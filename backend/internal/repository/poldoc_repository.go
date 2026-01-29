@@ -250,6 +250,86 @@ func (r *PolicyDocumentRepository) ListNeedingMaterialization(ctx context.Contex
 	return out, nil
 }
 
+func (r *PolicyDocumentRepository) ListNeedingEnrichment(ctx context.Context, limit int) ([]*domain.PolicyDocument, error) {
+	// "Needs enrichment" means missing AI fields.
+	// We intentionally keep this predicate aligned with the pipeline plan:
+	// - impact_score IS NULL OR political_score IS NULL OR keypoints empty.
+	query := `
+		SELECT
+			id,
+			source_key,
+			external_id,
+			fetched_at,
+			title,
+			agency,
+			summary,
+			keypoints,
+			impact_score,
+			political_score,
+			source_url,
+			published_at,
+			document_type,
+			pdf_url,
+			created_at,
+			updated_at
+		FROM policy_documents
+		WHERE
+			impact_score IS NULL
+			OR political_score IS NULL
+			OR keypoints IS NULL
+			OR keypoints = '[]'::jsonb
+		ORDER BY published_at DESC
+		LIMIT $1
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query documents for enrichment: %w", err)
+	}
+	defer rows.Close()
+
+	var out []*domain.PolicyDocument
+	for rows.Next() {
+		var d domain.PolicyDocument
+		var agency, impactScore, documentType, pdfURL *string
+		var keypointsRaw []byte
+		var politicalScore *int
+		if err := rows.Scan(
+			&d.ID,
+			&d.SourceKey,
+			&d.ExternalID,
+			&d.FetchedAt,
+			&d.Title,
+			&agency,
+			&d.Summary,
+			&keypointsRaw,
+			&impactScore,
+			&politicalScore,
+			&d.SourceURL,
+			&d.PublishedAt,
+			&documentType,
+			&pdfURL,
+			&d.CreatedAt,
+			&d.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan document for enrichment: %w", err)
+		}
+		d.Agency = agency
+		if len(keypointsRaw) > 0 {
+			_ = json.Unmarshal(keypointsRaw, &d.Keypoints)
+		}
+		d.ImpactScore = impactScore
+		d.PoliticalScore = politicalScore
+		d.DocumentType = documentType
+		d.PDFURL = pdfURL
+		out = append(out, &d)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating documents for enrichment: %w", err)
+	}
+	return out, nil
+}
+
 func (r *PolicyDocumentRepository) Update(ctx context.Context, tx *sql.Tx, doc *domain.PolicyDocument) error {
 	doc.UpdatedAt = time.Now().UTC()
 

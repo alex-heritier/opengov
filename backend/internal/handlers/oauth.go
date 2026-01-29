@@ -226,7 +226,7 @@ func exchangeGoogleToken(code string, cfg *config.Config) (string, error) {
 	return accessToken, nil
 }
 
-func getGoogleUserInfo(accessToken string, cfg *config.Config) (map[string]interface{}, error) {
+func getGoogleUserInfo(accessToken string, _ *config.Config) (map[string]interface{}, error) {
 	req, _ := http.NewRequest("GET", "https://www.googleapis.com/oauth2/v2/userinfo", nil)
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 

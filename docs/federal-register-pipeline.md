@@ -7,7 +7,7 @@ The legacy pipeline was monolithic (`backend/cmd/scraper/`).
 It has been refactored into a single jobs executable that can run one stage at a time:
 
 - Entrypoint: `backend/cmd/jobs/main.go`
-- One run (`--job pipeline`) will do: agency sync + scrape + canonicalize + enrich + materialize (**enrichment not implemented yet**)
+- One run (`--job pipeline`) will do: agency sync + scrape + canonicalize + enrich + materialize (**enrichment is currently a dry-run; no AI calls/writes yet**)
 - Writes: `policy_documents`, `feed_entries`, `raw_policy_documents`
 
 ## Goal
@@ -79,7 +79,7 @@ Design note: raw ingestion must not require a `policy_documents` row.
 
 Schema constraint note: `policy_documents.summary` is currently NOT NULL, so canonicalization must write a non-empty placeholder summary derived from raw (e.g. abstract/excerpts truncated) until enrichment runs.
 
-### 3) Enrichment (`--job enrich`) (planned; not implemented yet)
+### 3) Enrichment (`--job enrich`) (implemented as dry-run; no writes yet)
 
 - Input: `policy_documents`
 - Output: AI fields on `policy_documents` (summary, keypoints, impact_score, political_score)

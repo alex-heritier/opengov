@@ -211,6 +211,56 @@ func derivePlaceholderSummary(frDoc client.FederalRegisterDocument) string {
 	return s
 }
 
+func needsEnrichment(d *domain.PolicyDocument) bool {
+	if d.ImpactScore == nil {
+		return true
+	}
+	if d.PoliticalScore == nil {
+		return true
+	}
+	return len(d.Keypoints) == 0
+}
+
+// Enrich is the enrichment stage. For now, it is implemented as a dry-run and does not
+// call any external AI APIs or write any changes. It reports how many documents would
+// be enriched based on missing AI fields.
+func (s *JobsService) Enrich(ctx context.Context, batchSize int) (wouldEnrich int, err error) {
+	if batchSize <= 0 {
+		batchSize = 200
+	}
+
+	log.Println("Starting enrichment (dry-run; no writes)...")
+	for {
+		docs, err := s.docRepo.ListNeedingEnrichment(ctx, batchSize)
+		if err != nil {
+			return wouldEnrich, err
+		}
+		if len(docs) == 0 {
+			break
+		}
+
+		for _, d := range docs {
+			select {
+			case <-ctx.Done():
+				return wouldEnrich, ctx.Err()
+			default:
+			}
+
+			// Guardrail: ensure the in-memory predicate matches expectations too.
+			if needsEnrichment(d) {
+				wouldEnrich++
+			}
+		}
+
+		// Since we are not writing anything yet, stop after one batch to avoid
+		// repeatedly returning the same set of documents.
+		break
+	}
+
+	log.Printf("Enrichment dry-run completed. Would enrich: %d", wouldEnrich)
+	return wouldEnrich, nil
+}
+
 func (s *JobsService) Materialize(ctx context.Context, batchSize int) (upserted int, err error) {
 	if batchSize <= 0 {
 		batchSize = 500
@@ -274,6 +324,9 @@ func (s *JobsService) Pipeline(ctx context.Context) error {
 		return err
 	}
 	if _, err := s.Canonicalize(ctx, 200); err != nil {
+		return err
+	}
+	if _, err := s.Enrich(ctx, 200); err != nil {
 		return err
 	}
 	if _, err := s.Materialize(ctx, 500); err != nil {
