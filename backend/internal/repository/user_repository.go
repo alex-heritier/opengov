@@ -21,7 +21,7 @@ func NewUserRepository(db *db.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-func (r *UserRepository) GetByID(ctx context.Context, id int) (*domain.User, error) {
+func (r *UserRepository) GetByID(ctx context.Context, id int64) (*domain.User, error) {
 	query := `
 		SELECT id, email, hashed_password, is_active, is_superuser, is_verified,
 		       google_id, name, picture_url, political_leaning, state, created_at, updated_at, last_login_at
@@ -138,7 +138,7 @@ func (r *UserRepository) CreateFromGoogle(ctx context.Context, user *domain.User
 	return nil
 }
 
-func (r *UserRepository) UpdateLoginTime(ctx context.Context, id int) error {
+func (r *UserRepository) UpdateLoginTime(ctx context.Context, id int64) error {
 	query := "UPDATE users SET last_login_at = $1, updated_at = NOW() WHERE id = $2"
 	_, err := r.db.ExecContext(ctx, query, time.Now().UTC(), id)
 	return err

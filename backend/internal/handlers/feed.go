@@ -62,7 +62,7 @@ func (h *FeedHandler) GetFeed(c *gin.Context) {
 
 func (h *FeedHandler) GetItem(c *gin.Context) {
 	idStr := c.Param("id")
-	id, err := strconv.Atoi(idStr)
+	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid feed entry ID"})
 		return

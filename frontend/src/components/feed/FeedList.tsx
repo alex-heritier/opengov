@@ -47,7 +47,10 @@ export const FeedList: React.FC = () => {
 
   if (error) {
     return (
-      <Alert variant="destructive" className="rounded-lg border border-destructive/20 bg-destructive/5 text-destructive">
+      <Alert
+        variant="destructive"
+        className="rounded-lg border border-destructive/20 bg-destructive/5 text-destructive"
+      >
         <AlertCircle className="h-4 w-4" />
         <AlertDescription className="font-medium">
           Failed to load feed entries. Please try again later.
@@ -83,9 +86,12 @@ export const FeedList: React.FC = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/5 mb-4">
             <AlertCircle className="w-8 h-8 text-primary/40" />
           </div>
-          <h3 className="font-chicago text-lg text-foreground mb-2">No documents found</h3>
+          <h3 className="font-chicago text-lg text-foreground mb-2">
+            No documents found
+          </h3>
           <p className="text-muted-foreground text-sm max-w-sm mx-auto leading-relaxed">
-            Looks like the federal register is quiet today, or try adjusting your search terms.
+            Looks like the federal register is quiet today, or try adjusting
+            your search terms.
           </p>
         </div>
       )}
@@ -93,7 +99,10 @@ export const FeedList: React.FC = () => {
       {(isLoading || showLoadingMore) && (
         <div className="space-y-4">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-card border border-border rounded-lg p-6 shadow-sm space-y-4">
+            <div
+              key={i}
+              className="bg-card border border-border rounded-lg p-6 shadow-sm space-y-4"
+            >
               <div className="flex gap-3 mb-2">
                 <Skeleton className="h-4 w-24 rounded bg-secondary" />
                 <Skeleton className="h-4 w-32 rounded bg-secondary" />
@@ -116,7 +125,9 @@ export const FeedList: React.FC = () => {
 
       {!hasNextPage && items.length > 0 && !isLoading && (
         <div className="text-center py-12 border-t border-border border-dashed mt-8">
-          <p className="text-sm font-medium text-muted-foreground">End of Feed</p>
+          <p className="text-sm font-medium text-muted-foreground">
+            End of Feed
+          </p>
         </div>
       )}
     </div>

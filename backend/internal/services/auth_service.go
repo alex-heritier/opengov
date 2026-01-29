@@ -20,7 +20,7 @@ type AuthService struct {
 }
 
 type Claims struct {
-	UserID      int    `json:"user_id"`
+	UserID      int64  `json:"user_id"`
 	Email       string `json:"email"`
 	IsSuperuser bool   `json:"is_superuser"`
 	jwt.RegisteredClaims
@@ -95,6 +95,6 @@ func (s *AuthService) Authenticate(ctx context.Context, email, password string) 
 	return user, nil
 }
 
-func (s *AuthService) GetUserByID(ctx context.Context, id int) (*domain.User, error) {
+func (s *AuthService) GetUserByID(ctx context.Context, id int64) (*domain.User, error) {
 	return s.userRepo.GetByID(ctx, id)
 }

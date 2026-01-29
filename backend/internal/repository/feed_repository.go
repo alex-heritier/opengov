@@ -19,7 +19,7 @@ func NewFeedRepository(db *db.DB) *FeedRepository {
 }
 
 type FeedEntryRow struct {
-	FeedEntryID int
+	FeedEntryID int64
 	PublishedAt time.Time
 
 	Title          string
@@ -87,6 +87,7 @@ func (r *FeedRepository) GetFeedAnon(ctx context.Context, page, limit int, sort 
 		var keyPointsRaw []byte
 		var politicalScore sql.NullInt64
 		var impactScore sql.NullString
+		var likesCount, dislikesCount int64
 		err := rows.Scan(
 			&item.FeedEntryID,
 			&item.PublishedAt,
@@ -96,12 +97,14 @@ func (r *FeedRepository) GetFeedAnon(ctx context.Context, page, limit int, sort 
 			&politicalScore,
 			&impactScore,
 			&item.SourceURL,
-			&item.LikesCount,
-			&item.DislikesCount,
+			&likesCount,
+			&dislikesCount,
 		)
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to scan feed entry: %w", err)
 		}
+		item.LikesCount = int(likesCount)
+		item.DislikesCount = int(dislikesCount)
 		if politicalScore.Valid {
 			ps := int(politicalScore.Int64)
 			item.PoliticalScore = &ps
@@ -126,7 +129,7 @@ func (r *FeedRepository) GetFeedAnon(ctx context.Context, page, limit int, sort 
 	return items, total, nil
 }
 
-func (r *FeedRepository) GetFeedForUser(ctx context.Context, userID, page, limit int, sort string) ([]FeedEntryRow, int, error) {
+func (r *FeedRepository) GetFeedForUser(ctx context.Context, userID int64, page, limit int, sort string) ([]FeedEntryRow, int, error) {
 	offset := (page - 1) * limit
 	var orderDir string
 	if sort == "newest" {
@@ -186,6 +189,7 @@ func (r *FeedRepository) GetFeedForUser(ctx context.Context, userID, page, limit
 		var impactScore sql.NullString
 		var isBookmarked bool
 		var userLikeStatus sql.NullInt64
+		var likesCount, dislikesCount int64
 		err := rows.Scan(
 			&item.FeedEntryID,
 			&item.PublishedAt,
@@ -195,14 +199,16 @@ func (r *FeedRepository) GetFeedForUser(ctx context.Context, userID, page, limit
 			&politicalScore,
 			&impactScore,
 			&item.SourceURL,
-			&item.LikesCount,
-			&item.DislikesCount,
+			&likesCount,
+			&dislikesCount,
 			&isBookmarked,
 			&userLikeStatus,
 		)
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to scan feed entry: %w", err)
 		}
+		item.LikesCount = int(likesCount)
+		item.DislikesCount = int(dislikesCount)
 		if politicalScore.Valid {
 			ps := int(politicalScore.Int64)
 			item.PoliticalScore = &ps
@@ -233,7 +239,7 @@ func (r *FeedRepository) GetFeedForUser(ctx context.Context, userID, page, limit
 	return items, total, nil
 }
 
-func (r *FeedRepository) GetByIDAnon(ctx context.Context, feedEntryID int) (*FeedEntryRow, error) {
+func (r *FeedRepository) GetByIDAnon(ctx context.Context, feedEntryID int64) (*FeedEntryRow, error) {
 	query := `
 		SELECT
 			fi.id AS feed_entry_id,
@@ -262,6 +268,7 @@ func (r *FeedRepository) GetByIDAnon(ctx context.Context, feedEntryID int) (*Fee
 	var keyPointsRaw []byte
 	var politicalScore sql.NullInt64
 	var impactScore sql.NullString
+	var likesCount, dislikesCount int64
 	err := r.db.QueryRowContext(ctx, query, feedEntryID).Scan(
 		&item.FeedEntryID,
 		&item.PublishedAt,
@@ -271,8 +278,8 @@ func (r *FeedRepository) GetByIDAnon(ctx context.Context, feedEntryID int) (*Fee
 		&politicalScore,
 		&impactScore,
 		&item.SourceURL,
-		&item.LikesCount,
-		&item.DislikesCount,
+		&likesCount,
+		&dislikesCount,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -280,6 +287,8 @@ func (r *FeedRepository) GetByIDAnon(ctx context.Context, feedEntryID int) (*Fee
 	if err != nil {
 		return nil, fmt.Errorf("failed to get feed entry: %w", err)
 	}
+	item.LikesCount = int(likesCount)
+	item.DislikesCount = int(dislikesCount)
 	if politicalScore.Valid {
 		ps := int(politicalScore.Int64)
 		item.PoliticalScore = &ps
@@ -295,7 +304,7 @@ func (r *FeedRepository) GetByIDAnon(ctx context.Context, feedEntryID int) (*Fee
 	return &item, nil
 }
 
-func (r *FeedRepository) GetByIDForUser(ctx context.Context, userID, feedEntryID int) (*FeedEntryRow, error) {
+func (r *FeedRepository) GetByIDForUser(ctx context.Context, userID, feedEntryID int64) (*FeedEntryRow, error) {
 	query := `
 		SELECT
 			fi.id AS feed_entry_id,
@@ -330,6 +339,7 @@ func (r *FeedRepository) GetByIDForUser(ctx context.Context, userID, feedEntryID
 	var impactScore sql.NullString
 	var isBookmarked bool
 	var userLikeStatus sql.NullInt64
+	var likesCount, dislikesCount int64
 	err := r.db.QueryRowContext(ctx, query, feedEntryID, userID).Scan(
 		&item.FeedEntryID,
 		&item.PublishedAt,
@@ -339,8 +349,8 @@ func (r *FeedRepository) GetByIDForUser(ctx context.Context, userID, feedEntryID
 		&politicalScore,
 		&impactScore,
 		&item.SourceURL,
-		&item.LikesCount,
-		&item.DislikesCount,
+		&likesCount,
+		&dislikesCount,
 		&isBookmarked,
 		&userLikeStatus,
 	)
@@ -350,6 +360,8 @@ func (r *FeedRepository) GetByIDForUser(ctx context.Context, userID, feedEntryID
 	if err != nil {
 		return nil, fmt.Errorf("failed to get feed entry for user: %w", err)
 	}
+	item.LikesCount = int(likesCount)
+	item.DislikesCount = int(dislikesCount)
 	if politicalScore.Valid {
 		ps := int(politicalScore.Int64)
 		item.PoliticalScore = &ps
@@ -371,7 +383,7 @@ func (r *FeedRepository) GetByIDForUser(ctx context.Context, userID, feedEntryID
 	return &item, nil
 }
 
-func (r *FeedRepository) GetByPolicyDocID(ctx context.Context, policyDocID int) (*FeedEntryRow, error) {
+func (r *FeedRepository) GetByPolicyDocID(ctx context.Context, policyDocID int64) (*FeedEntryRow, error) {
 	query := `
 		SELECT
 			fi.id AS feed_entry_id,
@@ -400,6 +412,7 @@ func (r *FeedRepository) GetByPolicyDocID(ctx context.Context, policyDocID int) 
 	var keyPointsRaw []byte
 	var politicalScore sql.NullInt64
 	var impactScore sql.NullString
+	var likesCount, dislikesCount int64
 	err := r.db.QueryRowContext(ctx, query, policyDocID).Scan(
 		&item.FeedEntryID,
 		&item.PublishedAt,
@@ -409,8 +422,8 @@ func (r *FeedRepository) GetByPolicyDocID(ctx context.Context, policyDocID int) 
 		&politicalScore,
 		&impactScore,
 		&item.SourceURL,
-		&item.LikesCount,
-		&item.DislikesCount,
+		&likesCount,
+		&dislikesCount,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -418,6 +431,8 @@ func (r *FeedRepository) GetByPolicyDocID(ctx context.Context, policyDocID int) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get feed entry by policy doc id: %w", err)
 	}
+	item.LikesCount = int(likesCount)
+	item.DislikesCount = int(dislikesCount)
 	if politicalScore.Valid {
 		ps := int(politicalScore.Int64)
 		item.PoliticalScore = &ps
@@ -433,7 +448,7 @@ func (r *FeedRepository) GetByPolicyDocID(ctx context.Context, policyDocID int) 
 	return &item, nil
 }
 
-func (r *FeedRepository) UpsertFeedEntryByPolicyDocID(ctx context.Context, tx *sql.Tx, policyDocID int, title, shortText string, keyPoints []string, politicalScore *int, impactScore, sourceURL string, publishedAt time.Time) error {
+func (r *FeedRepository) UpsertFeedEntryByPolicyDocID(ctx context.Context, tx *sql.Tx, policyDocID int64, title, shortText string, keyPoints []string, politicalScore *int, impactScore, sourceURL string, publishedAt time.Time) error {
 	var keyPointsJSON []byte
 	var err error
 	if len(keyPoints) > 0 {
@@ -474,7 +489,7 @@ func (r *FeedRepository) UpsertFeedEntryByPolicyDocID(ctx context.Context, tx *s
 	return nil
 }
 
-func (r *FeedRepository) GetBookmarkedFeed(ctx context.Context, userID int) ([]FeedEntryRow, error) {
+func (r *FeedRepository) GetBookmarkedFeed(ctx context.Context, userID int64) ([]FeedEntryRow, error) {
 	query := `
 		SELECT
 			fi.id AS feed_entry_id,
@@ -518,6 +533,7 @@ func (r *FeedRepository) GetBookmarkedFeed(ctx context.Context, userID int) ([]F
 		var impactScore sql.NullString
 		var isBookmarked bool
 		var userLikeStatus sql.NullInt64
+		var likesCount, dislikesCount int64
 		err := rows.Scan(
 			&item.FeedEntryID,
 			&item.PublishedAt,
@@ -527,14 +543,16 @@ func (r *FeedRepository) GetBookmarkedFeed(ctx context.Context, userID int) ([]F
 			&politicalScore,
 			&impactScore,
 			&item.SourceURL,
-			&item.LikesCount,
-			&item.DislikesCount,
+			&likesCount,
+			&dislikesCount,
 			&isBookmarked,
 			&userLikeStatus,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan feed entry: %w", err)
 		}
+		item.LikesCount = int(likesCount)
+		item.DislikesCount = int(dislikesCount)
 		if politicalScore.Valid {
 			ps := int(politicalScore.Int64)
 			item.PoliticalScore = &ps

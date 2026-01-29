@@ -1,20 +1,22 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 
-export const WindowChrome = ({ 
-  children, 
+export const WindowChrome = ({
+  children,
   title,
-  className 
-}: { 
-  children: React.ReactNode; 
+  className,
+}: {
+  children: React.ReactNode;
   title?: string;
   className?: string;
 }) => (
-  <div className={cn(
-    "bg-card border border-border rounded-md shadow-sm overflow-hidden",
-    "hover:shadow-md transition-shadow duration-200",
-    className
-  )}>
+  <div
+    className={cn(
+      "bg-card border border-border rounded-md shadow-sm overflow-hidden",
+      "hover:shadow-md transition-shadow duration-200",
+      className,
+    )}
+  >
     {title && (
       <div className="bg-gradient-to-b from-secondary/80 to-secondary/40 border-b border-border px-3 py-1.5 flex items-center gap-2">
         <div className="flex gap-1.5">

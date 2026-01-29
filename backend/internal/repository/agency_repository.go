@@ -39,7 +39,7 @@ func (r *AgencyRepository) GetAll(ctx context.Context, limit, offset int) ([]dom
 	for rows.Next() {
 		var a domain.Agency
 		var shortName, description, url, jsonURL *string
-		var parentID *int
+		var parentID *int64
 		if err := rows.Scan(
 			&a.ID, &a.FRAgencyID, &a.RawName, &a.Name, &shortName, &a.Slug, &description,
 			&url, &jsonURL, &parentID, &a.RawData, &a.CreatedAt, &a.UpdatedAt,
@@ -74,7 +74,7 @@ func (r *AgencyRepository) Create(ctx context.Context, agency *domain.Agency) er
 	return nil
 }
 
-func (r *AgencyRepository) ExistsByFRAgencyID(ctx context.Context, frAgencyID int) (bool, error) {
+func (r *AgencyRepository) ExistsByFRAgencyID(ctx context.Context, frAgencyID int64) (bool, error) {
 	query := "SELECT COUNT(*) FROM agencies WHERE fr_agency_id = $1"
 	var count int
 	err := r.db.QueryRowContext(ctx, query, frAgencyID).Scan(&count)

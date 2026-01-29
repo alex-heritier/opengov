@@ -19,7 +19,7 @@ func NewRawPolicyDocumentRepository(db *db.DB) *RawPolicyDocumentRepository {
 	return &RawPolicyDocumentRepository{db: db}
 }
 
-func (r *RawPolicyDocumentRepository) Create(ctx context.Context, tx *sql.Tx, sourceKey, externalID string, rawPayload []byte, fetchedAt time.Time, policyDocID int) error {
+func (r *RawPolicyDocumentRepository) Create(ctx context.Context, tx *sql.Tx, sourceKey, externalID string, rawPayload []byte, fetchedAt time.Time, policyDocID int64) error {
 	query := `
 		INSERT INTO raw_policy_documents (source_key, external_id, raw_data, fetched_at, policy_document_id)
 		VALUES ($1, $2, $3, $4, $5)
@@ -32,7 +32,7 @@ func (r *RawPolicyDocumentRepository) Create(ctx context.Context, tx *sql.Tx, so
 	return nil
 }
 
-func (r *RawPolicyDocumentRepository) GetByID(ctx context.Context, id int) (*domain.RawPolicyDocument, error) {
+func (r *RawPolicyDocumentRepository) GetByID(ctx context.Context, id int64) (*domain.RawPolicyDocument, error) {
 	query := `
 		SELECT id, source_key, external_id, raw_data, fetched_at, policy_document_id, created_at
 		FROM raw_policy_documents WHERE id = $1
@@ -57,7 +57,7 @@ func (r *RawPolicyDocumentRepository) GetByID(ctx context.Context, id int) (*dom
 	return &entry, nil
 }
 
-func (r *RawPolicyDocumentRepository) GetByDocumentID(ctx context.Context, policyDocID int) ([]*domain.RawPolicyDocument, error) {
+func (r *RawPolicyDocumentRepository) GetByDocumentID(ctx context.Context, policyDocID int64) ([]*domain.RawPolicyDocument, error) {
 	query := `
 		SELECT id, source_key, external_id, raw_data, fetched_at, policy_document_id, created_at
 		FROM raw_policy_documents WHERE policy_document_id = $1

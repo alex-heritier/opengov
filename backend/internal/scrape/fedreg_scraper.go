@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/alex/opengov-go/internal/client"
-	"github.com/alex/opengov-go/internal/domain"
 	"github.com/alex/opengov-go/internal/transport"
 )
 
@@ -46,19 +45,43 @@ func (s *FedregScraper) Scrape(ctx context.Context, daysLookback int) ([]ScrapeR
 	return results, nil
 }
 
-func transformAgencies(frAgencies []client.FRAgency) []domain.Agency {
-	agencies := make([]domain.Agency, len(frAgencies))
+func transformAgencies(frAgencies []client.FRAgency) []transport.ScrapedAgency {
+	agencies := make([]transport.ScrapedAgency, len(frAgencies))
 	for i, frAgency := range frAgencies {
-		agencies[i] = domain.Agency{
-			FRAgencyID:  frAgency.ID,
+		var parentID *int64
+		if frAgency.ParentID != nil {
+			p := int64(*frAgency.ParentID)
+			parentID = &p
+		}
+
+		var shortName *string
+		if frAgency.ShortName != "" {
+			s := frAgency.ShortName
+			shortName = &s
+		}
+
+		var url *string
+		if frAgency.URL != "" {
+			u := frAgency.URL
+			url = &u
+		}
+
+		var jsonURL *string
+		if frAgency.JSONURL != "" {
+			j := frAgency.JSONURL
+			jsonURL = &j
+		}
+
+		agencies[i] = transport.ScrapedAgency{
+			FRAgencyID:  int64(frAgency.ID),
 			Name:        frAgency.Name,
-			ShortName:   &frAgency.ShortName,
+			ShortName:   shortName,
 			Slug:        frAgency.Slug,
-			URL:         &frAgency.URL,
-			ParentID:    frAgency.ParentID,
+			URL:         url,
+			ParentID:    parentID,
 			Description: frAgency.Description,
 			RawName:     frAgency.RawName,
-			JSONURL:     &frAgency.JSONURL,
+			JSONURL:     jsonURL,
 		}
 	}
 	return agencies

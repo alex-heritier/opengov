@@ -116,7 +116,7 @@ export const FeedEntryCard: React.FC<FeedEntryCardProps> = ({
     : "Date unavailable";
 
   return (
-    <article 
+    <article
       className="group relative bg-card border border-border rounded-md shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-200 ease-out"
       aria-labelledby={`entry-title-${id}`}
     >
@@ -124,37 +124,49 @@ export const FeedEntryCard: React.FC<FeedEntryCardProps> = ({
         {/* Meta row - cleaner pill design */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-wider bg-accent/50 text-accent-foreground border-primary/20">
+            <Badge
+              variant="outline"
+              className="font-mono text-[10px] uppercase tracking-wider bg-accent/50 text-accent-foreground border-primary/20"
+            >
               Fed Register
             </Badge>
             <time className="text-xs font-mono text-muted-foreground/70 tabular-nums">
               {formattedDate}
             </time>
           </div>
-          
+
           {/* Subtle bookmark icon - cleaner than button text */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5"
             onClick={handleToggleBookmark}
           >
-            <Bookmark className={cn("w-4 h-4 transition-all", bookmarked && "fill-current text-primary")} />
+            <Bookmark
+              className={cn(
+                "w-4 h-4 transition-all",
+                bookmarked && "fill-current text-primary",
+              )}
+            />
           </Button>
         </div>
 
         {/* Title - better hierarchy with Chicago font */}
-        <h3 
+        <h3
           id={`entry-title-${id}`}
           className="font-chicago text-lg leading-snug text-foreground group-hover:text-primary transition-colors"
         >
-          <Link to="/feed/$id" params={{ id: String(id) }} className="focus:outline-none focus:underline decoration-2 underline-offset-2">
+          <Link
+            to="/feed/$id"
+            params={{ id: String(id) }}
+            className="focus:outline-none focus:underline decoration-2 underline-offset-2"
+          >
             {title}
           </Link>
         </h3>
 
         {/* Summary - improved readability */}
-        <div 
+        <div
           className="text-sm leading-relaxed text-muted-foreground line-clamp-2 font-sans"
           dangerouslySetInnerHTML={{ __html: sanitizedSummary }}
         />
@@ -162,14 +174,24 @@ export const FeedEntryCard: React.FC<FeedEntryCardProps> = ({
         {/* Actions - minimal icon row */}
         <div className="flex items-center justify-between pt-3 border-t border-border/50">
           <div className="flex gap-1">
-            <Button variant="ghost" size="sm" asChild className="h-8 text-xs font-medium text-muted-foreground hover:text-foreground gap-1.5 px-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              asChild
+              className="h-8 text-xs font-medium text-muted-foreground hover:text-foreground gap-1.5 px-2"
+            >
               <Link to="/feed/$id" params={{ id: String(id) }}>
                 <FileText className="w-3.5 h-3.5" />
                 Read
               </Link>
             </Button>
             {source_url && (
-              <Button variant="ghost" size="sm" asChild className="h-8 text-xs font-medium text-muted-foreground hover:text-foreground gap-1.5 px-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                asChild
+                className="h-8 text-xs font-medium text-muted-foreground hover:text-foreground gap-1.5 px-2"
+              >
                 <a href={source_url} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="w-3.5 h-3.5" />
                   Source
@@ -180,30 +202,38 @@ export const FeedEntryCard: React.FC<FeedEntryCardProps> = ({
 
           {/* Voting - cleaner segmented control style */}
           <div className="flex items-center bg-secondary/50 rounded-md p-0.5">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleLike}
               className={cn(
                 "h-7 px-2 text-xs gap-1 rounded-sm transition-all",
-                likeStatus === true ? "bg-white text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+                likeStatus === true
+                  ? "bg-white text-primary shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               <ThumbsUp className="w-3.5 h-3.5" />
-              <span className="font-mono min-w-[1rem] text-center">{likesCount}</span>
+              <span className="font-mono min-w-[1rem] text-center">
+                {likesCount}
+              </span>
             </Button>
             <div className="w-px h-4 bg-border mx-0.5" />
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleDislike}
               className={cn(
                 "h-7 px-2 text-xs gap-1 rounded-sm transition-all",
-                likeStatus === false ? "bg-white text-destructive shadow-sm" : "text-muted-foreground hover:text-foreground"
+                likeStatus === false
+                  ? "bg-white text-destructive shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               <ThumbsDown className="w-3.5 h-3.5" />
-              <span className="font-mono min-w-[1rem] text-center">{dislikesCount}</span>
+              <span className="font-mono min-w-[1rem] text-center">
+                {dislikesCount}
+              </span>
             </Button>
           </div>
         </div>

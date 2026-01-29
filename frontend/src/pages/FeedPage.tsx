@@ -42,26 +42,32 @@ export default function FeedPage() {
                          transition-all duration-200"
             />
             {/* Keyboard shortcut hint - fun detail */}
-            <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:block 
-                           px-2 py-0.5 text-[10px] font-mono bg-muted rounded border border-border text-muted-foreground">
+            <kbd
+              className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:block 
+                           px-2 py-0.5 text-[10px] font-mono bg-muted rounded border border-border text-muted-foreground"
+            >
               ⌘K
             </kbd>
           </div>
 
           {!isAuthenticated && (
-            <WindowChrome title="Access Control" className="bg-card border border-border p-6 sm:p-8 rounded-lg shadow-sm relative overflow-hidden">
+            <WindowChrome
+              title="Access Control"
+              className="bg-card border border-border p-6 sm:p-8 rounded-lg shadow-sm relative overflow-hidden"
+            >
               <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
                 {/* Subtle flag motif placeholder if needed, or just abstract shape */}
                 <div className="w-32 h-32 bg-primary rounded-full blur-3xl" />
               </div>
-              
+
               <div className="relative z-10 flex flex-col sm:flex-row gap-8 items-start sm:items-center justify-between">
                 <div className="space-y-3 max-w-lg">
                   <h3 className="text-xl sm:text-2xl font-chicago tracking-tight text-foreground">
                     Unlock Full Access
                   </h3>
                   <p className="text-muted-foreground leading-relaxed font-sans">
-                    Sign in to bookmark regulations, track specific agencies, and curate your personalized feed.
+                    Sign in to bookmark regulations, track specific agencies,
+                    and curate your personalized feed.
                   </p>
                   <div className="flex gap-6 text-sm font-medium text-muted-foreground/80 pt-2 font-chicago">
                     <div className="flex items-center gap-2">
@@ -75,17 +81,19 @@ export default function FeedPage() {
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto min-w-[140px]">
-                  <Button 
-                    asChild 
-                    size="lg" 
+                  <Button
+                    asChild
+                    size="lg"
                     className="rounded-md font-chicago h-11 shadow-sm hover-lift"
                   >
-                    <Link to="/login">Sign In <ArrowRight className="ml-2 w-4 h-4" /></Link>
+                    <Link to="/login">
+                      Sign In <ArrowRight className="ml-2 w-4 h-4" />
+                    </Link>
                   </Button>
-                  <Button 
-                    asChild 
-                    variant="outline" 
-                    size="lg" 
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="lg"
                     className="rounded-md border-border text-foreground hover:bg-accent hover:text-accent-foreground font-chicago h-11 hover-lift"
                   >
                     <Link to="/feed">Guest Access</Link>

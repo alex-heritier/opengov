@@ -84,7 +84,7 @@ func (s *PolicyDocumentService) CreateFromScrape(ctx context.Context, doc *domai
 	return doc, nil
 }
 
-func (s *PolicyDocumentService) Update(ctx context.Context, id int, updates *domain.PolicyDocument) (*domain.PolicyDocument, error) {
+func (s *PolicyDocumentService) Update(ctx context.Context, id int64, updates *domain.PolicyDocument) (*domain.PolicyDocument, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
@@ -140,7 +140,7 @@ func (s *PolicyDocumentService) Update(ctx context.Context, id int, updates *dom
 	return existing, nil
 }
 
-func (s *PolicyDocumentService) GetByID(ctx context.Context, id int) (*domain.PolicyDocument, error) {
+func (s *PolicyDocumentService) GetByID(ctx context.Context, id int64) (*domain.PolicyDocument, error) {
 	return s.docRepo.GetByID(ctx, id)
 }
 

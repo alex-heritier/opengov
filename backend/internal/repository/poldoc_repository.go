@@ -23,7 +23,7 @@ func NewPolicyDocumentRepository(db *db.DB) *PolicyDocumentRepository {
 	return &PolicyDocumentRepository{db: db}
 }
 
-func (r *PolicyDocumentRepository) GetByID(ctx context.Context, id int) (*domain.PolicyDocument, error) {
+func (r *PolicyDocumentRepository) GetByID(ctx context.Context, id int64) (*domain.PolicyDocument, error) {
 	query := `
 		SELECT id, source_key, external_id, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, created_at, updated_at
 		FROM policy_documents WHERE id = $1
@@ -113,7 +113,7 @@ func (r *PolicyDocumentRepository) Create(ctx context.Context, tx *sql.Tx, doc *
 		doc.DocumentType, doc.PDFURL,
 	).Scan(&doc.ID)
 	if err != nil {
-		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" && pqErr.Constraint == "idx_policy_documents_source_key_external_id" {
 			return ErrDuplicateDocument
 		}
 		return fmt.Errorf("failed to insert document: %w", err)

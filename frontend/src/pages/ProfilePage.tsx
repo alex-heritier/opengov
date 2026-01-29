@@ -127,10 +127,16 @@ export default function ProfilePage() {
       <div className="min-h-screen bg-background p-6 flex items-center justify-center">
         <div className="max-w-md w-full bg-card border border-border p-8 rounded-none shadow-sm text-center">
           <Vote className="w-12 h-12 text-primary mx-auto mb-4" />
-          <h2 className="text-2xl font-chicago mb-2">Authentication Required</h2>
-          <p className="text-muted-foreground mb-6">Please log in to view your citizen profile.</p>
+          <h2 className="text-2xl font-chicago mb-2">
+            Authentication Required
+          </h2>
+          <p className="text-muted-foreground mb-6">
+            Please log in to view your citizen profile.
+          </p>
           <Button asChild>
-            <a href="/login" className="font-chicago">Sign In</a>
+            <a href="/login" className="font-chicago">
+              Sign In
+            </a>
           </Button>
         </div>
       </div>
@@ -140,7 +146,6 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300 pb-20">
       <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-8">
-        
         {/* Header */}
         <header className="border-b-2 border-primary/20 pb-6 mb-8 flex items-center gap-4">
           <div className="bg-primary/10 p-3 rounded-full">
@@ -157,7 +162,6 @@ export default function ProfilePage() {
         </header>
 
         <div className="grid gap-8 md:grid-cols-2">
-          
           {/* Left Column: ID Card & Actions */}
           <div className="space-y-6">
             {/* ID Card Style Info */}
@@ -169,36 +173,49 @@ export default function ProfilePage() {
                 </span>
                 <Flag className="w-4 h-4 text-primary/30" />
               </div>
-              
+
               <div className="p-6">
                 <div className="flex items-start gap-4">
                   {/* Avatar with subtle ring */}
                   <div className="w-20 h-20 rounded-full bg-secondary border-2 border-border overflow-hidden flex-shrink-0">
                     {user.picture_url ? (
-                      <img src={user.picture_url} alt="" className="w-full h-full object-cover" />
+                      <img
+                        src={user.picture_url}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-primary/5">
                         <UserIcon className="w-8 h-8 text-primary/40" />
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="flex-1 min-w-0">
                     <h2 className="font-serif text-2xl italic text-foreground mb-1 truncate">
                       {user.name || "Anonymous Citizen"}
                     </h2>
-                    <p className="text-sm text-muted-foreground font-mono truncate">{user.email}</p>
-                    
+                    <p className="text-sm text-muted-foreground font-mono truncate">
+                      {user.email}
+                    </p>
+
                     {/* Meta grid - cleaner */}
                     <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-border/50">
                       <div>
-                        <span className="block text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Member Since</span>
+                        <span className="block text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">
+                          Member Since
+                        </span>
                         <span className="text-sm font-medium tabular-nums">
-                          {new Date(user.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                          {new Date(user.created_at).toLocaleDateString(
+                            "en-US",
+                            { month: "short", year: "numeric" },
+                          )}
                         </span>
                       </div>
                       <div>
-                        <span className="block text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Status</span>
+                        <span className="block text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">
+                          Status
+                        </span>
                         <div className="flex items-center gap-1.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-success" />
                           <span className="text-sm font-medium">Active</span>
@@ -213,7 +230,9 @@ export default function ProfilePage() {
             {/* Account Actions */}
             <Card className="border-border shadow-sm">
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-chicago">Session Management</CardTitle>
+                <CardTitle className="text-lg font-chicago">
+                  Session Management
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <Button
@@ -238,31 +257,49 @@ export default function ProfilePage() {
               <CardHeader className="bg-primary/5 border-b border-border pb-6">
                 <div className="flex items-center gap-2 mb-1 text-primary">
                   <Vote className="w-5 h-5" />
-                  <span className="text-xs font-bold uppercase tracking-widest font-chicago">Voter Preferences</span>
+                  <span className="text-xs font-bold uppercase tracking-widest font-chicago">
+                    Voter Preferences
+                  </span>
                 </div>
-                <CardTitle className="text-2xl font-serif text-foreground">Civic Profile</CardTitle>
+                <CardTitle className="text-2xl font-serif text-foreground">
+                  Civic Profile
+                </CardTitle>
                 <CardDescription className="text-muted-foreground font-serif italic">
-                  Personalize your feed based on your location and political alignment.
+                  Personalize your feed based on your location and political
+                  alignment.
                 </CardDescription>
               </CardHeader>
-              
+
               <CardContent className="pt-6">
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-3">
-                    <Label htmlFor="state" className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <Label
+                      htmlFor="state"
+                      className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2"
+                    >
                       <MapPin className="w-4 h-4" />
                       State / Territory
                     </Label>
                     <Select value={state} onValueChange={setState}>
-                      <SelectTrigger id="state" className="h-12 bg-background border-input text-lg font-medium focus:ring-primary">
+                      <SelectTrigger
+                        id="state"
+                        className="h-12 bg-background border-input text-lg font-medium focus:ring-primary"
+                      >
                         <SelectValue placeholder="Select your state" />
                       </SelectTrigger>
                       <SelectContent className="max-h-[300px]">
-                        <SelectItem value="prefer-not-to-say" className="text-muted-foreground italic">
+                        <SelectItem
+                          value="prefer-not-to-say"
+                          className="text-muted-foreground italic"
+                        >
                           Prefer not to say
                         </SelectItem>
                         {US_STATES.map((option) => (
-                          <SelectItem key={option.value} value={option.value} className="font-medium">
+                          <SelectItem
+                            key={option.value}
+                            value={option.value}
+                            className="font-medium"
+                          >
                             {option.label}
                           </SelectItem>
                         ))}
@@ -271,7 +308,10 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="space-y-3">
-                    <Label htmlFor="political-leaning" className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <Label
+                      htmlFor="political-leaning"
+                      className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2"
+                    >
                       <Flag className="w-4 h-4" />
                       Political Alignment
                     </Label>
@@ -279,22 +319,33 @@ export default function ProfilePage() {
                       value={politicalLeaning}
                       onValueChange={setPoliticalLeaning}
                     >
-                      <SelectTrigger id="political-leaning" className="h-12 bg-background border-input text-lg font-medium focus:ring-primary">
+                      <SelectTrigger
+                        id="political-leaning"
+                        className="h-12 bg-background border-input text-lg font-medium focus:ring-primary"
+                      >
                         <SelectValue placeholder="Select your political leaning" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="prefer-not-to-say" className="text-muted-foreground italic">
+                        <SelectItem
+                          value="prefer-not-to-say"
+                          className="text-muted-foreground italic"
+                        >
                           Prefer not to say
                         </SelectItem>
                         {POLITICAL_LEANINGS.map((option) => (
-                          <SelectItem key={option.value} value={option.value} className="font-medium">
+                          <SelectItem
+                            key={option.value}
+                            value={option.value}
+                            className="font-medium"
+                          >
                             {option.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground ml-1">
-                      * Used to highlight relevant regulations and generate personalized summaries.
+                      * Used to highlight relevant regulations and generate
+                      personalized summaries.
                     </p>
                   </div>
 

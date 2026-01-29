@@ -16,7 +16,7 @@ func NewFeedService(feedRepo *repository.FeedRepository) *FeedService {
 	return &FeedService{feedRepo: feedRepo}
 }
 
-func (s *FeedService) GetFeed(ctx context.Context, userID *int, page, limit int, sort string) (transport.FeedResponse, error) {
+func (s *FeedService) GetFeed(ctx context.Context, userID *int64, page, limit int, sort string) (transport.FeedResponse, error) {
 	var items []repository.FeedEntryRow
 	var total int
 	var err error
@@ -46,7 +46,7 @@ func (s *FeedService) GetFeed(ctx context.Context, userID *int, page, limit int,
 	}, nil
 }
 
-func (s *FeedService) GetItem(ctx context.Context, userID *int, feedEntryID int) (*transport.FeedEntryResponse, error) {
+func (s *FeedService) GetItem(ctx context.Context, userID *int64, feedEntryID int64) (*transport.FeedEntryResponse, error) {
 	var item *repository.FeedEntryRow
 	var err error
 
@@ -67,7 +67,7 @@ func (s *FeedService) GetItem(ctx context.Context, userID *int, feedEntryID int)
 	return &resp, nil
 }
 
-func (s *FeedService) GetBookmarkedFeed(ctx context.Context, userID int) ([]transport.FeedEntryResponse, error) {
+func (s *FeedService) GetBookmarkedFeed(ctx context.Context, userID int64) ([]transport.FeedEntryResponse, error) {
 	items, err := s.feedRepo.GetBookmarkedFeed(ctx, userID)
 	if err != nil {
 		return nil, err

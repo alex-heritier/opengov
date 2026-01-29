@@ -28,7 +28,7 @@ func (h *LikeHandler) Toggle(c *gin.Context) {
 		return
 	}
 
-	feedEntryID, err := strconv.Atoi(c.Param("feed_entry_id"))
+	feedEntryID, err := strconv.ParseInt(c.Param("feed_entry_id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid feed entry ID"})
 		return
@@ -56,7 +56,7 @@ func (h *LikeHandler) Toggle(c *gin.Context) {
 }
 
 func (h *LikeHandler) GetCounts(c *gin.Context) {
-	feedEntryID, err := strconv.Atoi(c.Param("feed_entry_id"))
+	feedEntryID, err := strconv.ParseInt(c.Param("feed_entry_id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid feed entry ID"})
 		return
@@ -81,7 +81,7 @@ func (h *LikeHandler) Remove(c *gin.Context) {
 		return
 	}
 
-	feedEntryID, err := strconv.Atoi(c.Param("feed_entry_id"))
+	feedEntryID, err := strconv.ParseInt(c.Param("feed_entry_id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid feed entry ID"})
 		return
@@ -106,7 +106,7 @@ func (h *LikeHandler) GetStatus(c *gin.Context) {
 		return
 	}
 
-	feedEntryID, err := strconv.Atoi(c.Param("feed_entry_id"))
+	feedEntryID, err := strconv.ParseInt(c.Param("feed_entry_id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid feed entry ID"})
 		return

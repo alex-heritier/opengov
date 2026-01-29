@@ -9,6 +9,7 @@ import (
 	"github.com/alex/opengov-go/internal/client"
 	"github.com/alex/opengov-go/internal/config"
 	"github.com/alex/opengov-go/internal/constants"
+	"github.com/alex/opengov-go/internal/db/dbtypes"
 	"github.com/alex/opengov-go/internal/domain"
 	"github.com/alex/opengov-go/internal/repository"
 	"github.com/alex/opengov-go/internal/scrape"
@@ -191,20 +192,43 @@ func (s *ScraperService) SyncAgencies(ctx context.Context) (int, error) {
 	for _, frAgency := range frAgencies {
 		rawData, _ := json.Marshal(frAgency)
 
-		now := time.Now().UTC()
+		frAgencyID := int64(frAgency.ID)
+
+		var parentID *int64
+		if frAgency.ParentID != nil {
+			p := int64(*frAgency.ParentID)
+			parentID = &p
+		}
+
+		var shortName *string
+		if frAgency.ShortName != "" {
+			s := frAgency.ShortName
+			shortName = &s
+		}
+
+		var url *string
+		if frAgency.URL != "" {
+			u := frAgency.URL
+			url = &u
+		}
+
+		var jsonURL *string
+		if frAgency.JSONURL != "" {
+			j := frAgency.JSONURL
+			jsonURL = &j
+		}
+
 		agency := &domain.Agency{
-			FRAgencyID:  frAgency.ID,
+			FRAgencyID:  frAgencyID,
 			RawName:     frAgency.RawName,
 			Name:        frAgency.Name,
-			ShortName:   &frAgency.ShortName,
+			ShortName:   shortName,
 			Slug:        frAgency.Slug,
 			Description: frAgency.Description,
-			URL:         &frAgency.URL,
-			JSONURL:     &frAgency.JSONURL,
-			ParentID:    frAgency.ParentID,
-			RawData:     domain.JSONMap{},
-			CreatedAt:   now,
-			UpdatedAt:   now,
+			URL:         url,
+			JSONURL:     jsonURL,
+			ParentID:    parentID,
+			RawData:     dbtypes.JSONMap{},
 		}
 		json.Unmarshal(rawData, &agency.RawData)
 

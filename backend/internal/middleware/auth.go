@@ -69,12 +69,12 @@ func OptionalAuthMiddleware(authService *services.AuthService) gin.HandlerFunc {
 	}
 }
 
-func GetUserID(c *gin.Context) (int, bool) {
+func GetUserID(c *gin.Context) (int64, bool) {
 	userID, exists := c.Get("user_id")
 	if !exists {
 		return 0, false
 	}
-	id, ok := userID.(int)
+	id, ok := userID.(int64)
 	return id, ok
 }
 

@@ -2,11 +2,23 @@ package transport
 
 import (
 	"time"
-
-	"github.com/alex/opengov-go/internal/domain"
 )
 
 // JSON (HTTP) transport DTOs live here. They may contain json/binding tags.
+
+// ScrapedAgency is upstream agency metadata attached to a scraped document.
+// It is intentionally NOT the DB-backed domain Agency model.
+type ScrapedAgency struct {
+	FRAgencyID  int64
+	RawName     string
+	Name        string
+	ShortName   *string
+	Slug        string
+	Description *string
+	URL         *string
+	JSONURL     *string
+	ParentID    *int64
+}
 
 // ScrapedPolicyDocument is an upstream document payload returned by a scraper.
 // It is intentionally separate from the DB-backed domain models.
@@ -20,7 +32,7 @@ type ScrapedPolicyDocument struct {
 	PDFURL                 *string
 	PublicInspectionPDFURL *string
 	Excerpts               *string
-	Agencies               []domain.Agency
+	Agencies               []ScrapedAgency
 }
 
 // Auth
@@ -41,7 +53,7 @@ type AuthResponse struct {
 }
 
 type UserResponse struct {
-	ID               int     `json:"id"`
+	ID               int64   `json:"id"`
 	Email            string  `json:"email"`
 	Name             *string `json:"name,omitempty"`
 	PictureURL       *string `json:"picture_url,omitempty"`
@@ -64,7 +76,7 @@ type UpdateUserRequest struct {
 
 // OAuth (currently only used for docs / historical reference)
 type AuthUserResponse struct {
-	ID               int     `json:"id"`
+	ID               int64   `json:"id"`
 	Email            string  `json:"email"`
 	Name             *string `json:"name,omitempty"`
 	PictureURL       *string `json:"picture_url,omitempty"`
@@ -84,7 +96,7 @@ type ToggleLikeRequest struct {
 
 // Feed
 type FeedEntryResponse struct {
-	ID             int      `json:"id"`
+	ID             int64    `json:"id"`
 	Title          string   `json:"title"`
 	Summary        string   `json:"summary"`
 	Keypoints      []string `json:"keypoints,omitempty"`

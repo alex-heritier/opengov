@@ -18,7 +18,7 @@ func NewLikeRepository(db *db.DB) *LikeRepository {
 	return &LikeRepository{db: db}
 }
 
-func (r *LikeRepository) GetByUserAndFeedEntry(ctx context.Context, userID, feedEntryID int) (*domain.Like, error) {
+func (r *LikeRepository) GetByUserAndFeedEntry(ctx context.Context, userID, feedEntryID int64) (*domain.Like, error) {
 	query := `
 		SELECT id, user_id, feed_entry_id, value, created_at, updated_at
 		FROM likes WHERE user_id = $1 AND feed_entry_id = $2
@@ -36,7 +36,7 @@ func (r *LikeRepository) GetByUserAndFeedEntry(ctx context.Context, userID, feed
 	return &l, nil
 }
 
-func (r *LikeRepository) SetValue(ctx context.Context, userID, feedEntryID int, value int) (*domain.Like, error) {
+func (r *LikeRepository) SetValue(ctx context.Context, userID, feedEntryID int64, value int) (*domain.Like, error) {
 	existing, err := r.GetByUserAndFeedEntry(ctx, userID, feedEntryID)
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func (r *LikeRepository) SetValue(ctx context.Context, userID, feedEntryID int, 
 	return &l, nil
 }
 
-func (r *LikeRepository) GetFeedEntryCounts(ctx context.Context, feedEntryID int) (likes, dislikes int, err error) {
+func (r *LikeRepository) GetFeedEntryCounts(ctx context.Context, feedEntryID int64) (likes, dislikes int, err error) {
 	query := "SELECT COUNT(*) FROM likes WHERE feed_entry_id = $1 AND value = 1"
 	err = r.db.QueryRowContext(ctx, query, feedEntryID).Scan(&likes)
 	if err != nil {
@@ -87,7 +87,7 @@ func (r *LikeRepository) GetFeedEntryCounts(ctx context.Context, feedEntryID int
 	return likes, dislikes, nil
 }
 
-func (r *LikeRepository) GetUserStatus(ctx context.Context, userID, feedEntryID int) (status *int, err error) {
+func (r *LikeRepository) GetUserStatus(ctx context.Context, userID, feedEntryID int64) (status *int, err error) {
 	query := "SELECT value FROM likes WHERE user_id = $1 AND feed_entry_id = $2"
 	var value int
 	err = r.db.QueryRowContext(ctx, query, userID, feedEntryID).Scan(&value)
@@ -100,7 +100,7 @@ func (r *LikeRepository) GetUserStatus(ctx context.Context, userID, feedEntryID 
 	return &value, nil
 }
 
-func (r *LikeRepository) Remove(ctx context.Context, userID, feedEntryID int) error {
+func (r *LikeRepository) Remove(ctx context.Context, userID, feedEntryID int64) error {
 	query := "DELETE FROM likes WHERE user_id = $1 AND feed_entry_id = $2"
 	_, err := r.db.ExecContext(ctx, query, userID, feedEntryID)
 	return err
