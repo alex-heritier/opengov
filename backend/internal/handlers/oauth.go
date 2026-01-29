@@ -15,7 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/alex/opengov-go/internal/config"
-	"github.com/alex/opengov-go/internal/models"
+	"github.com/alex/opengov-go/internal/domain"
 	"github.com/alex/opengov-go/internal/repository"
 	"github.com/alex/opengov-go/internal/services"
 )
@@ -145,7 +145,7 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 			picture, _ := userInfo["picture"].(string)
 			verified, _ := userInfo["email_verified"].(bool)
 
-			user = &models.User{
+			user = &domain.User{
 				Email:       email,
 				GoogleID:    &googleID,
 				Name:        &name,
@@ -250,20 +250,6 @@ func getGoogleUserInfo(accessToken string, cfg *config.Config) (map[string]inter
 	return result, nil
 }
 
-type AuthUserResponse struct {
-	ID               int     `json:"id"`
-	Email            string  `json:"email"`
-	Name             *string `json:"name,omitempty"`
-	PictureURL       *string `json:"picture_url,omitempty"`
-	GoogleID         *string `json:"google_id,omitempty"`
-	PoliticalLeaning *string `json:"political_leaning,omitempty"`
-	IsActive         bool    `json:"is_active"`
-	IsVerified       bool    `json:"is_verified"`
-	CreatedAt        string  `json:"created_at"`
-	UpdatedAt        string  `json:"updated_at"`
-	LastLoginAt      *string `json:"last_login_at,omitempty"`
-}
-
 // TestLogin handles test authentication for development environments only.
 // It creates or retrieves a test user and logs them in, mimicking the Google OAuth flow
 // to avoid special cases in the frontend.
@@ -306,7 +292,7 @@ func (h *OAuthHandler) TestLogin(c *gin.Context) {
 			user.PictureURL = &testPicture
 		} else {
 			// Create new test user
-			user = &models.User{
+			user = &domain.User{
 				Email:       testEmail,
 				GoogleID:    &testGoogleID,
 				Name:        &testName,

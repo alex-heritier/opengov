@@ -10,7 +10,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/alex/opengov-go/internal/db"
-	"github.com/alex/opengov-go/internal/models"
+	"github.com/alex/opengov-go/internal/domain"
 )
 
 type UserRepository struct {
@@ -21,13 +21,13 @@ func NewUserRepository(db *db.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-func (r *UserRepository) GetByID(ctx context.Context, id int) (*models.User, error) {
+func (r *UserRepository) GetByID(ctx context.Context, id int) (*domain.User, error) {
 	query := `
 		SELECT id, email, hashed_password, is_active, is_superuser, is_verified,
 		       google_id, name, picture_url, political_leaning, state, created_at, updated_at, last_login_at
 		FROM users WHERE id = $1
 	`
-	var u models.User
+	var u domain.User
 	var lastLoginAt *time.Time
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&u.ID, &u.Email, &u.HashedPassword, &u.IsActive, &u.IsSuperuser, &u.IsVerified,
@@ -41,13 +41,13 @@ func (r *UserRepository) GetByID(ctx context.Context, id int) (*models.User, err
 	return &u, nil
 }
 
-func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
+func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
 	query := `
 		SELECT id, email, hashed_password, is_active, is_superuser, is_verified,
 		       google_id, name, picture_url, political_leaning, state, created_at, updated_at, last_login_at
 		FROM users WHERE email = $1
 	`
-	var u models.User
+	var u domain.User
 	var lastLoginAt *time.Time
 	err := r.db.QueryRowContext(ctx, query, email).Scan(
 		&u.ID, &u.Email, &u.HashedPassword, &u.IsActive, &u.IsSuperuser, &u.IsVerified,
@@ -64,13 +64,13 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.
 	return &u, nil
 }
 
-func (r *UserRepository) GetByGoogleID(ctx context.Context, googleID string) (*models.User, error) {
+func (r *UserRepository) GetByGoogleID(ctx context.Context, googleID string) (*domain.User, error) {
 	query := `
 		SELECT id, email, hashed_password, is_active, is_superuser, is_verified,
 		       google_id, name, picture_url, political_leaning, state, created_at, updated_at, last_login_at
 		FROM users WHERE google_id = $1
 	`
-	var u models.User
+	var u domain.User
 	var lastLoginAt *time.Time
 	err := r.db.QueryRowContext(ctx, query, googleID).Scan(
 		&u.ID, &u.Email, &u.HashedPassword, &u.IsActive, &u.IsSuperuser, &u.IsVerified,
@@ -87,7 +87,7 @@ func (r *UserRepository) GetByGoogleID(ctx context.Context, googleID string) (*m
 	return &u, nil
 }
 
-func (r *UserRepository) Create(ctx context.Context, user *models.User, password string) error {
+func (r *UserRepository) Create(ctx context.Context, user *domain.User, password string) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("failed to hash password: %w", err)
@@ -115,7 +115,7 @@ func (r *UserRepository) Create(ctx context.Context, user *models.User, password
 	return nil
 }
 
-func (r *UserRepository) CreateFromGoogle(ctx context.Context, user *models.User) error {
+func (r *UserRepository) CreateFromGoogle(ctx context.Context, user *domain.User) error {
 	now := time.Now().UTC()
 	user.CreatedAt = now
 	user.UpdatedAt = now
@@ -144,12 +144,12 @@ func (r *UserRepository) UpdateLoginTime(ctx context.Context, id int) error {
 	return err
 }
 
-func (r *UserRepository) VerifyPassword(user *models.User, password string) bool {
+func (r *UserRepository) VerifyPassword(user *domain.User, password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(user.HashedPassword), []byte(password))
 	return err == nil
 }
 
-func (r *UserRepository) Update(ctx context.Context, user *models.User) error {
+func (r *UserRepository) Update(ctx context.Context, user *domain.User) error {
 	query := `
 		UPDATE users SET
 			name = $1, picture_url = $2, political_leaning = $3, state = $4,

@@ -10,6 +10,7 @@ import (
 
 	"github.com/alex/opengov-go/internal/repository"
 	"github.com/alex/opengov-go/internal/services"
+	"github.com/alex/opengov-go/internal/transport"
 )
 
 type AdminHandler struct {
@@ -35,7 +36,7 @@ func (h *AdminHandler) GetStats(c *gin.Context) {
 
 	lastArticle, _ := h.docRepo.GetLatest(c.Request.Context())
 
-	resp := StatsResponse{
+	resp := transport.StatsResponse{
 		TotalArticles: total,
 	}
 

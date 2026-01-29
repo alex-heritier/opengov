@@ -1,3 +1,6 @@
+# Federal Register Data Processing Pipeline
+
+## Overview
 
 | Stage            | Table                  | Purpose                                     |
 | ---------------- | ---------------------- | ------------------------------------------- |
@@ -6,61 +9,38 @@
 | Enrichment       | `policy_documents`     | AI processing (summary/keypoints/scores)    |
 | Materialization  | `feed_entries`         | Feed-ready record derived from policy docs  |
 
-
----
-
-# Federal Register Data Processing Pipeline
-
 ## Stages
 
-Federal Register API
+### 1) Raw ingestion (scraper)
 
-```
-    ↓
-```
+- **Input**: Federal Register API
+- **Output**: `raw_policy_documents`
+- **Idempotency**: UPSERT on (`source_key`, `external_id`) so re-scrapes update the same raw record.
 
-Raw ingestion (scraper)
-→ `raw_policy_documents` table
+### 2) Canonicalization (service)
 
-- Idempotency check: UPSERT on (`source_key`, `external_id`) so re-scrapes update the same raw record.
+- **Output**: `policy_documents`
+- **Idempotency**: UPSERT on `unique_key` so the same document identity is updated, not duplicated.
 
-```
-    ↓
-```
+### 3) Enrichment (AI service)
 
-canonicalization service
-→ `policy_documents` table
+- **Output**: updates AI fields on `policy_documents`
+- **Idempotency**: for each enrichment field, only write when the target field is NULL/empty; if already set, skip that enrichment step.
 
-- Idempotency check: UPSERT on `unique_key` so the same document identity is updated, not duplicated.
+### 4) Materialization (service)
 
-```
-    ↓
-```
-
-enrichment service (AI)
-→ updates AI fields on `policy_documents`
-
-- Idempotency check: for each enrichment field, only write when the target field is NULL/empty; if already set, skip that enrichment step.
-
-```
-    ↓
-```
-
-materialization service
-→ creates `feed_entries` record
-
-- Idempotency check: UPSERT on `policy_document_id` so each policy document has at most one feed entry.
+- **Output**: creates `feed_entries` record
+- **Idempotency**: UPSERT on `policy_document_id` so each policy document has at most one feed entry.
 
 ## Architecture
 
-Each stage will have its own backend/cmd/.../ directory
+Each stage will have its own `backend/cmd/.../` directory:
 
-- Scraper: backend/cmd/scraper/ (exists)
-- Canonicalization: backend/cmd/canonicalize/ (new)
-- Enrichment: backend/cmd/enrichment/ (new)
-- Materialization: backend/cmd/materialize/ (new)
+- Scraper: `backend/cmd/scraper/` (exists)
+- Canonicalization: `backend/cmd/canonicalize/` (new)
+- Enrichment: `backend/cmd/enrichment/` (new)
+- Materialization: `backend/cmd/materialize/` (new)
 
 ## Usage
 
-The pipeline will be orchestrated by a backend/scripts/run-pipeline.sh script that handles running each executable in sequence.
-
+The pipeline will be orchestrated by `backend/scripts/run-pipeline.sh`, which runs each executable in sequence.

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/alex/opengov-go/internal/db"
-	"github.com/alex/opengov-go/internal/models"
+	"github.com/alex/opengov-go/internal/domain"
 )
 
 type RawPolicyDocumentRepository struct {
@@ -32,12 +32,12 @@ func (r *RawPolicyDocumentRepository) Create(ctx context.Context, tx *sql.Tx, so
 	return nil
 }
 
-func (r *RawPolicyDocumentRepository) GetByID(ctx context.Context, id int) (*models.RawPolicyDocument, error) {
+func (r *RawPolicyDocumentRepository) GetByID(ctx context.Context, id int) (*domain.RawPolicyDocument, error) {
 	query := `
 		SELECT id, source_key, external_id, raw_data, fetched_at, policy_document_id, created_at
 		FROM raw_policy_documents WHERE id = $1
 	`
-	var entry models.RawPolicyDocument
+	var entry domain.RawPolicyDocument
 	var rawData []byte
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&entry.ID,
@@ -57,7 +57,7 @@ func (r *RawPolicyDocumentRepository) GetByID(ctx context.Context, id int) (*mod
 	return &entry, nil
 }
 
-func (r *RawPolicyDocumentRepository) GetByDocumentID(ctx context.Context, policyDocID int) ([]*models.RawPolicyDocument, error) {
+func (r *RawPolicyDocumentRepository) GetByDocumentID(ctx context.Context, policyDocID int) ([]*domain.RawPolicyDocument, error) {
 	query := `
 		SELECT id, source_key, external_id, raw_data, fetched_at, policy_document_id, created_at
 		FROM raw_policy_documents WHERE policy_document_id = $1
@@ -69,9 +69,9 @@ func (r *RawPolicyDocumentRepository) GetByDocumentID(ctx context.Context, polic
 	}
 	defer rows.Close()
 
-	var entries []*models.RawPolicyDocument
+	var entries []*domain.RawPolicyDocument
 	for rows.Next() {
-		var entry models.RawPolicyDocument
+		var entry domain.RawPolicyDocument
 		var rawData []byte
 		err := rows.Scan(
 			&entry.ID,

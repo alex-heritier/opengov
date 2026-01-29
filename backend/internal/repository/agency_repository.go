@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/alex/opengov-go/internal/db"
-	"github.com/alex/opengov-go/internal/models"
+	"github.com/alex/opengov-go/internal/domain"
 )
 
 type AgencyRepository struct {
@@ -16,7 +16,7 @@ func NewAgencyRepository(db *db.DB) *AgencyRepository {
 	return &AgencyRepository{db: db}
 }
 
-func (r *AgencyRepository) GetAll(ctx context.Context, limit, offset int) ([]models.Agency, int, error) {
+func (r *AgencyRepository) GetAll(ctx context.Context, limit, offset int) ([]domain.Agency, int, error) {
 	query := "SELECT COUNT(*) FROM agencies"
 	var total int
 	if err := r.db.QueryRowContext(ctx, query).Scan(&total); err != nil {
@@ -35,9 +35,9 @@ func (r *AgencyRepository) GetAll(ctx context.Context, limit, offset int) ([]mod
 	}
 	defer rows.Close()
 
-	var agencies []models.Agency
+	var agencies []domain.Agency
 	for rows.Next() {
-		var a models.Agency
+		var a domain.Agency
 		var shortName, description, url, jsonURL *string
 		var parentID *int
 		if err := rows.Scan(
@@ -57,7 +57,7 @@ func (r *AgencyRepository) GetAll(ctx context.Context, limit, offset int) ([]mod
 	return agencies, total, nil
 }
 
-func (r *AgencyRepository) Create(ctx context.Context, agency *models.Agency) error {
+func (r *AgencyRepository) Create(ctx context.Context, agency *domain.Agency) error {
 	query := `
 		INSERT INTO agencies (fr_agency_id, raw_name, name, short_name, slug, description, url, json_url, parent_id, raw_data)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
@@ -81,7 +81,7 @@ func (r *AgencyRepository) ExistsByFRAgencyID(ctx context.Context, frAgencyID in
 	return count > 0, err
 }
 
-func (r *AgencyRepository) Upsert(ctx context.Context, agency *models.Agency) error {
+func (r *AgencyRepository) Upsert(ctx context.Context, agency *domain.Agency) error {
 	exists, err := r.ExistsByFRAgencyID(ctx, agency.FRAgencyID)
 	if err != nil {
 		return err

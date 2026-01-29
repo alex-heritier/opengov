@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/alex/opengov-go/internal/db"
-	"github.com/alex/opengov-go/internal/models"
+	"github.com/alex/opengov-go/internal/domain"
 )
 
 type LikeRepository struct {
@@ -18,12 +18,12 @@ func NewLikeRepository(db *db.DB) *LikeRepository {
 	return &LikeRepository{db: db}
 }
 
-func (r *LikeRepository) GetByUserAndFeedEntry(ctx context.Context, userID, feedEntryID int) (*models.Like, error) {
+func (r *LikeRepository) GetByUserAndFeedEntry(ctx context.Context, userID, feedEntryID int) (*domain.Like, error) {
 	query := `
 		SELECT id, user_id, feed_entry_id, value, created_at, updated_at
 		FROM likes WHERE user_id = $1 AND feed_entry_id = $2
 	`
-	var l models.Like
+	var l domain.Like
 	err := r.db.QueryRowContext(ctx, query, userID, feedEntryID).Scan(
 		&l.ID, &l.UserID, &l.FeedEntryID, &l.Value, &l.CreatedAt, &l.UpdatedAt,
 	)
@@ -36,7 +36,7 @@ func (r *LikeRepository) GetByUserAndFeedEntry(ctx context.Context, userID, feed
 	return &l, nil
 }
 
-func (r *LikeRepository) SetValue(ctx context.Context, userID, feedEntryID int, value int) (*models.Like, error) {
+func (r *LikeRepository) SetValue(ctx context.Context, userID, feedEntryID int, value int) (*domain.Like, error) {
 	existing, err := r.GetByUserAndFeedEntry(ctx, userID, feedEntryID)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (r *LikeRepository) SetValue(ctx context.Context, userID, feedEntryID int, 
 		VALUES ($1, $2, $3)
 		RETURNING id
 	`
-	var l models.Like
+	var l domain.Like
 	l.UserID = userID
 	l.FeedEntryID = feedEntryID
 	l.Value = value

@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/alex/opengov-go/internal/db"
-	"github.com/alex/opengov-go/internal/models"
+	"github.com/alex/opengov-go/internal/domain"
 )
 
 type BookmarkRepository struct {
@@ -17,12 +17,12 @@ func NewBookmarkRepository(db *db.DB) *BookmarkRepository {
 	return &BookmarkRepository{db: db}
 }
 
-func (r *BookmarkRepository) GetByUserAndFeedEntry(ctx context.Context, userID, feedEntryID int) (*models.Bookmark, error) {
+func (r *BookmarkRepository) GetByUserAndFeedEntry(ctx context.Context, userID, feedEntryID int) (*domain.Bookmark, error) {
 	query := `
 		SELECT id, user_id, feed_entry_id, created_at, updated_at
 		FROM bookmarks WHERE user_id = $1 AND feed_entry_id = $2
 	`
-	var b models.Bookmark
+	var b domain.Bookmark
 	err := r.db.QueryRowContext(ctx, query, userID, feedEntryID).Scan(
 		&b.ID, &b.UserID, &b.FeedEntryID, &b.CreatedAt, &b.UpdatedAt,
 	)

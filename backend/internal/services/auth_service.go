@@ -9,7 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/alex/opengov-go/internal/config"
-	"github.com/alex/opengov-go/internal/models"
+	"github.com/alex/opengov-go/internal/domain"
 	"github.com/alex/opengov-go/internal/repository"
 )
 
@@ -34,7 +34,7 @@ func NewAuthService(cfg *config.Config, userRepo *repository.UserRepository) *Au
 	}
 }
 
-func (s *AuthService) GenerateToken(user *models.User) (string, error) {
+func (s *AuthService) GenerateToken(user *domain.User) (string, error) {
 	now := time.Now()
 	claims := Claims{
 		UserID:      user.ID,
@@ -72,7 +72,7 @@ func (s *AuthService) ValidateToken(tokenString string) (*Claims, error) {
 	return claims, nil
 }
 
-func (s *AuthService) Authenticate(ctx context.Context, email, password string) (*models.User, error) {
+func (s *AuthService) Authenticate(ctx context.Context, email, password string) (*domain.User, error) {
 	user, err := s.userRepo.GetByEmail(ctx, email)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)
@@ -95,6 +95,6 @@ func (s *AuthService) Authenticate(ctx context.Context, email, password string) 
 	return user, nil
 }
 
-func (s *AuthService) GetUserByID(ctx context.Context, id int) (*models.User, error) {
+func (s *AuthService) GetUserByID(ctx context.Context, id int) (*domain.User, error) {
 	return s.userRepo.GetByID(ctx, id)
 }

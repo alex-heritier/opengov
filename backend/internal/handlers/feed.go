@@ -8,6 +8,7 @@ import (
 
 	"github.com/alex/opengov-go/internal/middleware"
 	"github.com/alex/opengov-go/internal/services"
+	"github.com/alex/opengov-go/internal/transport"
 )
 
 type FeedHandler struct {
@@ -42,7 +43,7 @@ func (h *FeedHandler) GetFeed(c *gin.Context) {
 	}
 
 	userID, hasAuth := middleware.GetUserID(c)
-	var resp services.FeedResponse
+	var resp transport.FeedResponse
 	var err error
 
 	if hasAuth {
@@ -68,7 +69,7 @@ func (h *FeedHandler) GetItem(c *gin.Context) {
 	}
 
 	userID, hasAuth := middleware.GetUserID(c)
-	var item *services.FeedEntryResponse
+	var item *transport.FeedEntryResponse
 	var svcErr error
 
 	if hasAuth {

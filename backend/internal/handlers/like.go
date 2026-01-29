@@ -8,6 +8,7 @@ import (
 
 	"github.com/alex/opengov-go/internal/middleware"
 	"github.com/alex/opengov-go/internal/repository"
+	"github.com/alex/opengov-go/internal/transport"
 )
 
 type LikeHandler struct {
@@ -18,10 +19,6 @@ func NewLikeHandler(likeRepo *repository.LikeRepository) *LikeHandler {
 	return &LikeHandler{
 		likeRepo: likeRepo,
 	}
-}
-
-type ToggleLikeRequest struct {
-	Value int `json:"value"`
 }
 
 func (h *LikeHandler) Toggle(c *gin.Context) {
@@ -37,7 +34,7 @@ func (h *LikeHandler) Toggle(c *gin.Context) {
 		return
 	}
 
-	var req ToggleLikeRequest
+	var req transport.ToggleLikeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return

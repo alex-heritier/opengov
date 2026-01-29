@@ -5,6 +5,7 @@ import (
 
 	"github.com/alex/opengov-go/internal/repository"
 	"github.com/alex/opengov-go/internal/timeformat"
+	"github.com/alex/opengov-go/internal/transport"
 )
 
 type FeedService struct {
@@ -15,30 +16,7 @@ func NewFeedService(feedRepo *repository.FeedRepository) *FeedService {
 	return &FeedService{feedRepo: feedRepo}
 }
 
-type FeedEntryResponse struct {
-	ID             int      `json:"id"`
-	Title          string   `json:"title"`
-	Summary        string   `json:"summary"`
-	Keypoints      []string `json:"keypoints,omitempty"`
-	ImpactScore    *string  `json:"impact_score,omitempty"`
-	PoliticalScore *int     `json:"political_score,omitempty"`
-	SourceURL      string   `json:"source_url"`
-	PublishedAt    string   `json:"published_at"`
-	IsBookmarked   *bool    `json:"is_bookmarked,omitempty"`
-	UserLikeStatus *int     `json:"user_like_status,omitempty"`
-	LikesCount     int      `json:"likes_count"`
-	DislikesCount  int      `json:"dislikes_count"`
-}
-
-type FeedResponse struct {
-	Items   []FeedEntryResponse `json:"items"`
-	Page    int                 `json:"page"`
-	Limit   int                 `json:"limit"`
-	Total   int                 `json:"total"`
-	HasNext bool                `json:"has_next"`
-}
-
-func (s *FeedService) GetFeed(ctx context.Context, userID *int, page, limit int, sort string) (FeedResponse, error) {
+func (s *FeedService) GetFeed(ctx context.Context, userID *int, page, limit int, sort string) (transport.FeedResponse, error) {
 	var items []repository.FeedEntryRow
 	var total int
 	var err error
@@ -50,16 +28,16 @@ func (s *FeedService) GetFeed(ctx context.Context, userID *int, page, limit int,
 	}
 
 	if err != nil {
-		return FeedResponse{}, err
+		return transport.FeedResponse{}, err
 	}
 
-	responses := make([]FeedEntryResponse, len(items))
+	responses := make([]transport.FeedEntryResponse, len(items))
 	for i, item := range items {
 		responses[i] = mapFeedEntryRowToResponse(item)
 	}
 
 	offset := (page - 1) * limit
-	return FeedResponse{
+	return transport.FeedResponse{
 		Items:   responses,
 		Page:    page,
 		Limit:   limit,
@@ -68,7 +46,7 @@ func (s *FeedService) GetFeed(ctx context.Context, userID *int, page, limit int,
 	}, nil
 }
 
-func (s *FeedService) GetItem(ctx context.Context, userID *int, feedEntryID int) (*FeedEntryResponse, error) {
+func (s *FeedService) GetItem(ctx context.Context, userID *int, feedEntryID int) (*transport.FeedEntryResponse, error) {
 	var item *repository.FeedEntryRow
 	var err error
 
@@ -89,21 +67,21 @@ func (s *FeedService) GetItem(ctx context.Context, userID *int, feedEntryID int)
 	return &resp, nil
 }
 
-func (s *FeedService) GetBookmarkedFeed(ctx context.Context, userID int) ([]FeedEntryResponse, error) {
+func (s *FeedService) GetBookmarkedFeed(ctx context.Context, userID int) ([]transport.FeedEntryResponse, error) {
 	items, err := s.feedRepo.GetBookmarkedFeed(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	responses := make([]FeedEntryResponse, len(items))
+	responses := make([]transport.FeedEntryResponse, len(items))
 	for i, item := range items {
 		responses[i] = mapFeedEntryRowToResponse(item)
 	}
 	return responses, nil
 }
 
-func mapFeedEntryRowToResponse(item repository.FeedEntryRow) FeedEntryResponse {
-	return FeedEntryResponse{
+func mapFeedEntryRowToResponse(item repository.FeedEntryRow) transport.FeedEntryResponse {
+	return transport.FeedEntryResponse{
 		ID:             item.FeedEntryID,
 		Title:          item.Title,
 		Summary:        item.ShortText,

@@ -4,7 +4,8 @@ import (
 	"context"
 
 	"github.com/alex/opengov-go/internal/client"
-	"github.com/alex/opengov-go/internal/models"
+	"github.com/alex/opengov-go/internal/domain"
+	"github.com/alex/opengov-go/internal/transport"
 )
 
 type FedregScraper struct {
@@ -25,7 +26,7 @@ func (s *FedregScraper) Scrape(ctx context.Context, daysLookback int) ([]ScrapeR
 
 	results := make([]ScrapeResult, len(docs))
 	for i, frDoc := range docs {
-		doc := ScrapedPolicyDocument{
+		doc := transport.ScrapedPolicyDocument{
 			DocumentNumber:         frDoc.Document.DocumentNumber,
 			Title:                  frDoc.Document.Title,
 			Type:                   frDoc.Document.Type,
@@ -45,10 +46,10 @@ func (s *FedregScraper) Scrape(ctx context.Context, daysLookback int) ([]ScrapeR
 	return results, nil
 }
 
-func transformAgencies(frAgencies []client.FRAgency) []models.Agency {
-	agencies := make([]models.Agency, len(frAgencies))
+func transformAgencies(frAgencies []client.FRAgency) []domain.Agency {
+	agencies := make([]domain.Agency, len(frAgencies))
 	for i, frAgency := range frAgencies {
-		agencies[i] = models.Agency{
+		agencies[i] = domain.Agency{
 			FRAgencyID:  frAgency.ID,
 			Name:        frAgency.Name,
 			ShortName:   &frAgency.ShortName,

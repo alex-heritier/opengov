@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/alex/opengov-go/internal/db"
-	"github.com/alex/opengov-go/internal/models"
+	"github.com/alex/opengov-go/internal/domain"
 	"github.com/alex/opengov-go/internal/repository"
 )
 
@@ -27,7 +27,7 @@ func NewPolicyDocumentService(docRepo *repository.PolicyDocumentRepository, feed
 	}
 }
 
-func (s *PolicyDocumentService) CreateFromScrape(ctx context.Context, doc *models.PolicyDocument, rawPayload []byte, fetchedAt time.Time) (*models.PolicyDocument, error) {
+func (s *PolicyDocumentService) CreateFromScrape(ctx context.Context, doc *domain.PolicyDocument, rawPayload []byte, fetchedAt time.Time) (*domain.PolicyDocument, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
@@ -84,7 +84,7 @@ func (s *PolicyDocumentService) CreateFromScrape(ctx context.Context, doc *model
 	return doc, nil
 }
 
-func (s *PolicyDocumentService) Update(ctx context.Context, id int, updates *models.PolicyDocument) (*models.PolicyDocument, error) {
+func (s *PolicyDocumentService) Update(ctx context.Context, id int, updates *domain.PolicyDocument) (*domain.PolicyDocument, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
@@ -140,7 +140,7 @@ func (s *PolicyDocumentService) Update(ctx context.Context, id int, updates *mod
 	return existing, nil
 }
 
-func (s *PolicyDocumentService) GetByID(ctx context.Context, id int) (*models.PolicyDocument, error) {
+func (s *PolicyDocumentService) GetByID(ctx context.Context, id int) (*domain.PolicyDocument, error) {
 	return s.docRepo.GetByID(ctx, id)
 }
 
@@ -148,7 +148,7 @@ func (s *PolicyDocumentService) ExistsBySourceKeyExternalID(ctx context.Context,
 	return s.docRepo.ExistsBySourceKeyExternalID(ctx, sourceKey, externalID)
 }
 
-func (s *PolicyDocumentService) GetBySourceKeyExternalID(ctx context.Context, sourceKey, externalID string) (*models.PolicyDocument, error) {
+func (s *PolicyDocumentService) GetBySourceKeyExternalID(ctx context.Context, sourceKey, externalID string) (*domain.PolicyDocument, error) {
 	return s.docRepo.GetBySourceKeyExternalID(ctx, sourceKey, externalID)
 }
 

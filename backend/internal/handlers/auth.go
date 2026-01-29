@@ -5,11 +5,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/alex/opengov-go/internal/domain"
 	"github.com/alex/opengov-go/internal/middleware"
-	"github.com/alex/opengov-go/internal/models"
 	"github.com/alex/opengov-go/internal/repository"
 	"github.com/alex/opengov-go/internal/services"
 	"github.com/alex/opengov-go/internal/timeformat"
+	"github.com/alex/opengov-go/internal/transport"
 )
 
 type AuthHandler struct {
@@ -24,39 +25,8 @@ func NewAuthHandler(authService *services.AuthService, userRepo *repository.User
 	}
 }
 
-type LoginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=8"`
-}
-
-type RegisterRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=8"`
-	Name     string `json:"name,omitempty"`
-}
-
-type AuthResponse struct {
-	AccessToken string        `json:"access_token"`
-	User        *UserResponse `json:"user"`
-}
-
-type UserResponse struct {
-	ID               int     `json:"id"`
-	Email            string  `json:"email"`
-	Name             *string `json:"name,omitempty"`
-	PictureURL       *string `json:"picture_url,omitempty"`
-	GoogleID         *string `json:"google_id,omitempty"`
-	PoliticalLeaning *string `json:"political_leaning,omitempty"`
-	State            *string `json:"state,omitempty"`
-	IsActive         bool    `json:"is_active"`
-	IsVerified       bool    `json:"is_verified"`
-	CreatedAt        string  `json:"created_at"`
-	UpdatedAt        string  `json:"updated_at"`
-	LastLoginAt      *string `json:"last_login_at,omitempty"`
-}
-
 func (h *AuthHandler) Login(c *gin.Context) {
-	var req LoginRequest
+	var req transport.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
@@ -74,14 +44,14 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, AuthResponse{
+	c.JSON(http.StatusOK, transport.AuthResponse{
 		AccessToken: token,
 		User:        userToResponse(user),
 	})
 }
 
 func (h *AuthHandler) Register(c *gin.Context) {
-	var req RegisterRequest
+	var req transport.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
@@ -93,7 +63,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	user := &models.User{
+	user := &domain.User{
 		Email: req.Email,
 		Name:  strPtr(req.Name),
 	}
@@ -108,7 +78,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, AuthResponse{
+	c.JSON(http.StatusCreated, transport.AuthResponse{
 		AccessToken: token,
 		User:        userToResponse(user),
 	})
@@ -156,13 +126,6 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"access_token": token})
 }
 
-type UpdateUserRequest struct {
-	Name             *string `json:"name,omitempty"`
-	PictureURL       *string `json:"picture_url,omitempty"`
-	PoliticalLeaning *string `json:"political_leaning,omitempty"`
-	State            *string `json:"state,omitempty"`
-}
-
 func (h *AuthHandler) UpdateUser(c *gin.Context) {
 	userID, hasAuth := middleware.GetUserID(c)
 	if !hasAuth {
@@ -176,7 +139,7 @@ func (h *AuthHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	var req UpdateUserRequest
+	var req transport.UpdateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
@@ -203,13 +166,13 @@ func (h *AuthHandler) UpdateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, userToResponse(user))
 }
 
-func userToResponse(u *models.User) *UserResponse {
+func userToResponse(u *domain.User) *transport.UserResponse {
 	var lastLoginAt *string
 	if u.LastLoginAt != nil {
 		s := u.LastLoginAt.Format(timeformat.RFC3339)
 		lastLoginAt = &s
 	}
-	return &UserResponse{
+	return &transport.UserResponse{
 		ID:               u.ID,
 		Email:            u.Email,
 		Name:             u.Name,

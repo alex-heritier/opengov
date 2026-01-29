@@ -9,7 +9,7 @@ import (
 	"github.com/alex/opengov-go/internal/client"
 	"github.com/alex/opengov-go/internal/config"
 	"github.com/alex/opengov-go/internal/constants"
-	"github.com/alex/opengov-go/internal/models"
+	"github.com/alex/opengov-go/internal/domain"
 	"github.com/alex/opengov-go/internal/repository"
 	"github.com/alex/opengov-go/internal/scrape"
 )
@@ -139,7 +139,7 @@ func (s *ScraperService) processSingleScrapeResult(ctx context.Context, result s
 		agencyPtr = &agency
 	}
 
-	newDoc := &models.PolicyDocument{
+	newDoc := &domain.PolicyDocument{
 		SourceKey:      constants.SourceTypeFederalRegister,
 		ExternalID:     doc.DocumentNumber,
 		Title:          doc.Title,
@@ -192,7 +192,7 @@ func (s *ScraperService) SyncAgencies(ctx context.Context) (int, error) {
 		rawData, _ := json.Marshal(frAgency)
 
 		now := time.Now().UTC()
-		agency := &models.Agency{
+		agency := &domain.Agency{
 			FRAgencyID:  frAgency.ID,
 			RawName:     frAgency.RawName,
 			Name:        frAgency.Name,
@@ -202,7 +202,7 @@ func (s *ScraperService) SyncAgencies(ctx context.Context) (int, error) {
 			URL:         &frAgency.URL,
 			JSONURL:     &frAgency.JSONURL,
 			ParentID:    frAgency.ParentID,
-			RawData:     models.JSONMap{},
+			RawData:     domain.JSONMap{},
 			CreatedAt:   now,
 			UpdatedAt:   now,
 		}
