@@ -143,12 +143,8 @@ Unified model combining Federal Register raw data and processed document content
 
 {
   "id": 1,
-  "feed_entry_id": 1,
-  "source": "federal_register",
-  "source_id": "2025-01234",
-  "document_number": "2025-01234",
-  "unique_key": "federal_register:2025-01234",
-  "raw_data": { /* complete API response */ },
+  "source_key": "federal_register",
+  "external_id": "2025-01234",
   "fetched_at": "2025-01-10T10:30:00.000000Z",
   "title": "Notice of Proposed Rulemaking: Food Safety Standards",
   "agency": "Food and Drug Administration",
@@ -169,12 +165,8 @@ Unified model combining Federal Register raw data and processed document content
 }
 
 **Fields:**
-- `feed_entry_id`: Foreign key to feed_entries.id
-- `source`: Data source identifier (e.g., "federal_register" for Federal Register)
-- `source_id`: Source-specific document ID
-- `document_number`: Federal Register document number (unique per source)
-- `unique_key`: Composite unique identifier (source:document_number)
-- `raw_data`: Complete API response for audit/debugging
+- `source_key`: Data source identifier (e.g., "federal_register" for Federal Register)
+- `external_id`: Source-specific document ID (e.g., document_number for Federal Register)
 - `fetched_at`: When raw data was fetched from API
 - `title`: Document headline
 - `agency`: Government agency name from Federal Register (nullable)
@@ -187,11 +179,13 @@ Unified model combining Federal Register raw data and processed document content
 - `document_type`: Type of Federal Register document (e.g., "Notice", "Rule", "Proposed Rule")
 - `pdf_url`: Link to PDF version (nullable)
 
+**Constraints:**
+- `UNIQUE (source_key, external_id)` - Primary deduplication key (per-source)
+
 **Indexes:**
-- `unique_key` - Primary deduplication key (unique)
-- `document_number` - For Federal Register lookups
+- `(source_key, external_id)` - Primary deduplication key (unique)
 - `published_at` - For efficient sorting/filtering by date
-- `source` - For filtering by source
+- `source_key` - For filtering by source
 
 ## PolicyDocumentSource
 

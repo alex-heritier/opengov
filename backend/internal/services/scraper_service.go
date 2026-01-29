@@ -140,10 +140,8 @@ func (s *ScraperService) processSingleScrapeResult(ctx context.Context, result s
 	}
 
 	newDoc := &models.PolicyDocument{
-		Source:         constants.SourceTypeFederalRegister,
-		SourceID:       doc.DocumentNumber,
-		UniqueKey:      constants.SourceTypeFederalRegister + ":" + doc.DocumentNumber,
-		DocumentNumber: doc.DocumentNumber,
+		SourceKey:      constants.SourceTypeFederalRegister,
+		ExternalID:     doc.DocumentNumber,
 		Title:          doc.Title,
 		Agency:         agencyPtr,
 		Summary:        analysis.Summary,

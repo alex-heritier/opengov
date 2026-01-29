@@ -91,31 +91,22 @@ type Agency struct {
 }
 
 type PolicyDocument struct {
-	ID                     int       `json:"id"`
-	Source                 string    `json:"source"`
-	SourceID               string    `json:"source_id"`
-	DocumentNumber         string    `json:"document_number"`
-	UniqueKey              string    `json:"unique_key"`
-	FetchedAt              time.Time `json:"fetched_at"`
-	Title                  string    `json:"title"`
-	Agency                 *string   `json:"agency,omitempty"`
-	Summary                string    `json:"summary"`
-	Keypoints              []string  `json:"keypoints,omitempty"`
-	ImpactScore            *string   `json:"impact_score,omitempty"`
-	PoliticalScore         *int      `json:"political_score,omitempty"`
-	SourceURL              string    `json:"source_url"`
-	PublishedAt            time.Time `json:"published_at"`
-	DocumentType           *string   `json:"document_type,omitempty"`
-	PDFURL                 *string   `json:"pdf_url,omitempty"`
-	CreatedAt              time.Time `json:"created_at"`
-	UpdatedAt              time.Time `json:"updated_at"`
-	Abstract               *string   `json:"abstract,omitempty"`
-	Excerpts               *string   `json:"excerpts,omitempty"`
-	Agencies               []Agency  `json:"agencies,omitempty"`
-	PublicationDate        string    `json:"publication_date"`
-	HTMLURL                string    `json:"html_url"`
-	Type                   string    `json:"type"`
-	PublicInspectionPDFURL *string   `json:"public_inspection_pdf_url,omitempty"`
+	ID             int       `json:"id"`
+	SourceKey      string    `json:"source_key"`
+	ExternalID     string    `json:"external_id"`
+	FetchedAt      time.Time `json:"fetched_at"`
+	Title          string    `json:"title"`
+	Agency         *string   `json:"agency,omitempty"`
+	Summary        string    `json:"summary"`
+	Keypoints      []string  `json:"keypoints,omitempty"`
+	ImpactScore    *string   `json:"impact_score,omitempty"`
+	PoliticalScore *int      `json:"political_score,omitempty"`
+	SourceURL      string    `json:"source_url"`
+	PublishedAt    time.Time `json:"published_at"`
+	DocumentType   *string   `json:"document_type,omitempty"`
+	PDFURL         *string   `json:"pdf_url,omitempty"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 }
 
 type Bookmark struct {

@@ -21,8 +21,8 @@ func NewRawPolicyDocumentRepository(db *db.DB) *RawPolicyDocumentRepository {
 
 func (r *RawPolicyDocumentRepository) Create(ctx context.Context, tx *sql.Tx, sourceKey, externalID string, rawPayload []byte, fetchedAt time.Time, policyDocID int) error {
 	query := `
-		INSERT INTO raw_policy_documents (source_key, external_id, raw_data, fetched_at, policy_document_id, created_at)
-		VALUES ($1, $2, $3, $4, $5, NOW())
+		INSERT INTO raw_policy_documents (source_key, external_id, raw_data, fetched_at, policy_document_id)
+		VALUES ($1, $2, $3, $4, $5)
 	`
 
 	_, err := tx.ExecContext(ctx, query, sourceKey, externalID, rawPayload, fetchedAt, policyDocID)

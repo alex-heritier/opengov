@@ -25,7 +25,7 @@ func (s *FedregScraper) Scrape(ctx context.Context, daysLookback int) ([]ScrapeR
 
 	results := make([]ScrapeResult, len(docs))
 	for i, frDoc := range docs {
-		doc := models.PolicyDocument{
+		doc := ScrapedPolicyDocument{
 			DocumentNumber:         frDoc.Document.DocumentNumber,
 			Title:                  frDoc.Document.Title,
 			Type:                   frDoc.Document.Type,

@@ -12,7 +12,8 @@ backend/
 │   ├── db/                       # Database connection
 │   ├── handlers/                 # HTTP handlers
 │   ├── middleware/               # Auth middleware
-│   ├── models/                   # Data models
+│   ├── transport/                # Request/response transport structs
+│   ├── domain/                   # Pure business logic domain models (No tags)
 │   ├── repository/               # Data access layer
 │   └── services/                 # Business logic & external APIs
 ├── bin/                          # Compiled binaries

@@ -25,7 +25,7 @@ func NewPolicyDocumentRepository(db *db.DB) *PolicyDocumentRepository {
 
 func (r *PolicyDocumentRepository) GetByID(ctx context.Context, id int) (*models.PolicyDocument, error) {
 	query := `
-		SELECT id, source, source_id, unique_key, document_number, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, created_at, updated_at
+		SELECT id, source_key, external_id, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, created_at, updated_at
 		FROM policy_documents WHERE id = $1
 	`
 	var a models.PolicyDocument
@@ -33,7 +33,7 @@ func (r *PolicyDocumentRepository) GetByID(ctx context.Context, id int) (*models
 	var keypointsRaw []byte
 	var politicalScore *int
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &a.FetchedAt,
+		&a.ID, &a.SourceKey, &a.ExternalID, &a.FetchedAt,
 		&a.Title, &agency, &a.Summary, &keypointsRaw, &impactScore, &politicalScore, &a.SourceURL, &a.PublishedAt,
 		&documentType, &pdfURL, &a.CreatedAt, &a.UpdatedAt,
 	)
@@ -51,17 +51,17 @@ func (r *PolicyDocumentRepository) GetByID(ctx context.Context, id int) (*models
 	return &a, nil
 }
 
-func (r *PolicyDocumentRepository) GetByDocumentNumber(ctx context.Context, docNumber string) (*models.PolicyDocument, error) {
+func (r *PolicyDocumentRepository) GetByExternalID(ctx context.Context, externalID string) (*models.PolicyDocument, error) {
 	query := `
-		SELECT id, source, source_id, unique_key, document_number, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, created_at, updated_at
-		FROM policy_documents WHERE document_number = $1
+		SELECT id, source_key, external_id, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, created_at, updated_at
+		FROM policy_documents WHERE external_id = $1
 	`
 	var a models.PolicyDocument
 	var agency, impactScore, documentType, pdfURL *string
 	var keypointsRaw []byte
 	var politicalScore *int
-	err := r.db.QueryRowContext(ctx, query, docNumber).Scan(
-		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &a.FetchedAt,
+	err := r.db.QueryRowContext(ctx, query, externalID).Scan(
+		&a.ID, &a.SourceKey, &a.ExternalID, &a.FetchedAt,
 		&a.Title, &agency, &a.Summary, &keypointsRaw, &impactScore, &politicalScore, &a.SourceURL, &a.PublishedAt,
 		&documentType, &pdfURL, &a.CreatedAt, &a.UpdatedAt,
 	)
@@ -79,24 +79,24 @@ func (r *PolicyDocumentRepository) GetByDocumentNumber(ctx context.Context, docN
 	return &a, nil
 }
 
-func (r *PolicyDocumentRepository) ExistsByUniqueKey(ctx context.Context, uniqueKey string) (bool, error) {
-	query := "SELECT COUNT(*) FROM policy_documents WHERE unique_key = $1"
+func (r *PolicyDocumentRepository) ExistsBySourceKeyExternalID(ctx context.Context, sourceKey, externalID string) (bool, error) {
+	query := "SELECT COUNT(*) FROM policy_documents WHERE source_key = $1 AND external_id = $2"
 	var count int
-	err := r.db.QueryRowContext(ctx, query, uniqueKey).Scan(&count)
+	err := r.db.QueryRowContext(ctx, query, sourceKey, externalID).Scan(&count)
 	return count > 0, err
 }
 
-func (r *PolicyDocumentRepository) GetByUniqueKey(ctx context.Context, uniqueKey string) (*models.PolicyDocument, error) {
+func (r *PolicyDocumentRepository) GetBySourceKeyExternalID(ctx context.Context, sourceKey, externalID string) (*models.PolicyDocument, error) {
 	query := `
-		SELECT id, source, source_id, unique_key, document_number, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, created_at, updated_at
-		FROM policy_documents WHERE unique_key = $1
+		SELECT id, source_key, external_id, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, created_at, updated_at
+		FROM policy_documents WHERE source_key = $1 AND external_id = $2
 	`
 	var a models.PolicyDocument
 	var agency, impactScore, documentType, pdfURL *string
 	var keypointsRaw []byte
 	var politicalScore *int
-	err := r.db.QueryRowContext(ctx, query, uniqueKey).Scan(
-		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &a.FetchedAt,
+	err := r.db.QueryRowContext(ctx, query, sourceKey, externalID).Scan(
+		&a.ID, &a.SourceKey, &a.ExternalID, &a.FetchedAt,
 		&a.Title, &agency, &a.Summary, &keypointsRaw, &impactScore, &politicalScore, &a.SourceURL, &a.PublishedAt,
 		&documentType, &pdfURL, &a.CreatedAt, &a.UpdatedAt,
 	)
@@ -130,12 +130,12 @@ func (r *PolicyDocumentRepository) Create(ctx context.Context, tx *sql.Tx, doc *
 	}
 
 	query := `
-		INSERT INTO policy_documents (source, source_id, unique_key, document_number, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+		INSERT INTO policy_documents (source_key, external_id, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 		RETURNING id
 	`
 	err = tx.QueryRowContext(ctx, query,
-		doc.Source, doc.SourceID, doc.UniqueKey, doc.DocumentNumber, doc.FetchedAt,
+		doc.SourceKey, doc.ExternalID, doc.FetchedAt,
 		doc.Title, doc.Agency, doc.Summary, keypointsJSON, doc.ImpactScore, doc.PoliticalScore,
 		doc.SourceURL, doc.PublishedAt,
 		doc.DocumentType, doc.PDFURL,
@@ -164,14 +164,14 @@ func (r *PolicyDocumentRepository) Update(ctx context.Context, tx *sql.Tx, doc *
 
 	query := `
 		UPDATE policy_documents
-		SET source = $1, source_id = $2, unique_key = $3, document_number = $4, fetched_at = $5,
-			title = $6, agency = $7, summary = $8, keypoints = $9, impact_score = $10, political_score = $11,
-			source_url = $12, published_at = $13, document_type = $14, pdf_url = $15,
+		SET source_key = $1, external_id = $2, fetched_at = $3,
+			title = $4, agency = $5, summary = $6, keypoints = $7, impact_score = $8, political_score = $9,
+			source_url = $10, published_at = $11, document_type = $12, pdf_url = $13,
 			updated_at = NOW()
-		WHERE id = $16
+		WHERE id = $14
 	`
 	_, err = tx.ExecContext(ctx, query,
-		doc.Source, doc.SourceID, doc.UniqueKey, doc.DocumentNumber, doc.FetchedAt,
+		doc.SourceKey, doc.ExternalID, doc.FetchedAt,
 		doc.Title, doc.Agency, doc.Summary, keypointsJSON, doc.ImpactScore, doc.PoliticalScore,
 		doc.SourceURL, doc.PublishedAt,
 		doc.DocumentType, doc.PDFURL,
@@ -192,7 +192,7 @@ func (r *PolicyDocumentRepository) Count(ctx context.Context) (int, error) {
 
 func (r *PolicyDocumentRepository) GetLatest(ctx context.Context) (*models.PolicyDocument, error) {
 	query := `
-		SELECT id, source, source_id, unique_key, document_number, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, created_at, updated_at
+		SELECT id, source_key, external_id, fetched_at, title, agency, summary, keypoints, impact_score, political_score, source_url, published_at, document_type, pdf_url, created_at, updated_at
 		FROM policy_documents
 		ORDER BY fetched_at DESC
 		LIMIT 1
@@ -202,7 +202,7 @@ func (r *PolicyDocumentRepository) GetLatest(ctx context.Context) (*models.Polic
 	var keypointsRaw []byte
 	var politicalScore *int
 	err := r.db.QueryRowContext(ctx, query).Scan(
-		&a.ID, &a.Source, &a.SourceID, &a.UniqueKey, &a.DocumentNumber, &a.FetchedAt,
+		&a.ID, &a.SourceKey, &a.ExternalID, &a.FetchedAt,
 		&a.Title, &agency, &a.Summary, &keypointsRaw, &impactScore, &politicalScore, &a.SourceURL, &a.PublishedAt,
 		&documentType, &pdfURL, &a.CreatedAt, &a.UpdatedAt,
 	)

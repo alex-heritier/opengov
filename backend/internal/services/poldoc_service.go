@@ -37,7 +37,7 @@ func (s *PolicyDocumentService) CreateFromScrape(ctx context.Context, doc *model
 	err = s.docRepo.Create(ctx, tx, doc)
 	if err != nil {
 		if errors.Is(err, repository.ErrDuplicateDocument) {
-			existing, fetchErr := s.docRepo.GetByUniqueKey(ctx, doc.UniqueKey)
+			existing, fetchErr := s.docRepo.GetBySourceKeyExternalID(ctx, doc.SourceKey, doc.ExternalID)
 			if fetchErr != nil {
 				return nil, fmt.Errorf("failed to fetch existing document: %w", fetchErr)
 			}
@@ -72,7 +72,7 @@ func (s *PolicyDocumentService) CreateFromScrape(ctx context.Context, doc *model
 		return nil, fmt.Errorf("failed to upsert feed entry: %w", err)
 	}
 
-	err = s.sourceRepo.Create(ctx, tx, doc.Source, doc.DocumentNumber, rawPayload, fetchedAt, doc.ID)
+	err = s.sourceRepo.Create(ctx, tx, doc.SourceKey, doc.ExternalID, rawPayload, fetchedAt, doc.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create raw entry: %w", err)
 	}
@@ -144,16 +144,12 @@ func (s *PolicyDocumentService) GetByID(ctx context.Context, id int) (*models.Po
 	return s.docRepo.GetByID(ctx, id)
 }
 
-func (s *PolicyDocumentService) GetByDocumentNumber(ctx context.Context, docNumber string) (*models.PolicyDocument, error) {
-	return s.docRepo.GetByDocumentNumber(ctx, docNumber)
+func (s *PolicyDocumentService) ExistsBySourceKeyExternalID(ctx context.Context, sourceKey, externalID string) (bool, error) {
+	return s.docRepo.ExistsBySourceKeyExternalID(ctx, sourceKey, externalID)
 }
 
-func (s *PolicyDocumentService) ExistsByUniqueKey(ctx context.Context, uniqueKey string) (bool, error) {
-	return s.docRepo.ExistsByUniqueKey(ctx, uniqueKey)
-}
-
-func (s *PolicyDocumentService) GetByUniqueKey(ctx context.Context, uniqueKey string) (*models.PolicyDocument, error) {
-	return s.docRepo.GetByUniqueKey(ctx, uniqueKey)
+func (s *PolicyDocumentService) GetBySourceKeyExternalID(ctx context.Context, sourceKey, externalID string) (*models.PolicyDocument, error) {
+	return s.docRepo.GetBySourceKeyExternalID(ctx, sourceKey, externalID)
 }
 
 func (s *PolicyDocumentService) Count(ctx context.Context) (int, error) {
